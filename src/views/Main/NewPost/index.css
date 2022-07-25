@@ -1,0 +1,9 @@
+.code-mirror-wrapper .CodeMirror.cm-s-lucario {
+  background: transparent !important;
+}
+.code-mirror-wrapper .CodeMirror {
+  color: white;
+}
+.code-mirror-wrapper .CodeMirror .CodeMirror-cursor {
+  border-color: white;
+}

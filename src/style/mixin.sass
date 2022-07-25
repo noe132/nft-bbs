@@ -1,0 +1,11 @@
+@mixin mb
+  @media screen and (max-width: 959px)
+    @content
+
+@mixin lt($width)
+  @media screen and (max-width: ($width - 1px))
+    @content
+
+@mixin gt($width)
+  @media screen and (min-width: ($width + 0px))
+    @content

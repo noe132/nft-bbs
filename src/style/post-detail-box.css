@@ -1,0 +1,9 @@
+.post-detail-box p {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+.post-detail-box img {
+  display: block;
+  max-height: 400px;
+  margin: 16px auto;
+}

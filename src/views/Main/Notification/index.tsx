@@ -1,0 +1,181 @@
+import React, { useEffect } from 'react';
+import classNames from 'classnames';
+import { observer } from 'mobx-react-lite';
+import { format } from 'date-fns';
+import { Button, CircularProgress, Tooltip } from '@mui/material';
+import { AlternateEmail, ThumbDownOffAlt, ThumbUpOffAlt } from '@mui/icons-material';
+
+import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
+import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
+import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
+import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
+
+import { UserAvatar, BackButton, ScrollToTopButton } from '~/components';
+import { nodeService, snackbarService, viewService } from '~/service';
+import { INotification, NotificationObjectType, NotificationType } from '~/database';
+import { ago } from '~/utils';
+
+export const Notification = observer((props: { className?: string }) => {
+  const handleViewItem = (_v: INotification) => {
+    // TODO: goto post and locate comment
+    snackbarService.show('TODO');
+  };
+
+  useEffect(() => {
+    nodeService.notification.load();
+  }, []);
+
+  return (
+    <div
+      className={classNames(
+        'relative z-20 flex justify-center flex-1 gap-x-[20px]',
+        props.className,
+      )}
+    >
+      <div className="flex-col relative w-[800px]">
+        <div className="flex justify-end w-full">
+          <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full" />
+        </div>
+        <BackButton className="fixed top-[60px] mt-6 -ml-5 -translate-x-full" />
+        <div className="flex-col flex-1 w-full bg-black/70">
+          <div className="flex justify-between text-white py-6 px-10">
+            <div className="text-18">消息通知</div>
+            <Button
+              className="text-soft-blue text-14 px-3"
+              variant="text"
+              color="inherit"
+              size="small"
+            >
+              全部已读
+            </Button>
+          </div>
+          <div className="flex-col mt-3">
+            {nodeService.state.notification.list.map((v) => {
+              const fromProfile = nodeService.state.profile.map.get(v.fromUserAddress);
+              const fromProfileName = fromProfile ? fromProfile.name : v.fromUserAddress.slice(0, 10);
+              const actionText = actionTexts.find((u) => u[0] === v.objectType && u[1] === v.type)?.[2] ?? '';
+              return (
+                <React.Fragment key={v.id}>
+                  <div className="flex-col px-8 gap-y-4">
+                    <div className="flex items-center gap-x-3 ml-8">
+                      <UserAvatar profile={fromProfile} />
+                      <div className="">
+                        <span className="text-rum-orange text-16 mr-3">
+                          {fromProfileName}
+                        </span>
+                        <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
+                          <span className="text-gray-af text-12 mr-3">
+                            {ago(v.timestamp)}
+                          </span>
+                        </Tooltip>
+                        <span className="text-14 text-white">
+                          {actionText}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      {v.type === NotificationType.like && (
+                        <ThumbUpOffAlt className="flex-none mr-3 -mb-px text-26 text-link-soft" />
+                      )}
+                      {v.type === NotificationType.dislike && (
+                        <ThumbDownOffAlt className="flex-none mr-3 -mb-px text-26 text-link-soft" />
+                      )}
+                      {v.type === NotificationType.comment && (
+                        <CommentDetailIcon className="flex-none mr-3 -mb-px text-26 text-link-soft" />
+                      )}
+                      {false && (
+                        <AlternateEmail className="flex-none mr-3 -mb-px text-26 text-link-soft" />
+                      )}
+                      {false && (
+                        <WineIcon className="flex-none mr-3 -mb-px text-26 text-rum-orange" />
+                      )}
+
+                      {v.objectType === NotificationObjectType.post && (
+                        <div className="border-l border-[#b4daff] truncate-2 text-blue-gray text-14 px-2">
+                          {`${nodeService.state.post.map.get(v.objectId)!.content}`}
+                        </div>
+                      )}
+                      {v.objectType === NotificationObjectType.comment && (
+                        <div className="truncate-2 text-white text-14 px-2">
+                          {`${nodeService.state.comment.map.get(v.objectId)!.content}`}
+                        </div>
+                      )}
+                      {false && (
+                        <div className="truncate-2 text-white text-14 px-2">
+                          @Maocaizhao 我在发表评论，这个评论框固定不跟随主贴滚动。<br />
+                          @王大喵 回复的时候再点别的回复按钮可以新增@
+                        </div>
+                      )}
+                      {false && (
+                        <div className="border-l border-[#b4daff] truncate-2 text-blue-gray text-14 px-2">
+                          这是我帖子的摘要内容所以前面有表示引用的符号这是我帖子的摘要内容所以前面有表示引用的符号这是我帖子的摘要内容所以前面有表示引用的符号
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-x-4 ml-8">
+                      <Button
+                        className="text-link-soft"
+                        variant="text"
+                        size="small"
+                        onClick={() => handleViewItem(v)}
+                      >
+                        前往查看
+                      </Button>
+                      <Button
+                        className="text-link-soft"
+                        variant="text"
+                        size="small"
+                      >
+                        <ReplyIcon className="mr-1 -mt-[2px] text-24" />
+                        回复
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-white/15 my-4 mx-16" />
+                </React.Fragment>
+              );
+            })}
+
+            {nodeService.state.notification.loading && (
+              <div className="flex flex-center p-4">
+                <CircularProgress />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="w-[280px]">
+        <div className="flex-col gap-y-9 flex-center relative bg-black/70 h-[240px] pt-16 mt-16">
+          <div className="w-25 h-25 rounded-full overflow-hidden bg-white absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
+            <div className="bg-blue-400/70 rounded-full h-full w-full" />
+          </div>
+          <div className="text-white text-center text-18">
+            {nodeService.state.groupName}
+          </div>
+          <Tooltip title="请先登录">
+            <Button
+              className="rounded-full text-16 px-5 py-[7px]"
+              variant="outlined"
+              color="rum"
+              onClick={() => viewService.pushPage('newpost')}
+            >
+              <EditIcon className="text-22 mr-3 mb-px" />
+              发布新帖
+            </Button>
+          </Tooltip>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const actionTexts = [
+  [NotificationObjectType.post, NotificationType.comment, '评论了您的帖子'],
+  [NotificationObjectType.post, NotificationType.like, '给你的帖子点赞'],
+  [NotificationObjectType.post, NotificationType.dislike, '给你的帖子点踩'],
+  [NotificationObjectType.comment, NotificationType.comment, '评论了您的评论'],
+  [NotificationObjectType.comment, NotificationType.like, '给你的评论点赞'],
+  [NotificationObjectType.comment, NotificationType.dislike, '给你的评论点踩'],
+] as const;

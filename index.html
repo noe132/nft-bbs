@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/">
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no" />
+    <title>nft-bbs</title>
+    <!-- preflight-injection-point -->
+    <!-- mui-insertion-point -->
+  </head>
+  <body>
+    <script>
+      var $buoop = {required:{e:80,f:80,o:80,s:12,c:80},api:2022.05 };
+      function $buo_f(){
+       var e = document.createElement("script");
+       e.src = "//browser-update.org/update.min.js";
+       document.body.appendChild(e);
+      };
+      try {document.addEventListener("DOMContentLoaded", $buo_f,false)}
+      catch(e){window.attachEvent("onload", $buo_f)}
+    </script>
+    <div id="root"></div>
+    <script>
+      (() => {
+        const findHeadComment = (comment) => Array.from(document.head.childNodes)
+          .filter((v) => v.nodeType === 8)
+          .find((v) => v.textContent && v.textContent.includes(comment));
+
+        const injectStyleTo = (comment, style) => {
+          const commentNode = findHeadComment(comment);
+          document.head.insertBefore(style, commentNode);
+        };
+
+        const originalAppendChild = document.head.appendChild
+        document.head.appendChild = (node) => {
+          if (node.nodeType === 1 && node.tagName === 'STYLE') {
+            if (node.innerHTML.startsWith('.tailwind-base-style')) {
+              injectStyleTo('preflight-injection-point', node);
+              return
+            }
+          }
+          originalAppendChild.call(document.head, node)
+        }
+      })()
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
