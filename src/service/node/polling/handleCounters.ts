@@ -125,6 +125,7 @@ const handleItems = async (counterName: CounterName, items: IContent[]) => {
         type: trxContent.name === CounterName.postLike ? NotificationType.like : NotificationType.dislike,
         objectId: trxContent.objectId,
         objectType: NotificationObjectType.post,
+        actionTrxId: item.TrxId,
         fromUserAddress,
         timestamp: Date.now(),
       });
@@ -142,6 +143,7 @@ const handleItems = async (counterName: CounterName, items: IContent[]) => {
         type: trxContent.name === CounterName.commentLike ? NotificationType.like : NotificationType.dislike,
         objectId: trxContent.objectId,
         objectType: NotificationObjectType.comment,
+        actionTrxId: item.TrxId,
         fromUserAddress,
         timestamp: Date.now(),
       });

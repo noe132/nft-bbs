@@ -21,6 +21,8 @@ export interface INotification {
   type: NotificationType
   objectId: string
   objectType: NotificationObjectType
+  /** 产生 notification 的这个 comment trx 的 id */
+  actionTrxId: string
   fromUserAddress: string
   timestamp: number
 }

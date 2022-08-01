@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import classNames from 'classnames';
-import { observer } from 'mobx-react-lite';
+import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import { Button, CircularProgress, Tooltip } from '@mui/material';
 import { AlternateEmail, ThumbDownOffAlt, ThumbUpOffAlt } from '@mui/icons-material';
@@ -16,6 +16,12 @@ import { INotification, NotificationObjectType, NotificationType } from '~/datab
 import { ago } from '~/utils';
 
 export const Notification = observer((props: { className?: string }) => {
+  const state = useLocalObservable(() => ({
+    get notificationsWithoutDislike() {
+      return nodeService.state.notification.list.filter((v) => v.type !== NotificationType.dislike);
+    },
+  }));
+
   const handleViewItem = (_v: INotification) => {
     // TODO: goto post and locate comment
     snackbarService.show('TODO');
@@ -50,10 +56,26 @@ export const Notification = observer((props: { className?: string }) => {
             </Button>
           </div>
           <div className="flex-col mt-3">
-            {nodeService.state.notification.list.map((v) => {
+            {state.notificationsWithoutDislike.map((v) => {
               const fromProfile = nodeService.state.profile.map.get(v.fromUserAddress);
               const fromProfileName = fromProfile ? fromProfile.name : v.fromUserAddress.slice(0, 10);
               const actionText = actionTexts.find((u) => u[0] === v.objectType && u[1] === v.type)?.[2] ?? '';
+              let content = '';
+              if (v.type === NotificationType.comment) {
+                if (!nodeService.state.comment.map.has(v.actionTrxId)) {
+                  nodeService.comment.loadOne(v.actionTrxId);
+                }
+                const comment = nodeService.state.comment.map.get(v.actionTrxId);
+                content = comment?.content ?? '';
+              } else {
+                if (v.objectType === NotificationObjectType.post) {
+                  content = nodeService.state.post.map.get(v.objectId)!.content;
+                }
+                if (v.objectType === NotificationObjectType.comment) {
+                  // TODO: 给评论点赞的notification。需要获取被点赞评论的content
+                  // content = nodeService.state.comment.map.get(v.objectId)!.content;
+                }
+              }
               return (
                 <React.Fragment key={v.id}>
                   <div className="flex-col px-8 gap-y-4">
@@ -90,7 +112,16 @@ export const Notification = observer((props: { className?: string }) => {
                         <WineIcon className="flex-none mr-3 -mb-px text-26 text-rum-orange" />
                       )}
 
-                      {v.objectType === NotificationObjectType.post && (
+                      <div
+                        className={classNames(
+                          'truncate-2 text-blue-gray text-14 px-2',
+                          v.type !== NotificationType.comment && 'border-l border-[#b4daff]',
+                        )}
+                      >
+                        {/* {`${nodeService.state.post.map.get(v.objectId)!.content}`} */}
+                        {content}
+                      </div>
+                      {/* {v.objectType === NotificationObjectType.post && (
                         <div className="border-l border-[#b4daff] truncate-2 text-blue-gray text-14 px-2">
                           {`${nodeService.state.post.map.get(v.objectId)!.content}`}
                         </div>
@@ -99,7 +130,7 @@ export const Notification = observer((props: { className?: string }) => {
                         <div className="truncate-2 text-white text-14 px-2">
                           {`${nodeService.state.comment.map.get(v.objectId)!.content}`}
                         </div>
-                      )}
+                      )} */}
                       {false && (
                         <div className="truncate-2 text-white text-14 px-2">
                           @Maocaizhao 我在发表评论，这个评论框固定不跟随主贴滚动。<br />
@@ -121,14 +152,17 @@ export const Notification = observer((props: { className?: string }) => {
                       >
                         前往查看
                       </Button>
-                      <Button
-                        className="text-link-soft"
-                        variant="text"
-                        size="small"
-                      >
-                        <ReplyIcon className="mr-1 -mt-[2px] text-24" />
-                        回复
-                      </Button>
+                      {v.type === NotificationType.comment && (
+                        <Button
+                          className="text-link-soft"
+                          variant="text"
+                          size="small"
+                          onClick={() => handleViewItem(v)}
+                        >
+                          <ReplyIcon className="mr-1 -mt-[2px] text-24" />
+                          回复
+                        </Button>
+                      )}
                     </div>
                   </div>
 

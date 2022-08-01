@@ -10,6 +10,10 @@ export const ViewRoot = observer(() => {
 
   useEffect(() => {
     nodeService.init();
+
+    return () => {
+      nodeService.destroy();
+    };
   }, []);
 
   if (!lang.ready) { return null; }
