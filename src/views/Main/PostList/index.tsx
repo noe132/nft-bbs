@@ -4,7 +4,7 @@ import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
-import { ExpandMore, ThumbDownOffAlt, ThumbUpOffAlt } from '@mui/icons-material';
+import { ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 import { Button, CircularProgress, IconButton, Popover, Tooltip } from '@mui/material';
 
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
@@ -84,7 +84,12 @@ export const PostList = observer((props: { className?: string }) => {
                       size="small"
                       onClick={() => handleUpdatePostCounter(v, CounterName.postLike)}
                     >
-                      <ThumbUpOffAlt className="mr-2 text-18" />
+                      {!v.summary.likeCount && (
+                        <ThumbUpOffAlt className="mr-2 text-18" />
+                      )}
+                      {!!v.summary.likeCount && (
+                        <ThumbUpAlt className="mr-2 text-18" />
+                      )}
                       {v.summary.likeCount || '点赞'}
                     </Button>
                   </div>
@@ -95,7 +100,12 @@ export const PostList = observer((props: { className?: string }) => {
                       size="small"
                       onClick={() => handleUpdatePostCounter(v, CounterName.postDislike)}
                     >
-                      <ThumbDownOffAlt className="mr-2 text-18" />
+                      {!v.summary.dislikeCount && (
+                        <ThumbDownOffAlt className="mr-2 text-18" />
+                      )}
+                      {!!v.summary.dislikeCount && (
+                        <ThumbDownAlt className="mr-2 text-18" />
+                      )}
                       {v.summary.dislikeCount || '点踩'}
                     </Button>
                   </div>

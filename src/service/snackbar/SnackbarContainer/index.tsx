@@ -100,9 +100,9 @@ export const SnackbarContainer = observer(() => {
             }),
             onExit: action(() => {
               const index = state.list.indexOf(item);
-              setTimeout(() => {
+              setTimeout(action(() => {
                 state.list.splice(index, 1);
-              }, themeDarkOption.transitions.duration.leavingScreen);
+              }), themeDarkOption.transitions.duration.leavingScreen);
             }),
           }}
           onClose={action((_e: unknown, reason: SnackbarCloseReason) => {

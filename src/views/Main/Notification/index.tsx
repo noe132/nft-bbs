@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import { Button, CircularProgress, Tooltip } from '@mui/material';
-import { AlternateEmail, ThumbDownOffAlt, ThumbUpOffAlt } from '@mui/icons-material';
+import { AlternateEmail, ThumbDownAlt, ThumbUpAlt } from '@mui/icons-material';
 
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
@@ -97,10 +97,10 @@ export const Notification = observer((props: { className?: string }) => {
                     </div>
                     <div className="flex items-center">
                       {v.type === NotificationType.like && (
-                        <ThumbUpOffAlt className="flex-none mr-3 -mb-px text-26 text-link-soft" />
+                        <ThumbUpAlt className="flex-none mr-3 -mb-px text-26 text-link-soft" />
                       )}
                       {v.type === NotificationType.dislike && (
-                        <ThumbDownOffAlt className="flex-none mr-3 -mb-px text-26 text-link-soft" />
+                        <ThumbDownAlt className="flex-none mr-3 -mb-px text-26 text-link-soft" />
                       )}
                       {v.type === NotificationType.comment && (
                         <CommentDetailIcon className="flex-none mr-3 -mb-px text-26 text-link-soft" />

@@ -4,8 +4,9 @@ import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
 import RemoveMarkdown from 'remove-markdown';
+import { format } from 'date-fns';
 import { Button, ClickAwayListener, Tooltip } from '@mui/material';
-import { ThumbDownOffAlt, ThumbUpOffAlt } from '@mui/icons-material';
+import { ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
@@ -15,7 +16,7 @@ import { ScrollToTopButton, BackButton, UserAvatar } from '~/components';
 import { nodeService, viewService } from '~/service';
 import { CounterName, IPost, IProfile } from '~/database';
 import { ago, runLoading } from '~/utils';
-import { format } from 'date-fns';
+import { editProfile } from '~/modals';
 
 export const UserProfile = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -94,6 +95,7 @@ export const UserProfile = observer((props: { className?: string }) => {
               color="link"
               variant="text"
               size="small"
+              onClick={() => editProfile({ name: state.profile.name, avatar: state.profile.avatar })}
             >
               <EditIcon className="text-18 -mt-px mr-1" />
               修改身份资料
@@ -106,7 +108,7 @@ export const UserProfile = observer((props: { className?: string }) => {
             <div className="flex-col justify-center flex-1 gap-y-1">
               <div className="flex text-20 pr-30">
                 <div className="flex-1 w-0 truncate">
-                  {state.profile.name}
+                  {state.profile.name || state.profile.userAddress.slice(0, 10)}
                 </div>
               </div>
               {!!state.profile.intro && (
@@ -163,7 +165,12 @@ export const UserProfile = observer((props: { className?: string }) => {
                     size="small"
                     onClick={() => handleUpdatePostCounter(v, CounterName.postLike)}
                   >
-                    <ThumbUpOffAlt className="mr-2 text-18" />
+                    {!v.summary.likeCount && (
+                      <ThumbUpOffAlt className="mr-2 text-18" />
+                    )}
+                    {!!v.summary.likeCount && (
+                      <ThumbUpAlt className="mr-2 text-18" />
+                    )}
                     {v.summary.likeCount || '点赞'}
                   </Button>
                   <Button
@@ -172,7 +179,12 @@ export const UserProfile = observer((props: { className?: string }) => {
                     size="small"
                     onClick={() => handleUpdatePostCounter(v, CounterName.postDislike)}
                   >
-                    <ThumbDownOffAlt className="mr-2 text-18" />
+                    {!v.summary.dislikeCount && (
+                      <ThumbDownOffAlt className="mr-2 text-18" />
+                    )}
+                    {!!v.summary.dislikeCount && (
+                      <ThumbDownAlt className="mr-2 text-18" />
+                    )}
                     {v.summary.dislikeCount || '点踩'}
                   </Button>
                   <Button

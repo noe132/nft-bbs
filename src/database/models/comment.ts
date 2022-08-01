@@ -4,6 +4,7 @@ import { IComment, CounterName, ICommentTrxContent } from './types';
 import { getDatabase } from '../init';
 import * as UniqueCounterModel from './uniqueCounter';
 import * as ProfileModel from './profile';
+import { TrxType } from './common';
 
 export const getTrxContent = (content: IContent) => JSON.parse(content.Data.content) as ICommentTrxContent;
 
@@ -96,7 +97,14 @@ const packComments = async (_comments: IComment[], options: {
   const profileMap = keyBy(profiles, 'userAddress');
   comments = comments.map((comment) => {
     comment.extra = comment.extra || {};
-    comment.extra.userProfile = profileMap[comment.userAddress];
+    comment.extra.userProfile = profileMap[comment.userAddress] ?? {
+      type: TrxType.profile,
+      userAddress: comment.userAddress,
+      name: '',
+      avatar: '',
+      intro: '',
+      groupId: '',
+    };
     return comment;
   });
   return comments;

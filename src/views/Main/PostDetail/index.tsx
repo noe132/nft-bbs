@@ -85,7 +85,11 @@ export const PostDetail = observer((props: { className?: string }) => {
       // return comments.filter((v) => !v.threadId);
     },
     get sortedCommentTree() {
-      return [...this.commentTree].sort((a, b) => (this.commentSort === 'latest' ? a.timestamp - b.timestamp : b.timestamp - a.timestamp));
+      return [...this.commentTree].sort((a, b) => (
+        this.commentSort === 'latest'
+          ? b.timestamp - a.timestamp
+          : a.timestamp - b.timestamp
+      ));
     },
   }));
 

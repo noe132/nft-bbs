@@ -1,4 +1,4 @@
-import QuorumLightNodeSDK, { IGroup } from 'quorum-light-node-sdk';
+import QuorumLightNodeSDK, { IContent, IGroup } from 'quorum-light-node-sdk';
 import store from 'store2';
 import { ethers } from 'ethers';
 import { action, observable, runInAction } from 'mobx';
@@ -6,7 +6,7 @@ import {
   init as initDatabase,
   ProfileModel, CommentModel, PostModel, CounterModel, UniqueCounterModel, NotificationModel,
   ICounterTrxContent, ICommentTrxContent, IComment, IPost, IProfile, IProfileTrxContent, IPostTrxContent,
-  TrxType, TrxStorage, TrxStatus, CounterName, NotificationObjectType, INotification, NotificationStatus,
+  TrxType, TrxStorage, TrxStatus, CounterName, NotificationObjectType, INotification, NotificationStatus, NotificationType,
 } from '~/database';
 import { bus, PollingTask, runLoading, sleep } from '~/utils';
 import { pollingContentsTask } from './polling';
@@ -388,6 +388,16 @@ const comment = {
     await PostModel.bulkPut([postClone]);
     return dbComment;
   },
+  loadOne: async (trxId: string) => {
+    const list = await CommentModel.bulkGet([trxId]);
+    const comment = list.at(0);
+    if (comment) {
+      runInAction(() => {
+        state.comment.map.set(comment.trxId, comment);
+      });
+    }
+    return comment;
+  },
 };
 
 const notification = {
@@ -462,14 +472,11 @@ const joinGroup = async (seedUrl: string) => {
   state.pollingTask = new PollingTask(pollingContentsTask, 3000, true);
 };
 
-const init = async () => {
-  await initDatabase();
-
-  bus.on('loadedData', action(() => {
+const busListeners = {
+  loadedData: action(() => {
     state.loadedData = true;
-  }));
-
-  bus.on('content', action((content) => {
+  }),
+  content: action((content: IContent) => {
     let jsonResult: ICommentTrxContent | IPostTrxContent | IProfileTrxContent | undefined;
     try {
       jsonResult = JSON.parse(content.Data.content);
@@ -504,21 +511,39 @@ const init = async () => {
         state.profile.map.set(myAddress, profile);
       }
     }
-  }));
+  }),
+  notification: action((notification: INotification) => {
+    // ignore dislike
+    if (notification.type !== NotificationType.dislike) {
+      state.notification.unreadCount += 1;
+    }
+  }),
+};
 
-  bus.on('notification', action((_notification) => {
-    // TODO:
-    state.notification.unreadCount += 1;
-  }));
+const init = async () => {
+  await initDatabase();
+  bus.on('loadedData', busListeners.loadedData);
+  bus.on('content', busListeners.content);
+  bus.on('notification', busListeners.notification);
 
   runInAction(() => {
     state.inited = true;
   });
 };
 
+const destroy = () => {
+  if (state.pollingTask) {
+    state.pollingTask.stop();
+  }
+  bus.off('loadedData', busListeners.loadedData);
+  bus.off('content', busListeners.content);
+  bus.off('notification', busListeners.notification);
+};
+
 export const nodeService = {
   state,
   init,
+  destroy,
 
   joinGroup,
   post,

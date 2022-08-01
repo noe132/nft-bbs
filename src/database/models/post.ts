@@ -1,11 +1,12 @@
 
+import { Collection } from 'dexie';
 import { IContent } from 'quorum-light-node-sdk';
 import { keyBy } from 'lodash-es';
 import { getDatabase } from '../init';
 import { IPost, CounterName, IPostTrxContent } from './types';
 import * as UniqueCounterModel from './uniqueCounter';
 import * as ProfileModel from './profile';
-import { Collection } from 'dexie';
+import { TrxType } from './common';
 
 export const getTrxContent = (content: IContent) => JSON.parse(content.Data.content) as IPostTrxContent;
 
@@ -30,6 +31,7 @@ export const bulkPut = async (posts: IPost[]) => {
   const db = getDatabase();
   await db.posts.bulkPut(posts);
 };
+
 
 export const bulkGet = async (trxIds: string[], options?: {
   currentUserAddress?: string
@@ -93,7 +95,14 @@ const packPosts = async (_posts: IPost[], options: {
   const profileMap = keyBy(profiles, 'userAddress');
   posts = posts.map((post) => {
     post.extra = post.extra || {};
-    post.extra.userProfile = profileMap[post.userAddress];
+    post.extra.userProfile = profileMap[post.userAddress] ?? {
+      type: TrxType.profile,
+      userAddress: post.userAddress,
+      name: '',
+      avatar: '',
+      intro: '',
+      groupId: '',
+    };
     return post;
   });
   return posts;

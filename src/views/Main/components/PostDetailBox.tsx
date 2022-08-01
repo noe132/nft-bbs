@@ -4,13 +4,12 @@ import { runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import { Button, Tooltip } from '@mui/material';
-import { Share, ThumbDownAltOutlined, ThumbUpAltOutlined } from '@mui/icons-material';
+import { Share, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 
 import { ago, renderPostMarkdown, runLoading } from '~/utils';
-import { PostImageZoomButton } from '~/components/PostImageZoomButton';
 import { imageZoomService, viewService, nodeService, snackbarService } from '~/service';
 import { CounterName, IPost } from '~/database';
-import { UserAvatar } from '~/components/UserAvatar';
+import { UserAvatar, PostImageZoomButton } from '~/components';
 
 export const PostDetailBox = observer((props: { className?: string, post: IPost }) => {
   const state = useLocalObservable(() => ({
@@ -84,7 +83,12 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
             variant="text"
             onClick={() => handleUpdatePostCounter(CounterName.postLike)}
           >
-            <ThumbUpAltOutlined className="mr-2 text-22" />
+            {!props.post.summary.likeCount && (
+              <ThumbUpOffAlt className="mr-2 text-22" />
+            )}
+            {!!props.post.summary.likeCount && (
+              <ThumbUpAlt className="mr-2 text-22" />
+            )}
             {props.post.summary.likeCount || '点赞'}
           </Button>
           <Button
@@ -92,7 +96,12 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
             variant="text"
             onClick={() => handleUpdatePostCounter(CounterName.postDislike)}
           >
-            <ThumbDownAltOutlined className="mr-2 text-22" />
+            {!props.post.summary.dislikeCount && (
+              <ThumbDownOffAlt className="mr-2 text-22" />
+            )}
+            {!!props.post.summary.dislikeCount && (
+              <ThumbDownAlt className="mr-2 text-22" />
+            )}
             {props.post.summary.dislikeCount || '点踩'}
           </Button>
         </div>

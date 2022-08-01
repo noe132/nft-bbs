@@ -1,5 +1,5 @@
 import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk';
-import { groupBy, keyBy } from 'lodash-es';
+import { groupBy } from 'lodash-es';
 import store from 'store2';
 import {
   CommentModel, PostModel, NotificationModel,

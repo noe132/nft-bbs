@@ -2,8 +2,8 @@
 import React, { useRef } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import { Button, CircularProgress, Dialog, FormControl, IconButton, InputLabel, Menu, MenuItem, OutlinedInput } from '@mui/material';
-import { Check, ChevronLeft, Close } from '@mui/icons-material';
+import { Button, CircularProgress, Dialog, FormControl, IconButton, InputLabel, OutlinedInput } from '@mui/material';
+import { ChevronLeft, Close } from '@mui/icons-material';
 import PasteIcon from 'boxicons/svg/regular/bx-paste.svg?fill-icon';
 
 import bgImg3x from '~/assets/images/rum_barrel_bg@3x.jpg';
@@ -11,26 +11,26 @@ import logoImg from '~/assets/icons/rumsystem.svg';
 import RumLogo from '~/assets/icons/logo.png';
 import RumLogo2x from '~/assets/icons/logo@2x.png';
 import RumLogo3x from '~/assets/icons/logo@3x.png';
-import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
+// import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
 import { ThemeLight } from '~/utils';
-import { AllLanguages, langName, langService, nodeService, snackbarService } from '~/service';
+import { nodeService, snackbarService } from '~/service';
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
-    seedUrl: 'rum://seed?v=1&e=0&n=0&b=Ptpg6HKIRIaTnVw_f3SKvg&c=wPOoSSDCxbk7owipIwJ4nKmRyyN2wRsW1I_vsxZm1dI&g=gTaSO4IDTgi_51DrO1WOLA&k=Aqa6ngNxgrVhf2kQc4nA-0Wr4tsWiaBrshZJPujT5B9g&s=GDLJ-TcXuo95q-CsUFty7pvMIYZRFRQ3VwrparvjKy00wIYSmx5pl4xT4ALb6AVgNei_is5kn1MuXfh9b5wB-QE&t=Fv89llMDYIA&a=%E8%81%8A%E5%A4%A9%E5%AE%A45&y=group_timeline&u=http://103.61.39.166:9003?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6W10sImV4cCI6MTY1OTcwNDI2NCwibmFtZSI6Im5vZGUtYWxsLWdyb3VwcyIsInJvbGUiOiJjaGFpbiJ9.mHeMhunwDGmjnB7PhoKqVrUZI7QbfaGxOPgH2o4WUQo',
+    seedUrl: 'rum://seed?v=1&e=0&n=0&b=48rNOzKfQKKysYm-Obes8w&c=XVs5w2f-8f36JbGOCgZFyQ16VR4HrK5S_k70ia64isU&g=_ztAsQEnTLSLStXu-t66TQ&k=Ajm4Z_Xaf_z70vhvuULp1EKWnY23SzF36xggiU_1CNBA&s=Rixby97Q3wXlRWJfvPVwuxHBp9pJnvN8yOyS2eTeDLV1vkSTRIu6uGtFZStEomIINdd42AtRQZQlSWiOACzycQA&t=Fwcqet61HME&a=%E8%81%8A%E5%A4%A9%E5%AE%A41&y=group_timeline&u=https://103.61.39.95?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6W10sImV4cCI6MTY5MDg3NTgxMiwibmFtZSI6Im5vZGUtYWxsLWdyb3VwcyIsInJvbGUiOiJjaGFpbiJ9.UOUcyCiu0mAjYDOpE-KyTCnKgoG-LlXhLBdLr8AXMyM',
     passwordPopup: false,
     step: 0,
     languageMenu: false,
   }));
 
-  const languageButton = useRef<HTMLButtonElement>(null);
+  // const languageButton = useRef<HTMLButtonElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const handleChangeLanguage = action((lang: AllLanguages) => {
-    langService.switchLang(lang);
-    state.languageMenu = false;
-  });
+  // const handleChangeLanguage = action((lang: AllLanguages) => {
+  //   langService.switchLang(lang);
+  //   state.languageMenu = false;
+  // });
 
   const handleNextStep = async () => {
     if (state.step === 0) {
@@ -88,7 +88,7 @@ export const Join = observer(() => {
         />
       </a>
       <div className="fixed top-12 right-16 flex items-center flex-none">
-        <Button
+        {/* <Button
           className="text-[#5fc0e9] px-4"
           variant="text"
           ref={languageButton}
@@ -127,7 +127,7 @@ export const Join = observer(() => {
               {langName['zh-cn']}
             </MenuItem>
           </Menu>
-        </ThemeLight>
+        </ThemeLight> */}
       </div>
       <div
         className="flex-col flex-1 bg-cover bg-center"

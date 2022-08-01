@@ -11,7 +11,7 @@ import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import RumLogo from '~/assets/icons/logo.png';
 import RumLogo2x from '~/assets/icons/logo@2x.png';
 import RumLogo3x from '~/assets/icons/logo@3x.png';
-import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
+// import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 import { ThemeLight } from '~/utils';
 import {
   nodeService, snackbarService, langService, viewService,
@@ -20,7 +20,7 @@ import {
 import { editProfile } from '~/modals';
 import { ACCOUNT1, ACCOUNT2 } from '~/utils/testAccount';
 import { getDatabase } from '~/database';
-import { UserAvatar } from '~/components/UserAvatar';
+import { UserAvatar } from '~/components';
 
 export const Header = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -359,7 +359,7 @@ export const Header = observer((props: { className?: string }) => {
         transformOrigin={{ horizontal: 'center', vertical: 'top' }}
         disableScrollLock
       >
-        <MenuItem onClick={action(() => { state.menu = false; state.langMenu = true; })}>
+        {/* <MenuItem onClick={action(() => { state.menu = false; state.langMenu = true; })}>
           <div className="flex gap-x-3 mr-2">
             <LanguageIcon className="text-black text-20" />
             <div className="flex-col gap-y-[2px]">
@@ -371,7 +371,7 @@ export const Header = observer((props: { className?: string }) => {
               </div>
             </div>
           </div>
-        </MenuItem>
+        </MenuItem> */}
         <MenuItem onClick={() => handleChangeAccount('1')}>
           <div className="flex gap-x-3 mr-2">
             使用账号1
