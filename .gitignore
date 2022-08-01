@@ -18,3 +18,4 @@
 /src/routes.ts
 /src/routes-ssr.ts
 /build/dev-config-local.ts
+/cert
