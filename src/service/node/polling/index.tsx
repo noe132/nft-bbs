@@ -1,8 +1,7 @@
 import QuorumLightNodeSDK, { IListContentsOptions, IContent } from 'quorum-light-node-sdk';
-import store from 'store2';
 import { groupBy } from 'lodash-es';
 
-import { TrxType } from '~/database';
+import { GroupStatusModel, TrxType } from '~/database';
 import { bus } from '~/utils';
 
 import { handleComments } from './handleComments';
@@ -11,14 +10,10 @@ import { handlePosts } from './handlePosts';
 import { handleProfiles } from './handleProfiles';
 
 const LIMIT = 500;
-const GROUP_STATUS_MAP = 'groupStatusMap';
-
-type IGroupStatusMap = Record<string, { startTrx: string }>;
 
 export const pollingContentsTask = async () => {
-  const groupStatusMap = (store(GROUP_STATUS_MAP) || {}) as IGroupStatusMap;
   const group = QuorumLightNodeSDK.cache.Group.list()[0];
-  const groupStatus = groupStatusMap[group.groupId];
+  const groupStatus = await GroupStatusModel.get(group.groupId);
   const listOptions: IListContentsOptions = {
     groupId: group.groupId,
     count: LIMIT,
@@ -56,11 +51,12 @@ const handleContents = async (groupId: string, contents: IContent[]) => {
       bus.emit('content', content);
     }
 
-    const groupStatusMap = (store(GROUP_STATUS_MAP) || {}) as IGroupStatusMap;
-    groupStatusMap[groupId] = {
+    const groupStatus = await GroupStatusModel.get(groupId) ?? {
+      groupId,
       startTrx: contents[contents.length - 1].TrxId,
     };
-    store(GROUP_STATUS_MAP, groupStatusMap);
+    groupStatus.startTrx = contents[contents.length - 1].TrxId;
+    GroupStatusModel.put(groupStatus);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(err);

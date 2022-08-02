@@ -32,7 +32,6 @@ export const Header = observer((props: { className?: string }) => {
     langMenu: false,
     filter: 'all' as HotestFilter,
 
-    logined: true,
     get viewPage() {
       return viewService.state.page[0]!;
     },
@@ -111,11 +110,7 @@ export const Header = observer((props: { className?: string }) => {
     viewService.pushPage('userprofile', state.profile);
   });
 
-  const handleChangeAccount = async (type: '1' | '2' | 'new') => {
-    store.remove('keystore');
-    store.remove('privateKey');
-    store.remove('password');
-    store.remove('address');
+  const handleChangeAccount = (type: '1' | '2' | 'new') => {
     let wallet;
     if (type === '1') {
       const privateKey = ACCOUNT1.privateKey;
@@ -128,25 +123,28 @@ export const Header = observer((props: { className?: string }) => {
     }
 
     const password = '123';
-    const keystore = await wallet.encrypt(password, { scrypt: { N: 64 } });
-    store('keystore', keystore);
     store('privateKey', wallet.privateKey);
     store('password', password);
-    store('address', wallet.address);
-    store.remove('groupStatusMap');
-    store.remove('lightNodeGroupMap');
     const db = getDatabase();
     db.delete();
     window.location.reload();
   };
 
   const handleClearData = () => {
-    store.remove('groupStatusMap');
-    store.remove('lightNodeGroupMap');
     const db = getDatabase();
     db.delete();
     window.location.reload();
   };
+
+  const handleLogin = action(() => {
+    state.userDropdown = false;
+    handleClearData();
+  });
+
+  const handleLogout = action(() => {
+    state.userDropdown = false;
+    handleClearData();
+  });
 
   return (<>
     <div className="h-[60px]" />
@@ -252,7 +250,7 @@ export const Header = observer((props: { className?: string }) => {
                 onClick: handleOpenSearchInput,
                 active: state.searchMode,
               },
-              state.logined && {
+              nodeService.state.logined && {
                 key: 'notification',
                 icon: (
                   <Badge
@@ -287,11 +285,11 @@ export const Header = observer((props: { className?: string }) => {
             ))}
           </div>
 
-          {!state.logined && (
+          {!nodeService.state.logined && (
             <Button
               className="rounded-full py-px px-5 text-16"
               color="rum"
-              onClick={action(() => { state.logined = true; })}
+              onClick={handleLogin}
             >
               登录
             </Button>
@@ -299,11 +297,15 @@ export const Header = observer((props: { className?: string }) => {
           <div
             className="flex flex-center gap-x-3 cursor-pointer"
             ref={userBoxRef}
-            onClick={action(() => { state.userDropdown = true; })}
+            onClick={action(() => {
+              if (nodeService.state.logined) {
+                state.userDropdown = true;
+              }
+            })}
           >
             <UserAvatar profile={nodeService.state.myProfile} />
             <span className="text-white">
-              {nodeService.state.profileName}
+              {nodeService.state.logined ? nodeService.state.profileName : '游客'}
             </span>
           </div>
           <IconButton
@@ -356,7 +358,7 @@ export const Header = observer((props: { className?: string }) => {
           <Button
             className="rounded-none w-full border-solid border-t border-black/10 mt-6 h-12 font-normal text-14"
             variant="text"
-            onClick={action(() => { state.userDropdown = false; snackbarService.show('TODO'); })}
+            onClick={handleLogout}
           >
             退出登录
           </Button>

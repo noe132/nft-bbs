@@ -1,6 +1,5 @@
 import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk';
 import { groupBy, keyBy, sum } from 'lodash-es';
-import store from 'store2';
 
 import {
   CounterModel, UniqueCounterModel, PostModel, CommentModel, NotificationModel,
@@ -8,6 +7,7 @@ import {
   NotificationType, NotificationObjectType,
 } from '~/database';
 import { bus } from '~/utils';
+import { keyService } from '~/service/key';
 
 export const handleCounters = async (items: IContent[] = []) => {
   if (items.length === 0) {
@@ -113,12 +113,12 @@ const handleItems = async (counterName: CounterName, items: IContent[]) => {
   }
 
   const notifications: INotification[] = [];
-  const myPosts = posts.filter((post) => post.userAddress === store('address'));
+  const myPosts = posts.filter((post) => post.userAddress === keyService.state.keys.address);
   const myPostMap = keyBy(myPosts, 'trxId');
   for (const item of itemsForPost) {
     const trxContent = CounterModel.getTrxContent(item);
     const fromUserAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey);
-    if (myPostMap[trxContent.objectId] && fromUserAddress !== store('address')) {
+    if (myPostMap[trxContent.objectId] && fromUserAddress !== keyService.state.keys.address) {
       notifications.push({
         groupId: item.GroupId,
         status: NotificationStatus.unread,
@@ -131,12 +131,12 @@ const handleItems = async (counterName: CounterName, items: IContent[]) => {
       });
     }
   }
-  const myComments = comments.filter((comment) => comment.userAddress === store('address'));
+  const myComments = comments.filter((comment) => comment.userAddress === keyService.state.keys.address);
   const myCommentMap = keyBy(myComments, 'trxId');
   for (const item of itemsForComment) {
     const trxContent = CounterModel.getTrxContent(item);
     const fromUserAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey);
-    if (myCommentMap[trxContent.objectId] && fromUserAddress !== store('address')) {
+    if (myCommentMap[trxContent.objectId] && fromUserAddress !== keyService.state.keys.address) {
       notifications.push({
         groupId: item.GroupId,
         status: NotificationStatus.unread,

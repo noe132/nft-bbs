@@ -27,6 +27,14 @@ export const Notification = observer((props: { className?: string }) => {
     snackbarService.show('TODO');
   };
 
+  const handleNewPost = () => {
+    if (!nodeService.state.logined) {
+      snackbarService.show('请先登录');
+      return;
+    }
+    viewService.pushPage('newpost');
+  };
+
   useEffect(() => {
     nodeService.notification.load();
   }, []);
@@ -188,12 +196,12 @@ export const Notification = observer((props: { className?: string }) => {
           <div className="text-white text-center text-18">
             {nodeService.state.groupName}
           </div>
-          <Tooltip title="请先登录">
+          <Tooltip title={!nodeService.state.logined ? '请先登录' : ''}>
             <Button
               className="rounded-full text-16 px-5 py-[7px]"
               variant="outlined"
               color="rum"
-              onClick={() => viewService.pushPage('newpost')}
+              onClick={handleNewPost}
             >
               <EditIcon className="text-22 mr-3 mb-px" />
               发布新帖

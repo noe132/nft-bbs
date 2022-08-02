@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import store from 'store2';
 import RemoveMarkdown from 'remove-markdown';
 import { format } from 'date-fns';
 import { Button, ClickAwayListener, Tooltip } from '@mui/material';
@@ -13,7 +12,7 @@ import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { ScrollToTopButton, BackButton, UserAvatar } from '~/components';
-import { nodeService, viewService } from '~/service';
+import { keyService, nodeService, viewService } from '~/service';
 import { CounterName, IPost } from '~/database';
 import { ago, runLoading } from '~/utils';
 import { editProfile } from '~/modals';
@@ -43,7 +42,7 @@ export const UserProfile = observer((props: { className?: string }) => {
       return null;
     },
     get selfProfile() {
-      return this.profile?.userAddress === store('address');
+      return this.profile?.userAddress === keyService.state.keys.address;
     },
   }));
 

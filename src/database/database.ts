@@ -8,6 +8,7 @@ import {
   IUniqueCounter,
   IImage,
   INotification,
+  IGroupStatus,
 } from './models/types';
 
 export default class Database extends Dexie {
@@ -18,13 +19,14 @@ export default class Database extends Dexie {
   uniqueCounters: Dexie.Table<IUniqueCounter, number>;
   images: Dexie.Table<IImage, number>;
   notifications: Dexie.Table<INotification, number>;
+  groupStatus: Dexie.Table<IGroupStatus, number>;
 
-  constructor() {
+  public constructor() {
     super(DATABASE_NAME);
 
     runPreviousMigrations();
 
-    this.version(1).stores({
+    this.version(2).stores({
       posts: [
         'trxId',
         'userAddress',
@@ -71,6 +73,11 @@ export default class Database extends Dexie {
         '[groupId+type]',
         '[groupId+status]',
       ].join(','),
+      groupStatus: [
+        '++id',
+        'groupId',
+        'startTrx',
+      ].join(','),
     });
 
     this.posts = this.table('posts');
@@ -80,6 +87,23 @@ export default class Database extends Dexie {
     this.uniqueCounters = this.table('uniqueCounters');
     this.images = this.table('images');
     this.notifications = this.table('notifications');
+    this.groupStatus = this.table('groupStatus');
+  }
+
+  public async clearAllTable() {
+    const tables = [
+      this.posts,
+      this.comments,
+      this.profiles,
+      this.counters,
+      this.uniqueCounters,
+      this.images,
+      this.notifications,
+      this.groupStatus,
+    ];
+    await this.transaction('rw', tables, async () => {
+      await Promise.all(tables.map((v) => v.clear()));
+    });
   }
 }
 

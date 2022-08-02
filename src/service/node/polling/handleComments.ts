@@ -1,12 +1,12 @@
 import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk';
 import { groupBy } from 'lodash-es';
-import store from 'store2';
 import {
   CommentModel, PostModel, NotificationModel,
   INotification, NotificationStatus, NotificationType, NotificationObjectType,
   TrxStatus, TrxStorage,
 } from '~/database';
 import { bus } from '~/utils';
+import { keyService } from '~/service/key';
 
 
 export const handleComments = async (items: IContent[] = []) => {
@@ -50,7 +50,7 @@ export const handleComments = async (items: IContent[] = []) => {
 
   // handle notifications
   {
-    const myUserAddress = store('address');
+    const myUserAddress = keyService.state.keys.address;
     for (const comment of newComments) {
       // ignore comment posted by user himself
       if (comment.userAddress === myUserAddress) { continue; }

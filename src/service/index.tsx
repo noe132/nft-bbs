@@ -4,6 +4,7 @@ import { langService } from './lang';
 import { nodeService } from './node';
 
 export * from './imageZoom';
+export * from './key';
 export * from './lang';
 export * from './node';
 export * from './snackbar';

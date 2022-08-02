@@ -1,6 +1,4 @@
 import QuorumLightNodeSDK, { IContent, IGroup } from 'quorum-light-node-sdk';
-import store from 'store2';
-import { ethers } from 'ethers';
 import { action, observable, runInAction } from 'mobx';
 import {
   init as initDatabase,
@@ -10,6 +8,7 @@ import {
 } from '~/database';
 import { bus, PollingTask, runLoading, sleep } from '~/utils';
 import { pollingContentsTask } from './polling';
+import { keyService } from '../key';
 
 export type HotestFilter = 'all' | 'year' | 'month' | 'week';
 
@@ -61,19 +60,22 @@ const state = observable({
     unreadCount: 0,
   },
   get myProfile() {
-    return this.profile.map.get(store('address'));
+    return this.profile.map.get(keyService.state.keys.address);
   },
   get profileName() {
-    return this.myProfile ? this.myProfile.name : store('address').slice(0, 10);
+    return this.myProfile ? this.myProfile.name : keyService.state.keys.address.slice(0, 10);
   },
   get groupName() {
     return this.group?.groupName || '';
+  },
+  get logined() {
+    return !!keyService.state.keys.address;
   },
 });
 
 const updateProfile = async () => {
   const group = QuorumLightNodeSDK.cache.Group.list()[0];
-  const userAddress = store('address');
+  const userAddress = keyService.state.keys.address;
   const [profile] = await ProfileModel.bulkGet([{
     groupId: group.groupId,
     userAddress,
@@ -111,14 +113,14 @@ const submitProfile = async (params: { name: string, avatar: string }) => {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: store('privateKey'),
+      privateKey: keyService.state.keys.privateKey,
     });
     // eslint-disable-next-line no-console
     console.log(res);
     const profile = {
       ...trxContent,
       groupId: group.groupId,
-      userAddress: store('address'),
+      userAddress: keyService.state.keys.address,
     };
     await ProfileModel.bulkPut([profile]);
     await updateProfile();
@@ -152,7 +154,7 @@ const updateCounter = async (params: {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: store('privateKey'),
+      privateKey: keyService.state.keys.privateKey,
     });
     // eslint-disable-next-line no-console
     console.log(res);
@@ -162,7 +164,7 @@ const updateCounter = async (params: {
     const uniqueCounter = {
       name: counterName,
       objectId: item.trxId,
-      userAddress: store('address'),
+      userAddress: keyService.state.keys.address,
     };
     await (item.extra![countedKey] ? UniqueCounterModel.bulkDelete([uniqueCounter]) : UniqueCounterModel.bulkAdd([uniqueCounter]));
 
@@ -252,7 +254,7 @@ const post = {
     const posts = await PostModel.list({
       searchText: '',
       publisherUserAddress,
-      currentUserAddress: store('address'),
+      currentUserAddress: keyService.state.keys.address,
     });
     runInAction(() => {
       posts.forEach((v) => {
@@ -276,13 +278,13 @@ const post = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: store('privateKey'),
+      privateKey: keyService.state.keys.privateKey,
     });
     // eslint-disable-next-line no-console
     console.log(res);
     const post = {
       ...trxContent,
-      userAddress: store('address'),
+      userAddress: keyService.state.keys.address,
       groupId: group.groupId,
       trxId: res.trx_id,
       storage: TrxStorage.cache,
@@ -294,7 +296,7 @@ const post = {
     await PostModel.create(post);
     // TODO:
     const dbPost = (await PostModel.bulkGet([post.trxId], {
-      currentUserAddress: store('address'),
+      currentUserAddress: keyService.state.keys.address,
     }))[0];
     runInAction(() => {
       state.post.trxIds.unshift(dbPost.trxId);
@@ -317,7 +319,7 @@ const comment = {
       async () => {
         const comments = await CommentModel.list({
           objectId: postTrxId,
-          currentUserAddress: store('address'),
+          currentUserAddress: keyService.state.keys.address,
         });
         if (state.comment.taskId !== taskId) { return; }
         runInAction(() => {
@@ -340,13 +342,13 @@ const comment = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: store('privateKey'),
+      privateKey: keyService.state.keys.privateKey,
     });
     // eslint-disable-next-line no-console
     console.log(res);
     const comment = {
       ...trxContent,
-      userAddress: store('address'),
+      userAddress: keyService.state.keys.address,
       groupId: group.groupId,
       trxId: res.trx_id,
       storage: TrxStorage.cache,
@@ -357,7 +359,7 @@ const comment = {
     };
     await CommentModel.create(comment);
     const dbComment = (await CommentModel.bulkGet([comment.trxId], {
-      currentUserAddress: store('address'),
+      currentUserAddress: keyService.state.keys.address,
     }))[0];
 
     runInAction(() => {
@@ -445,21 +447,21 @@ const notification = {
   },
 };
 
-const joinGroup = async (seedUrl: string) => {
+const joinGroup = async (
+  seedUrl: string,
+  keys?: {
+    privateKey: string
+    password: string
+    keystore: string
+    address: string
+  },
+) => {
   QuorumLightNodeSDK.cache.Group.add(seedUrl);
 
-  if (!store('privateKey')) {
-    const wallet = ethers.Wallet.createRandom();
-    const password = '123';
-    const keystore = await wallet.encrypt(password, {
-      scrypt: {
-        N: 64,
-      },
-    });
-    store('keystore', keystore.replaceAll('\\', ''));
-    store('password', password);
-    store('address', wallet.address);
-    store('privateKey', wallet.privateKey);
+  if (keys) {
+    keyService.use(keys);
+  } else {
+    keyService.clear();
   }
 
   await updateProfile();
@@ -501,7 +503,7 @@ const busListeners = {
 
     if (jsonResult.type === TrxType.profile) {
       const userAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(content.SenderPubkey);
-      const myAddress = store('address');
+      const myAddress = keyService.state.keys.address;
       if (userAddress === myAddress) {
         const profile = {
           ...ProfileModel.getTrxContent(content),
