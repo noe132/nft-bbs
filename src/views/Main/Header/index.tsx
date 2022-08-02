@@ -99,6 +99,18 @@ export const Header = observer((props: { className?: string }) => {
     });
   });
 
+  const handleOpenUserProfile = action(() => {
+    state.userDropdown = false;
+    if (!state.profile) { return; }
+    if (
+      viewService.state.page[0] === 'userprofile'
+      && viewService.state.page[1]?.userAddress === state.profile.userAddress
+    ) {
+      return;
+    }
+    viewService.pushPage('userprofile', state.profile);
+  });
+
   const handleChangeAccount = async (type: '1' | '2' | 'new') => {
     store.remove('keystore');
     store.remove('privateKey');
@@ -337,6 +349,7 @@ export const Header = observer((props: { className?: string }) => {
             className="rounded-full font-normal pb-0 pt-px px-8 mt-4 text-12"
             variant="outlined"
             color="link"
+            onClick={handleOpenUserProfile}
           >
             我的主页
           </Button>

@@ -14,7 +14,7 @@ import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { ScrollToTopButton, BackButton, UserAvatar } from '~/components';
 import { nodeService, viewService } from '~/service';
-import { CounterName, IPost, IProfile } from '~/database';
+import { CounterName, IPost } from '~/database';
 import { ago, runLoading } from '~/utils';
 import { editProfile } from '~/modals';
 
@@ -30,11 +30,20 @@ export const UserProfile = observer((props: { className?: string }) => {
       const list = Array(4).fill(0).map((_, i) => i);
       return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
     },
+    get viewProfile() {
+      if (viewService.state.page[0] === 'userprofile') {
+        return viewService.state.page[1];
+      }
+      return null;
+    },
     get profile() {
-      return viewService.state.page[1] as IProfile;
+      if (this.viewProfile) {
+        return nodeService.state.profile.map.get(this.viewProfile.userAddress);
+      }
+      return null;
     },
     get selfProfile() {
-      return this.profile.userAddress === store('address');
+      return this.profile?.userAddress === store('address');
     },
   }));
 
@@ -58,6 +67,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     runLoading(
       (l) => { state.loading = l; },
       async () => {
+        if (!state.profile) { return; }
         const posts = await nodeService.post.getPosts(state.profile.userAddress);
         runInAction(() => {
           state.posts = posts;
@@ -70,6 +80,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     loadPosts();
   }, []);
 
+  if (!state.profile) { return null; }
   return (
     <div
       className={classNames(
@@ -95,7 +106,7 @@ export const UserProfile = observer((props: { className?: string }) => {
               color="link"
               variant="text"
               size="small"
-              onClick={() => editProfile({ name: state.profile.name, avatar: state.profile.avatar })}
+              onClick={() => editProfile({ name: state.profile!.name, avatar: state.profile!.avatar })}
             >
               <EditIcon className="text-18 -mt-px mr-1" />
               修改身份资料
