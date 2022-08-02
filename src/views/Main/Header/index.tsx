@@ -14,7 +14,7 @@ import RumLogo3x from '~/assets/icons/logo@3x.png';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 import { ThemeLight } from '~/utils';
 import {
-  nodeService, snackbarService, langService, viewService,
+  nodeService, langService, viewService,
   AllLanguages, langName, HotestFilter,
 } from '~/service';
 import { editProfile } from '~/modals';
