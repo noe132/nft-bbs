@@ -4,7 +4,7 @@ import {
   init as initDatabase,
   ProfileModel, CommentModel, PostModel, CounterModel, UniqueCounterModel, NotificationModel,
   ICounterTrxContent, ICommentTrxContent, IComment, IPost, IProfile, IProfileTrxContent, IPostTrxContent,
-  TrxType, TrxStorage, TrxStatus, CounterName, NotificationObjectType, INotification, NotificationStatus, NotificationType,
+  TrxType, TrxStorage, TrxStatus, CounterName, NotificationObjectType, INotification, NotificationStatus, NotificationType, IImageTrxContent, ImageModel,
 } from '~/database';
 import { bus, PollingTask, runLoading, sleep } from '~/utils';
 import { pollingContentsTask } from './polling';
@@ -447,33 +447,6 @@ const notification = {
   },
 };
 
-const joinGroup = async (
-  seedUrl: string,
-  keys?: {
-    privateKey: string
-    password: string
-    keystore: string
-    address: string
-  },
-) => {
-  QuorumLightNodeSDK.cache.Group.add(seedUrl);
-
-  if (keys) {
-    keyService.use(keys);
-  } else {
-    keyService.clear();
-  }
-
-  await updateProfile();
-  await updateUnreadCount();
-
-  runInAction(() => {
-    state.group = QuorumLightNodeSDK.cache.Group.list()[0];
-  });
-
-  state.pollingTask = new PollingTask(pollingContentsTask, 3000, true);
-};
-
 const busListeners = {
   loadedData: action(() => {
     state.loadedData = true;
@@ -522,6 +495,83 @@ const busListeners = {
   }),
 };
 
+const joinGroup = async (
+  seedUrl: string,
+  keys?: {
+    privateKey: string
+    password: string
+    keystore: string
+    address: string
+  },
+) => {
+  QuorumLightNodeSDK.cache.Group.add(seedUrl);
+
+  if (keys) {
+    keyService.use(keys);
+  } else {
+    keyService.clear();
+  }
+
+  await updateProfile();
+  await updateUnreadCount();
+
+  runInAction(() => {
+    state.group = QuorumLightNodeSDK.cache.Group.list()[0];
+  });
+
+  state.pollingTask = new PollingTask(pollingContentsTask, 3000, true);
+};
+
+export interface ISubmitAttributedToPayload {
+  name?: string
+  content: string
+  image?: Array<{
+    mediaType: string
+    name: string
+    content: string
+  }>
+  attributedTo: Array<Record<string, string>>
+}
+
+const postImage = async (imgBlob: Blob, mineType: string) => {
+  const group = state.group!;
+
+  const content = await new Promise<string>((rs) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(imgBlob);
+    reader.addEventListener('loadend', () => {
+      const base64data = reader.result;
+      rs(base64data as string);
+    });
+  });
+  const base64Data = content.replace(/^data:.+?;base64,/, '');
+
+  const trxContent: IImageTrxContent = {
+    type: TrxType.image,
+    mineType,
+    content: base64Data,
+  };
+  const res = await QuorumLightNodeSDK.chain.Trx.create({
+    groupId: group.groupId,
+    object: {
+      content: JSON.stringify(trxContent),
+      type: 'Note',
+    },
+    aesKey: group.cipherKey,
+    privateKey: keyService.state.keys.privateKey,
+  });
+
+  ImageModel.bulkAdd([{
+    type: TrxType.image,
+    mineType,
+    content: imgBlob,
+    storage: TrxStorage.cache,
+    trxId: res.trx_id,
+  }]);
+
+  return res;
+};
+
 const init = async () => {
   await initDatabase();
   bus.on('loadedData', busListeners.loadedData);
@@ -547,10 +597,11 @@ export const nodeService = {
   init,
   destroy,
 
-  joinGroup,
   post,
   comment,
   notification,
+  joinGroup,
+  postImage,
 
   updateCounter,
   submitProfile,

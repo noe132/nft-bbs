@@ -3,10 +3,10 @@ import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { Close } from '@mui/icons-material';
 import { Dialog, FormControl, IconButton, InputLabel, OutlinedInput } from '@mui/material';
-import { createPromise, runLoading, ThemeLight } from '~/utils';
-import { modalViewState } from './modalViewState';
 import { LoadingButton } from '@mui/lab';
+import { createPromise, runLoading, ThemeLight } from '~/utils';
 import { nodeService, snackbarService } from '~/service';
+import { modalViewState } from './helper/modalViewState';
 
 interface EditProfileParams {
   avatar?: string
@@ -14,35 +14,17 @@ interface EditProfileParams {
   showSkip?: boolean
 }
 
-export const editProfile = action((params: EditProfileParams) => {
+export const editProfile = action((props: EditProfileParams) => {
   const p = createPromise();
-  modalViewState.id += 1;
-  const item = {
-    children: (
-      <EditProfileDialog
-        rs={p.rs}
-        avatar={params.avatar}
-        name={params.name}
-        onDelete={action(() => {
-          const index = modalViewState.list.indexOf(item);
-          if (index !== -1) {
-            modalViewState.list.splice(index, 1);
-          }
-        })}
-        key={modalViewState.id}
-      />
-    ),
-  };
-  modalViewState.list.push(item);
-  return p.p;
+  modalViewState.push({
+    component: EditProfileDialog,
+    resolve: p.rs,
+    props,
+  });
 });
 
-interface ModalProps {
+interface ModalProps extends EditProfileParams {
   rs: () => unknown
-  onDelete: () => unknown
-  avatar?: string
-  name?: string
-  showSkip?: boolean
 }
 
 export const EditProfileDialog = observer((props: ModalProps) => {
@@ -50,31 +32,26 @@ export const EditProfileDialog = observer((props: ModalProps) => {
     open: true,
   }));
 
-  const handleConfirm = () => {
+  const handleConfirm = action(() => {
     props.rs();
-    handleClose();
-  };
-
-  const handleSkip = () => {
-    props.rs();
-    handleClose();
-  };
-
-  const handleClose = action(() => {
     state.open = false;
-    setTimeout(props.onDelete, 1000);
+  });
+
+  const handleSkip = action(() => {
+    props.rs();
+    state.open = false;
   });
 
   return (
     <ThemeLight>
       <Dialog
         open={state.open}
-        onClose={action(() => { state.open = false; })}
+        onClose={handleSkip}
       >
         <div className="flex-col relative w-[400px]">
           <IconButton
             className="absolute top-2 right-2"
-            onClick={action(() => { state.open = false; })}
+            onClick={handleSkip}
           >
             <Close />
           </IconButton>

@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { ThemeRoot } from './utils/theme';
 import { initService, ServiceViews } from './service';
 import { ViewRoot } from './views';
-import { ModalViews } from './modals/ModalViews';
+import { ModalViews } from './modals/helper/ModalViews';
 
 
 const App = observer(() => {

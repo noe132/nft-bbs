@@ -12,11 +12,12 @@ import {
 import HeadingIcon from 'boxicons/svg/regular/bx-heading.svg?fill-icon';
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
-import { renderPostMarkdown, runLoading } from '~/utils';
+import { compressImage, renderPostMarkdown, runLoading, SCHEMA_PREFIX } from '~/utils';
 import { BackButton, UserAvatar } from '~/components';
 import { nodeService, snackbarService, viewService } from '~/service';
+import { selectImage } from '~/modals';
 
-import { makeHeading, makeImage, makeLink, toggleBlock, toggleLine } from './helper';
+import { makeHeading, makeLink, toggleBlock, toggleLine } from './helper';
 
 import './index.css';
 
@@ -28,6 +29,8 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
     focused: false,
     preview: false,
     previewHTML: '',
+
+    images: [] as Array<{ img: Blob, url: string, mimeType: string }>,
 
     posting: false,
     get titleLength() {
@@ -52,7 +55,19 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
   const handleMakeUL = () => { toggleLine(state.editor!, 'unordered-list'); focusEditor(); };
   const handleMakeOL = () => { toggleLine(state.editor!, 'ordered-list'); focusEditor(); };
   const handleMakeLink = () => { makeLink(state.editor!); focusEditor(); };
-  const handleMakeImage = () => { makeImage(state.editor!); focusEditor(); };
+  const handleMakeImage = async () => {
+    const data = await selectImage();
+    if (typeof data === 'string') {
+      state.editor?.replaceSelection(`![](${data})`);
+    }
+    if (data instanceof File) {
+      const img = await compressImage(data);
+      if (!img) { return; }
+      const url = URL.createObjectURL(img.img);
+      state.images.push({ img: img.img, url, mimeType: img.mineType });
+      state.editor?.replaceSelection(`![](${url})`);
+    }
+  };
   const handlePreview = action(() => {
     state.preview = !state.preview;
     if (!state.preview) { return; }
@@ -60,10 +75,27 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
   });
 
   const handlePost = async () => {
+    const allImages = state.postContent.matchAll(/!\[.*?\]\((blob:.+?)\)/g);
+    const allLinks = Array.from(new Set([...allImages].map((v) => v[1])));
+    const images = state.images.filter((v) => allLinks.includes(v.url)).map((v) => ({
+      ...v,
+      trxId: '',
+    }));
     await runLoading(
       (l) => { state.posting = l; },
       async () => {
-        await nodeService.post.create(state.title, state.postContent);
+        for (const img of images) {
+          const res = await nodeService.postImage(img.img, img.mimeType);
+          img.trxId = res.trx_id;
+        }
+
+        const postContent = state.postContent.replaceAll(/(!\[.*?\])\((blob:.+?)\)/g, (sub, g1, g2) => {
+          const img = images.find((v) => v.url === g2);
+          if (!img) { return sub; }
+          return `${g1}(${SCHEMA_PREFIX}${img?.trxId})`;
+        });
+
+        await nodeService.post.create(state.title, postContent);
         snackbarService.show('发布成功');
         viewService.back();
       },
@@ -89,6 +121,10 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
     editor.on('focus', action(() => { state.focused = true; }));
     editor.on('blur', action(() => { state.focused = false; }));
     editor.on('change', action((e) => { state.postContent = e.getValue(); }));
+
+    return () => {
+      state.images.forEach((v) => URL.revokeObjectURL(v.url));
+    };
   }, []);
 
   return (

@@ -30,7 +30,7 @@ enum Step {
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
-    seedUrl: 'rum://seed?v=1&e=0&n=0&b=48rNOzKfQKKysYm-Obes8w&c=XVs5w2f-8f36JbGOCgZFyQ16VR4HrK5S_k70ia64isU&g=_ztAsQEnTLSLStXu-t66TQ&k=Ajm4Z_Xaf_z70vhvuULp1EKWnY23SzF36xggiU_1CNBA&s=Rixby97Q3wXlRWJfvPVwuxHBp9pJnvN8yOyS2eTeDLV1vkSTRIu6uGtFZStEomIINdd42AtRQZQlSWiOACzycQA&t=Fwcqet61HME&a=%E8%81%8A%E5%A4%A9%E5%AE%A41&y=group_timeline&u=https://103.61.39.95?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6W10sImV4cCI6MTY5MDg3NTgxMiwibmFtZSI6Im5vZGUtYWxsLWdyb3VwcyIsInJvbGUiOiJjaGFpbiJ9.UOUcyCiu0mAjYDOpE-KyTCnKgoG-LlXhLBdLr8AXMyM',
+    seedUrl: 'rum://seed?v=1&e=0&n=0&b=j-uDl10GR2SjzkIezJh-Ug&c=sigrO3Tw3qyIFd9iua_lSklgaIgDTOUOoLw9gsP2qXQ&g=UuP9crb_R6uSBsi0TTLoTQ&k=A-ewQEGu2QDeStlZp4zE7Iuxuk6tOU2_ZrPYulh99-IH&s=4UTftLoe677RVBbSLE_3WWWpoVvPmUTZlWBo8vfQ7Bwe9AVYYKRvjHDH_OYJiufmdtLyCW74BhN2piOMDqKxUgA&t=FwhjTJUPU7A&a=NFT%E8%AE%BA%E5%9D%9B%E4%BA%A7%E5%93%81%E5%86%85%E6%B5%8B%E4%B8%93%E7%94%A8&y=group_timeline&u=https%3A%2F%2F103.61.39.95%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyI1MmUzZmQ3Mi1iNmZmLTQ3YWItOTIwNi1jOGI0NGQzMmU4NGQiXSwiZXhwIjoxODE3MzY1Njc0LCJuYW1lIjoiYWxsb3ctNTJlM2ZkNzItYjZmZi00N2FiLTkyMDYtYzhiNDRkMzJlODRkIiwicm9sZSI6Im5vZGUifQ.70qEKkDT6l-OUQx_d0U8muoDTTbGGBK5IHjf4_6scVQ',
     passwordPopup: false,
     privateKey: '',
     password: '',

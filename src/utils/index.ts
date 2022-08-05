@@ -3,6 +3,8 @@ import { runInAction } from 'mobx';
 export * from './PollingTask';
 export * from './ago';
 export * from './bus';
+export * from './compressImage';
+export * from './constants';
 export * from './markdown';
 export * from './theme';
 export * from './useScreenSize';

@@ -8,13 +8,18 @@ import { Share, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from 
 
 import { ago, renderPostMarkdown, runLoading } from '~/utils';
 import { imageZoomService, viewService, nodeService, snackbarService } from '~/service';
-import { CounterName, IPost } from '~/database';
+import { CounterName, ImageModel, IPost } from '~/database';
 import { UserAvatar, PostImageZoomButton } from '~/components';
 
 export const PostDetailBox = observer((props: { className?: string, post: IPost }) => {
   const state = useLocalObservable(() => ({
     content: '',
     likeLoading: false,
+    images: new Map<string, string>(
+      Array.from(
+        props.post.content.matchAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g),
+      ).map((_sub, _g1, g2) => [g2 as any as string, '']),
+    ),
   }));
 
   const handlePostClick = (e: React.MouseEvent) => {
@@ -35,11 +40,32 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
     );
   };
 
-  useEffect(() => {
-    const html = renderPostMarkdown(props.post.content);
-    runInAction(() => {
-      state.content = html;
+  const parseContent = async () => {
+    const matches = props.post.content.matchAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g);
+    await Promise.all(
+      Array.from(matches).map(async (match) => {
+        const [_sub, _g1, trxId] = match;
+        const item = await ImageModel.get(trxId);
+        runInAction(() => {
+          if (item?.content) {
+            try {
+              state.images.set(trxId, URL.createObjectURL(item.content));
+            } catch (e) {}
+          }
+        });
+      }),
+    );
+    const content = props.post.content.replaceAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g, (_sub, g1, trxId) => {
+      const imgUrl = state.images.get(trxId);
+      return `${g1}(${imgUrl})`;
     });
+    runInAction(() => {
+      state.content = renderPostMarkdown(content);
+    });
+  };
+
+  useEffect(() => {
+    parseContent();
   }, [props.post.content]);
 
   return (

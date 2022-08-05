@@ -31,7 +31,9 @@ export const createBaseRenderer = (options?: mdit.Options) => {
 };
 
 export const defaultRenderer = createBaseRenderer();
-export const renderPostMarkdown = (md: string) => DOMPurify.sanitize(defaultRenderer.render(md.replaceAll(/\n+/g, '\n\n')));
+export const renderPostMarkdown = (md: string) => DOMPurify.sanitize(defaultRenderer.render(md.replaceAll(/\n+/g, '\n\n')), {
+  ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|blob|rum):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
+});
 
 const modifyToken = (token: any, mdfn: any, env: any) => {
   // create attrObj for convenient get/set of attributes
