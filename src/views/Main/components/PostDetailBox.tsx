@@ -109,7 +109,11 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
       <div className="flex justify-between border-dark-blue border-t mt-4 px-14 py-4">
         <div className="flex gap-x-2">
           <Button
-            className="text-link-soft min-w-0"
+            className={classNames(
+              'min-w-0',
+              !props.post.extra?.liked && 'text-link-soft',
+              props.post.extra?.liked && 'text-rum-orange',
+            )}
             variant="text"
             onClick={() => handleUpdatePostCounter(CounterName.postLike)}
           >
@@ -122,7 +126,11 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
             {props.post.summary.likeCount || '点赞'}
           </Button>
           <Button
-            className="text-link-soft min-w-0"
+            className={classNames(
+              'min-w-0',
+              !props.post.extra?.disliked && 'text-link-soft',
+              props.post.extra?.disliked && 'text-rum-orange',
+            )}
             variant="text"
             onClick={() => handleUpdatePostCounter(CounterName.postDislike)}
           >

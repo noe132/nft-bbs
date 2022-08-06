@@ -59,6 +59,9 @@ const state = observable({
     list: [] as Array<INotification>,
     unreadCount: 0,
   },
+  counter: {
+    handledCounterTrxIds: new Set<string>(),
+  },
   get myProfile() {
     return this.profile.map.get(keyService.state.keys.address);
   },
@@ -161,6 +164,10 @@ const updateCounter = async (params: {
     await CounterModel.create({
       trxId: res.trx_id,
     });
+    runInAction(() => {
+      state.counter.handledCounterTrxIds.add(res.trx_id);
+    });
+
     const uniqueCounter = {
       name: counterName,
       objectId: item.trxId,
@@ -462,7 +469,7 @@ const busListeners = {
     state.loadedData = true;
   }),
   content: action((content: IContent) => {
-    let jsonResult: ICommentTrxContent | IPostTrxContent | IProfileTrxContent | undefined;
+    let jsonResult: ICommentTrxContent | IPostTrxContent | IProfileTrxContent | ICounterTrxContent | undefined;
     try {
       jsonResult = JSON.parse(content.Data.content);
     } catch (e) {}
@@ -494,6 +501,34 @@ const busListeners = {
           groupId: content.GroupId,
         };
         state.profile.map.set(myAddress, profile);
+      }
+    }
+
+    if (jsonResult.type === TrxType.counter) {
+      if (!state.counter.handledCounterTrxIds.has(content.TrxId)) {
+        console.log('counter', jsonResult);
+        if ([CounterName.postLike, CounterName.postDislike].includes(jsonResult.name)) {
+          const post = state.post.map.get(jsonResult.objectId);
+          if (post) {
+            if (jsonResult.name === CounterName.postLike) {
+              post.summary.likeCount += jsonResult.value;
+            }
+            if (jsonResult.name === CounterName.postDislike) {
+              post.summary.dislikeCount += jsonResult.value;
+            }
+          }
+        }
+        if ([CounterName.commentLike, CounterName.commentDislike].includes(jsonResult.name)) {
+          const comment = state.comment.map.get(jsonResult.objectId);
+          if (comment) {
+            if (jsonResult.name === CounterName.postLike) {
+              comment.summary.likeCount += jsonResult.value;
+            }
+            if (jsonResult.name === CounterName.postDislike) {
+              comment.summary.dislikeCount += jsonResult.value;
+            }
+          }
+        }
       }
     }
   }),

@@ -18,3 +18,8 @@ export const bulkGet = (trxIds: string[]) => {
   const db = getDatabase();
   return db.counters.where('trxId').anyOf(trxIds).toArray();
 };
+
+export const get = (trxId: string) => {
+  const db = getDatabase();
+  return db.counters.where({ trxId }).last();
+};

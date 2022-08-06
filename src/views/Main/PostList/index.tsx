@@ -87,7 +87,11 @@ export const PostList = observer((props: { className?: string }) => {
                 <div className="flex gap-x-2 -ml-2">
                   <div className="min-w-[72px]">
                     <Button
-                      className="text-link-soft text-14 px-2 min-w-0"
+                      className={classNames(
+                        'text-14 px-2 min-w-0',
+                        !v.extra?.liked && 'text-link-soft',
+                        v.extra?.liked && 'text-rum-orange',
+                      )}
                       variant="text"
                       size="small"
                       onClick={() => handleUpdatePostCounter(v, CounterName.postLike)}
@@ -103,7 +107,11 @@ export const PostList = observer((props: { className?: string }) => {
                   </div>
                   <div className="min-w-[72px]">
                     <Button
-                      className="text-link-soft text-14 px-2 min-w-0"
+                      className={classNames(
+                        'text-14 px-2 min-w-0',
+                        !v.extra?.disliked && 'text-link-soft',
+                        v.extra?.disliked && 'text-rum-orange',
+                      )}
                       variant="text"
                       size="small"
                       onClick={() => handleUpdatePostCounter(v, CounterName.postDislike)}
