@@ -64,7 +64,7 @@ export const list = async (
     ? db.posts.where({ userAddress: publisherUserAddress })
     : db.posts.toCollection();
   collection = searchText
-    ? collection.filter((p) => new RegExp(searchText || '', 'i').test(p.content))
+    ? collection.filter((p) => new RegExp(searchText || '', 'i').test(p.content) || new RegExp(searchText || '', 'i').test(p.title))
     : collection;
   const posts = await collection.reverse().sortBy('timestamp');
   return packPosts(posts, {

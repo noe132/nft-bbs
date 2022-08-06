@@ -259,7 +259,7 @@ const post = {
 
   getPosts: async (publisherUserAddress?: string) => {
     const posts = await PostModel.list({
-      searchText: '',
+      searchText: state.post.mode.type === 'search' ? state.post.mode.search : '',
       publisherUserAddress,
       currentUserAddress: keyService.state.keys.address,
     });
