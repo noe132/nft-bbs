@@ -57,10 +57,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
   const handleMakeLink = () => { makeLink(state.editor!); focusEditor(); };
   const handleMakeImage = async () => {
     const data = await selectImage();
-    if (typeof data === 'string') {
-      state.editor?.replaceSelection(`![](${data})`);
-    }
-    if (data instanceof File) {
+    if (data instanceof Blob) {
       const img = await compressImage(data);
       if (!img) { return; }
       const url = URL.createObjectURL(img.img);

@@ -10,7 +10,7 @@ const drawImage = (img: HTMLImageElement, width: number, height: number, quality
 };
 const MAX_SIZE = 200 * 1024;
 
-export const compressImage = async (file: File) => {
+export const compressImage = async (file: Blob) => {
   if (file.size < MAX_SIZE) {
     return {
       img: file,

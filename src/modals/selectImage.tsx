@@ -8,7 +8,7 @@ import { modalViewState } from './helper/modalViewState';
 import { imageLib } from './imageLib';
 
 export const selectImage = action(() => {
-  const p = createPromise<File | string | null>();
+  const p = createPromise<Blob | null>();
   modalViewState.push({
     component: SelectImage,
     resolve: p.rs,
@@ -17,7 +17,7 @@ export const selectImage = action(() => {
 });
 
 interface ModalProps {
-  rs: (file: File | string | null) => unknown
+  rs: (file: Blob | null) => unknown
 }
 
 const SelectImage = observer((props: ModalProps) => {
@@ -48,7 +48,7 @@ const SelectImage = observer((props: ModalProps) => {
 });
 
 
-const A = observer((props: { rs: (file: File | string) => unknown }) => {
+const A = observer((props: { rs: (file: Blob) => unknown }) => {
   const fileInput = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

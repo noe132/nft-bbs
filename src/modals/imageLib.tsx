@@ -4,13 +4,14 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import { Close } from '@mui/icons-material';
 import { CircularProgress, Dialog, IconButton, OutlinedInput, Tooltip } from '@mui/material';
 
-import { createPromise, sleep, ThemeLight } from '~/utils';
+import { createPromise, runLoading, sleep, ThemeLight } from '~/utils';
 import { pixabayApi } from '~/api';
 import { modalViewState } from './helper/modalViewState';
 import { Scrollable } from '~/components';
+import { PixabayResponse } from '~/api/pixabay';
 
 export const imageLib = action(() => {
-  const p = createPromise<string | null>();
+  const p = createPromise<Blob | null>();
   modalViewState.push({
     component: ImageLib,
     resolve: p.rs,
@@ -19,7 +20,7 @@ export const imageLib = action(() => {
 });
 
 interface ModalProps {
-  rs: (file: string | null) => unknown
+  rs: (file: Blob | null) => unknown
 }
 
 const ImageLib = observer((props: ModalProps) => {
@@ -37,7 +38,7 @@ const ImageLib = observer((props: ModalProps) => {
       <Dialog open={state.open} onClose={handleClose} maxWidth={false}>
         <div className="flex-col relative ">
           <IconButton
-            className="absolute top-2 right-2 z-10"
+            className="absolute top-2 right-2 z-50"
             onClick={handleClose}
           >
             <Close />
@@ -58,7 +59,7 @@ const containsChinese = (s: string) => {
 };
 const LIMIT = 24;
 
-const A = observer((props: { rs: (url: string) => unknown }) => {
+const A = observer((props: { rs: (file: Blob) => unknown }) => {
   const state = useLocalObservable(() => ({
     isFetching: false,
     isFetched: false,
@@ -66,10 +67,12 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
     searchKeyword: '',
     hasMore: true,
     total: 0,
-    images: [] as any,
+    images: [] as PixabayResponse['hits'],
     tooltipDisableHoverListener: true,
+
+    loading: false,
     get ids() {
-      return this.images.map((image: any) => image.id);
+      return this.images.map((image) => image.id);
     },
   }));
   const RATIO = 16 / 9;
@@ -84,6 +87,17 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
     state.isFetched = false;
     state.searchKeyword = value;
   });
+
+  const handleSelectImage = (url: string) => {
+    if (!url) { return; }
+    runLoading(
+      (l) => { state.loading = l; },
+      async () => {
+        const blob = await (await fetch(url)).blob();
+        props.rs(blob);
+      },
+    );
+  };
 
   React.useEffect(() => {
     const io = new IntersectionObserver(action((entries) => {
@@ -108,8 +122,8 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
     });
     (async () => {
       try {
-        const query: string = state.searchKeyword.split(' ').join('+');
-        const res: any = await pixabayApi.search({
+        const query = state.searchKeyword.split(' ').join('+');
+        const res = await pixabayApi.search({
           q: query,
           page: state.page,
           per_page: LIMIT,
@@ -145,7 +159,12 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
   }, [state.page, state.searchKeyword]);
 
   return (
-    <div className="pixabay-image-lib bg-white rounded-0 text-center p-0 w-[640px]">
+    <div className="relative pixabay-image-lib bg-white rounded-0 text-center p-0 w-[640px]">
+      {state.loading && (
+        <div className="flex flex-center absolute inset-0 bg-black/50 z-10">
+          <CircularProgress className="text-white" />
+        </div>
+      )}
       <div className="relative">
         <div className="flex justify-center mt-6">
           <OutlinedInput
@@ -176,8 +195,8 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
               gridTemplateColumns: 'repeat(4, 132px)',
             }}
           >
-            {state.images.map((image: any) => (
-              <div key={image.id} id={image.id}>
+            {state.images.map((image) => (
+              <div key={image.id}>
                 <Tooltip
                   placement="top"
                   arrow
@@ -210,7 +229,7 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
                       width: 132,
                       height: 132 / RATIO,
                     }}
-                    onClick={() => props.rs(image.webformatURL)}
+                    onClick={() => handleSelectImage(image.webformatURL)}
                   />
                 </Tooltip>
               </div>
