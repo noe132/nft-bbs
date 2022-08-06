@@ -25,11 +25,9 @@ export const Notification = observer((props: { className?: string }) => {
 
   const handleViewItem = async (v: INotification) => {
     // TODO: goto post and locate comment
-    if (v.type === NotificationType.comment) {
-      const post = await nodeService.post.getPost(v.objectId);
-      if (!post) { return; }
-      viewService.pushPage('postdetail', post, v.actionTrxId);
-    }
+    const post = await nodeService.post.getPost(v.objectId);
+    if (!post) { return; }
+    viewService.pushPage('postdetail', post, v.actionTrxId);
   };
 
   const handleNewPost = () => {
@@ -82,7 +80,10 @@ export const Notification = observer((props: { className?: string }) => {
                 content = comment?.content ?? '';
               } else {
                 if (v.objectType === NotificationObjectType.post) {
-                  content = RemoveMarkdown(nodeService.state.post.map.get(v.objectId)!.content);
+                  content = RemoveMarkdown(
+                    nodeService.state.post.map.get(v.objectId)!.content
+                      .replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'),
+                  );
                 }
                 if (v.objectType === NotificationObjectType.comment) {
                   // TODO: 给评论点赞的notification。需要获取被点赞评论的content
@@ -136,16 +137,14 @@ export const Notification = observer((props: { className?: string }) => {
                       </div>
                     </div>
                     <div className="flex gap-x-4 ml-8">
-                      {v.type === NotificationType.comment && (
-                        <Button
-                          className="text-link-soft"
-                          variant="text"
-                          size="small"
-                          onClick={() => handleViewItem(v)}
-                        >
-                          前往查看
-                        </Button>
-                      )}
+                      <Button
+                        className="text-link-soft"
+                        variant="text"
+                        size="small"
+                        onClick={() => handleViewItem(v)}
+                      >
+                        前往查看
+                      </Button>
                       {v.type === NotificationType.comment && (
                         <Button
                           className="text-link-soft"

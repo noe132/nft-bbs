@@ -81,7 +81,7 @@ export const PostList = observer((props: { className?: string }) => {
                 {v.title || '无标题'}
               </div>
               <div className="text-blue-gray text-14 truncate-2 mt-2">
-                {RemoveMarkdown(v.content)}
+                {RemoveMarkdown(v.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
               </div>
               <div className="flex items-center justify-between mt-3 text-14">
                 <div className="flex gap-x-2 -ml-2">
