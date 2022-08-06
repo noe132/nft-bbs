@@ -6,6 +6,7 @@ import DefaultAvatar from '~/assets/images/default_avatar.png';
 interface AvatarProps {
   className?: string
   profile?: IProfile | null
+  avatar?: string
   size?: number
   children?: React.ReactNode
 }
@@ -19,7 +20,7 @@ export const UserAvatar = (props: AvatarProps) => (
     style={{
       width: `${props.size ?? 28}px`,
       height: `${props.size ?? 28}px`,
-      backgroundImage: `url("${props.profile?.avatar || DefaultAvatar}")`,
+      backgroundImage: `url("${props.profile?.avatar || props.avatar || DefaultAvatar}")`,
     }}
   >
     {props.children}

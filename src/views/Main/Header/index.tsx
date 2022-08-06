@@ -4,7 +4,7 @@ import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
 import { ethers } from 'ethers';
-import { Check, Close, MoreVert, NotificationsNone, Search, Share } from '@mui/icons-material';
+import { Check, Close, MoreVert, NotificationsNone, Search } from '@mui/icons-material';
 import { Badge, Button, IconButton, Input, Menu, MenuItem, Popover, Tab, Tabs } from '@mui/material';
 
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';

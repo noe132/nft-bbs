@@ -247,9 +247,6 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
             </div>
           )}
         </Scrollable>
-
-        <style>
-        </style>
       </div>
     </div>
   );

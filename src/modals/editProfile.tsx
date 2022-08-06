@@ -1,12 +1,17 @@
+import React, { useRef } from 'react';
 import classNames from 'classnames';
-import { action } from 'mobx';
+import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { Close } from '@mui/icons-material';
 import { Dialog, FormControl, IconButton, InputLabel, OutlinedInput } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
+import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import { createPromise, runLoading, ThemeLight } from '~/utils';
 import { nodeService, snackbarService } from '~/service';
+import { UserAvatar } from '~/components';
+
 import { modalViewState } from './helper/modalViewState';
+import { editAvatar } from './editAvatar';
 
 interface EditProfileParams {
   avatar?: string
@@ -21,13 +26,14 @@ export const editProfile = action((props: EditProfileParams) => {
     resolve: p.rs,
     props,
   });
+  return p.p;
 });
 
 interface ModalProps extends EditProfileParams {
   rs: () => unknown
 }
 
-export const EditProfileDialog = observer((props: ModalProps) => {
+const EditProfileDialog = observer((props: ModalProps) => {
   const state = useLocalObservable(() => ({
     open: true,
   }));
@@ -81,9 +87,22 @@ export const EditProfileView = observer((props: Props) => {
   const state = useLocalObservable(() => ({
     avatar: props.avatar ?? '',
     name: props.name ?? '',
-
     loading: false,
   }));
+
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const handleSelectImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) { return; }
+    const avatar = await editAvatar({ avatar: file });
+    if (avatar) {
+      runInAction(() => {
+        state.avatar = avatar;
+      });
+    }
+  };
 
   const handleSubmitProfile = async () => {
     if (!state.name || state.loading) { return; }
@@ -100,7 +119,8 @@ export const EditProfileView = observer((props: Props) => {
     );
   };
 
-  return (
+  return (<>
+    <input ref={fileInput} type="file" accept="image/*" hidden onChange={handleSelectImage} />
     <div
       className={classNames(
         'flex-col flex-1 justify-between items-center p-6 pt-10 gap-y-6',
@@ -110,7 +130,25 @@ export const EditProfileView = observer((props: Props) => {
       <div className="text-16 font-medium">
         编辑身份资料
       </div>
-      <div className="w-20 h-20 bg-black/20" />
+      <div
+        className="group relative w-20 h-20 cursor-pointer"
+        onClick={() => fileInput.current?.click()}
+      >
+        <UserAvatar className="shadow-2" avatar={state.avatar} size={80} />
+        <div className="absolute right-0 bottom-0 border-black border rounded-full bg-white p-px hidden group-hover:block">
+          <CamaraIcon className="text-12" />
+        </div>
+      </div>
+      {/* <ImageEditor
+        className="opacity-0 !absolute !m-0 -inset-px"
+        width={200}
+        placeholderWidth={90}
+        editorPlaceholderWidth={200}
+        imageUrl={state.avatar}
+        getImageUrl={(url: string) => {
+          state.avatar = url;
+        }}
+      /> */}
       <FormControl size="small">
         <InputLabel>昵称</InputLabel>
         <OutlinedInput
@@ -135,5 +173,5 @@ export const EditProfileView = observer((props: Props) => {
         确定
       </LoadingButton>
     </div>
-  );
+  </>);
 });

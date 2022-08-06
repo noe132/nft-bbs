@@ -506,7 +506,6 @@ const busListeners = {
 
     if (jsonResult.type === TrxType.counter) {
       if (!state.counter.handledCounterTrxIds.has(content.TrxId)) {
-        console.log('counter', jsonResult);
         if ([CounterName.postLike, CounterName.postDislike].includes(jsonResult.name)) {
           const post = state.post.map.get(jsonResult.objectId);
           if (post) {
