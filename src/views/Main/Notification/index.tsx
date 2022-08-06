@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
+import RemoveMarkdown from 'remove-markdown';
 import { Button, CircularProgress, Tooltip } from '@mui/material';
 import { AlternateEmail, ThumbDownAlt, ThumbUpAlt } from '@mui/icons-material';
 
@@ -81,7 +82,7 @@ export const Notification = observer((props: { className?: string }) => {
                 content = comment?.content ?? '';
               } else {
                 if (v.objectType === NotificationObjectType.post) {
-                  content = nodeService.state.post.map.get(v.objectId)!.content;
+                  content = RemoveMarkdown(nodeService.state.post.map.get(v.objectId)!.content);
                 }
                 if (v.objectType === NotificationObjectType.comment) {
                   // TODO: 给评论点赞的notification。需要获取被点赞评论的content
@@ -130,30 +131,9 @@ export const Notification = observer((props: { className?: string }) => {
                           v.type !== NotificationType.comment && 'border-l border-[#b4daff]',
                         )}
                       >
-                        {/* {`${nodeService.state.post.map.get(v.objectId)!.content}`} */}
                         {content}
+                        {!content && (<span>&nbsp;</span>)}
                       </div>
-                      {/* {v.objectType === NotificationObjectType.post && (
-                        <div className="border-l border-[#b4daff] truncate-2 text-blue-gray text-14 px-2">
-                          {`${nodeService.state.post.map.get(v.objectId)!.content}`}
-                        </div>
-                      )}
-                      {v.objectType === NotificationObjectType.comment && (
-                        <div className="truncate-2 text-white text-14 px-2">
-                          {`${nodeService.state.comment.map.get(v.objectId)!.content}`}
-                        </div>
-                      )} */}
-                      {false && (
-                        <div className="truncate-2 text-white text-14 px-2">
-                          @Maocaizhao 我在发表评论，这个评论框固定不跟随主贴滚动。<br />
-                          @王大喵 回复的时候再点别的回复按钮可以新增@
-                        </div>
-                      )}
-                      {false && (
-                        <div className="border-l border-[#b4daff] truncate-2 text-blue-gray text-14 px-2">
-                          这是我帖子的摘要内容所以前面有表示引用的符号这是我帖子的摘要内容所以前面有表示引用的符号这是我帖子的摘要内容所以前面有表示引用的符号
-                        </div>
-                      )}
                     </div>
                     <div className="flex gap-x-4 ml-8">
                       {v.type === NotificationType.comment && (

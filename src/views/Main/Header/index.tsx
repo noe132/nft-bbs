@@ -176,7 +176,8 @@ export const Header = observer((props: { className?: string }) => {
                 value={state.tab}
                 TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
               >
-                {['最新', '最热'].map((v, i) => (
+                {/* {['最新', '最热'].map((v, i) => ( */}
+                {['最新'].map((v, i) => (
                   <Tab
                     className="text-gray-9c text-20 h-[60px] px-8"
                     classes={{ selected: '!text-rum-orange' }}
@@ -240,12 +241,12 @@ export const Header = observer((props: { className?: string }) => {
         <div className="flex items-center gap-x-4">
           <div className="flex justify-end items-center gap-x-4 mr-8">
             {[
-              {
-                key: 'share',
-                icon: <Share className="text-24" />,
-                onClick: () => 1,
-                active: false,
-              },
+              // {
+              //   key: 'share',
+              //   icon: <Share className="text-24" />,
+              //   onClick: () => 1,
+              //   active: false,
+              // },
               state.viewPage === 'postlist' && {
                 key: 'search',
                 icon: <Search className="text-28" />,
