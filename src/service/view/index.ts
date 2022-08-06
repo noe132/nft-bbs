@@ -2,7 +2,7 @@ import { action, observable } from 'mobx';
 import { IPost, IProfile } from '~/database';
 
 type Pages = ['postlist']
-| ['postdetail', IPost]
+| [pageName: 'postdetail', post: IPost, commentTrx?: string]
 | ['newpost']
 | ['notification']
 | ['userprofile', IProfile];

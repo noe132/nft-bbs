@@ -7,6 +7,7 @@ import { CircularProgress, Dialog, IconButton, OutlinedInput, Tooltip } from '@m
 import { createPromise, sleep, ThemeLight } from '~/utils';
 import { pixabayApi } from '~/api';
 import { modalViewState } from './helper/modalViewState';
+import { Scrollable } from '~/components';
 
 export const imageLib = action(() => {
   const p = createPromise<string | null>();
@@ -36,7 +37,7 @@ const ImageLib = observer((props: ModalProps) => {
       <Dialog open={state.open} onClose={handleClose} maxWidth={false}>
         <div className="flex-col relative ">
           <IconButton
-            className="absolute top-2 right-2"
+            className="absolute top-2 right-2 z-10"
             onClick={handleClose}
           >
             <Close />
@@ -168,7 +169,7 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
             <img src="https://i.xue.cn/172e1214.png" alt="pixabay" />
           </a>
         </Tooltip>
-        <div className="mt-2 overflow-y-auto p-1 h-[400px]">
+        <Scrollable className="mt-2 p-1 h-[400px]" wide>
           <div
             className="grid-container grid gap-4 p-4 justify-center"
             style={{
@@ -178,7 +179,7 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
             {state.images.map((image: any) => (
               <div key={image.id} id={image.id}>
                 <Tooltip
-                  placement="left"
+                  placement="top"
                   arrow
                   enterDelay={800}
                   enterNextDelay={800}
@@ -200,7 +201,7 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
                   }
                 >
                   <div
-                    className="rounded image cursor-pointer"
+                    className="rounded image cursor-pointer bg-cover bg-center"
                     style={{
                       backgroundImage: `url(${image.webformatURL.replace(
                         '_640',
@@ -245,30 +246,9 @@ const A = observer((props: { rs: (url: string) => unknown }) => {
               <CircularProgress className="text-gray-af" size={32} />
             </div>
           )}
-        </div>
+        </Scrollable>
+
         <style>
-          {`
-            .pixabay-image-lib .image {
-              background-size: cover;
-              background-position: center center;
-            }
-            // .pixabay-image-lib .grid-container {
-            //   padding: 10px 4px;
-            //   width: 100%;
-            //   display: grid;
-            //   grid-template-columns: repeat(4, 1fr);
-            //   grid-auto-rows: minmax(62px, 62px);
-            //   row-gap: 24px;
-            //   column-gap: 0;
-            //   align-items: center;
-            //   justify-items: center;
-            // }
-            // .pixabay-image-lib .grid-container.sm {
-            //   padding: 10px 12px;
-            //   grid-template-columns: repeat(2, 1fr);
-            //   row-gap: 38px;
-            // }
-          `}
         </style>
       </div>
     </div>

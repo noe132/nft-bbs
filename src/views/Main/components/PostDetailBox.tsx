@@ -68,6 +68,10 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
     parseContent();
   }, [props.post.content]);
 
+  useEffect(() => () => {
+    state.images.forEach((v) => URL.revokeObjectURL(v));
+  }, []);
+
   return (
     <div
       className={classNames(

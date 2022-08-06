@@ -122,9 +122,10 @@ export const Header = observer((props: { className?: string }) => {
       wallet = ethers.Wallet.createRandom();
     }
 
-    const password = '123';
+    // const password = '123';
     store('privateKey', wallet.privateKey);
-    store('password', password);
+    // store('password', password);
+    store.remove('password');
     const db = getDatabase();
     db.delete();
     window.location.reload();
@@ -143,6 +144,7 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleLogout = action(() => {
     state.userDropdown = false;
+    store.remove('password');
     handleClearData();
   });
 

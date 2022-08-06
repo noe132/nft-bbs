@@ -303,6 +303,16 @@ const post = {
       state.post.map.set(dbPost.trxId, dbPost);
     });
   },
+
+  getPost: async (trxId: string) => {
+    const post = await PostModel.get(trxId);
+    if (post) {
+      runInAction(() => {
+        state.post.map.set(post.trxId, post);
+      });
+    }
+    return post;
+  },
 };
 
 const comment = {

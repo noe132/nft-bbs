@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
@@ -23,21 +23,22 @@ import { keyService, nodeService, snackbarService } from '~/service';
 import { getDatabase } from '~/database';
 
 enum Step {
-  InputSeedUrl = 0,
+  SavedLoginCheck = 0,
+  InputSeedUrl = 1,
   SeedUrlParsingError = 2,
   PrepareJoinGroup = 3,
 }
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
-    seedUrl: 'rum://seed?v=1&e=0&n=0&b=j-uDl10GR2SjzkIezJh-Ug&c=sigrO3Tw3qyIFd9iua_lSklgaIgDTOUOoLw9gsP2qXQ&g=UuP9crb_R6uSBsi0TTLoTQ&k=A-ewQEGu2QDeStlZp4zE7Iuxuk6tOU2_ZrPYulh99-IH&s=4UTftLoe677RVBbSLE_3WWWpoVvPmUTZlWBo8vfQ7Bwe9AVYYKRvjHDH_OYJiufmdtLyCW74BhN2piOMDqKxUgA&t=FwhjTJUPU7A&a=NFT%E8%AE%BA%E5%9D%9B%E4%BA%A7%E5%93%81%E5%86%85%E6%B5%8B%E4%B8%93%E7%94%A8&y=group_timeline&u=https%3A%2F%2F103.61.39.95%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyI1MmUzZmQ3Mi1iNmZmLTQ3YWItOTIwNi1jOGI0NGQzMmU4NGQiXSwiZXhwIjoxODE3MzY1Njc0LCJuYW1lIjoiYWxsb3ctNTJlM2ZkNzItYjZmZi00N2FiLTkyMDYtYzhiNDRkMzJlODRkIiwicm9sZSI6Im5vZGUifQ.70qEKkDT6l-OUQx_d0U8muoDTTbGGBK5IHjf4_6scVQ',
+    seedUrl: store('seedUrl') || 'rum://seed?v=1&e=0&n=0&b=j-uDl10GR2SjzkIezJh-Ug&c=sigrO3Tw3qyIFd9iua_lSklgaIgDTOUOoLw9gsP2qXQ&g=UuP9crb_R6uSBsi0TTLoTQ&k=A-ewQEGu2QDeStlZp4zE7Iuxuk6tOU2_ZrPYulh99-IH&s=4UTftLoe677RVBbSLE_3WWWpoVvPmUTZlWBo8vfQ7Bwe9AVYYKRvjHDH_OYJiufmdtLyCW74BhN2piOMDqKxUgA&t=FwhjTJUPU7A&a=NFT%E8%AE%BA%E5%9D%9B%E4%BA%A7%E5%93%81%E5%86%85%E6%B5%8B%E4%B8%93%E7%94%A8&y=group_timeline&u=https%3A%2F%2F103.61.39.95%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyI1MmUzZmQ3Mi1iNmZmLTQ3YWItOTIwNi1jOGI0NGQzMmU4NGQiXSwiZXhwIjoxODE3MzY1Njc0LCJuYW1lIjoiYWxsb3ctNTJlM2ZkNzItYjZmZi00N2FiLTkyMDYtYzhiNDRkMzJlODRkIiwicm9sZSI6Im5vZGUifQ.70qEKkDT6l-OUQx_d0U8muoDTTbGGBK5IHjf4_6scVQ',
     passwordPopup: false,
     privateKey: '',
     password: '',
     passwordVisibility: false,
     rememberPassword: false,
     group: null as null | IGroup,
-    step: 0,
+    step: Step.SavedLoginCheck,
     languageMenu: false,
     get canLogin() {
       return !!this.password && !!this.privateKey;
@@ -109,6 +110,7 @@ export const Join = observer(() => {
       return;
     }
     store('privateKey', state.privateKey);
+    store('seedUrl', state.seedUrl);
     if (state.rememberPassword) {
       store('password', state.password);
     } else {
@@ -145,6 +147,33 @@ export const Join = observer(() => {
       state.seedUrl = content;
     });
   };
+
+  const savedLoginCheck = async () => {
+    const seedUrl = store('seedUrl');
+    const privateKey = store('privateKey');
+    const password = store('password');
+    if (seedUrl && privateKey && password) {
+      let data;
+      try {
+        data = await keyService.validate(privateKey, password);
+      } catch (e) {
+        snackbarService.error('私钥或密码错误');
+        return;
+      }
+      try {
+        await nodeService.joinGroup(state.seedUrl, data);
+        return;
+      } catch (e) {}
+      return;
+    }
+    runInAction(() => {
+      state.step = Step.InputSeedUrl;
+    });
+  };
+
+  useEffect(() => {
+    savedLoginCheck();
+  }, []);
 
   return (<>
     <div className="min-h-[100vh] flex-col">
@@ -218,6 +247,11 @@ export const Join = observer(() => {
       >
         <div className="flex flex-center flex-1">
           <div className="relative flex-col flex-center bg-black/70 w-[720px] h-[330px] rounded-[10px]">
+            {state.step === Step.SavedLoginCheck && (
+              <div className="flex-col flex-center">
+                <CircularProgress className="text-white/70" />
+              </div>
+            )}
             {state.step === Step.InputSeedUrl && (
               <div className="flex-col flex-center">
                 <div className="text-white text-18">
@@ -262,7 +296,7 @@ export const Join = observer(() => {
                 </div>
               </div>
             )}
-            {state.step === 1 && (
+            {false && (
               <div className="flex-col flex-center">
                 <CircularProgress className="text-gray-70" size={48} />
 

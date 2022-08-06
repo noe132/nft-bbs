@@ -22,9 +22,13 @@ export const Notification = observer((props: { className?: string }) => {
     },
   }));
 
-  const handleViewItem = (_v: INotification) => {
+  const handleViewItem = async (v: INotification) => {
     // TODO: goto post and locate comment
-    snackbarService.show('TODO');
+    if (v.type === NotificationType.comment) {
+      const post = await nodeService.post.getPost(v.objectId);
+      if (!post) { return; }
+      viewService.pushPage('postdetail', post, v.actionTrxId);
+    }
   };
 
   const handleNewPost = () => {
@@ -152,14 +156,16 @@ export const Notification = observer((props: { className?: string }) => {
                       )}
                     </div>
                     <div className="flex gap-x-4 ml-8">
-                      <Button
-                        className="text-link-soft"
-                        variant="text"
-                        size="small"
-                        onClick={() => handleViewItem(v)}
-                      >
-                        前往查看
-                      </Button>
+                      {v.type === NotificationType.comment && (
+                        <Button
+                          className="text-link-soft"
+                          variant="text"
+                          size="small"
+                          onClick={() => handleViewItem(v)}
+                        >
+                          前往查看
+                        </Button>
+                      )}
                       {v.type === NotificationType.comment && (
                         <Button
                           className="text-link-soft"

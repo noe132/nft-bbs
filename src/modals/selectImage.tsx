@@ -33,7 +33,7 @@ const SelectImage = observer((props: ModalProps) => {
   return (
     <ThemeLight>
       <Dialog open={state.open} onClose={handleClose}>
-        <div className="flex-col relative w-[400px]">
+        <div className="flex-col relative w-[300px]">
           <IconButton
             className="absolute top-2 right-2"
             onClick={handleClose}

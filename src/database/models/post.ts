@@ -32,6 +32,13 @@ export const bulkPut = async (posts: IPost[]) => {
   await db.posts.bulkPut(posts);
 };
 
+export const get = async (trxId: string) => {
+  const db = getDatabase();
+  const post = await db.posts.where({ trxId }).last();
+  if (!post) { return null; }
+  const packedPosts = await packPosts([post], { currentUserAddress: '' });
+  return packedPosts[0];
+};
 
 export const bulkGet = async (trxIds: string[], options?: {
   currentUserAddress?: string

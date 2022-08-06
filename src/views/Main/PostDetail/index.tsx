@@ -263,7 +263,7 @@ export const PostDetail = observer((props: { className?: string }) => {
           </div>
 
           <div className="relative flex-col pt-4 pb-8">
-            <div className="flex-col px-16 divide-y divide-white/20">
+            <div className="flex-col px-12 divide-y divide-white/20">
               {!state.sortedCommentTree.length && (
                 <div className="flex flex-center text-white/80 text-14 py-6 pb-4">
                   暂无评论
@@ -371,17 +371,49 @@ interface CommentItemProps {
 const CommentItem = observer((props: CommentItemProps) => {
   const state = useLocalObservable(() => ({
     expand: true,
+    highlight: false,
+    get needToHighlight() {
+      const highlightedId = viewService.state.page[0] === 'postdetail' && viewService.state.page.length === 3
+        ? viewService.state.page[2]
+        : '';
+      return highlightedId === props.comment.trxId;
+    },
   }));
+
+  const handleClearHighlight = action(() => {
+    if (state.highlight) {
+      state.highlight = false;
+    }
+  });
 
   const subComments = (props.weakMap.get(props.comment) ?? [])
     .map((v) => nodeService.state.comment.map.get(v)!);
 
+  useEffect(action(() => {
+    if (state.needToHighlight) {
+      state.highlight = true;
+      setTimeout(() => {
+        const node = document.querySelector(`[data-comment-trx-id="${props.comment.trxId}"]`);
+        if (node) {
+          scrollIntoView(node, {
+            behavior: 'smooth',
+          });
+        }
+      });
+    }
+  }), []);
+
   return (
     <div
       className={classNames(
-        'comment-box',
+        'comment-box px-4 duration-200',
+        state.highlight && 'bg-blue-400/20',
         props.className,
       )}
+      onClick={handleClearHighlight}
+      style={{
+        transitionProperty: 'background-color',
+      }}
       data-comment-trx-id={props.comment.trxId}
     >
       <div className="py-4 group">
