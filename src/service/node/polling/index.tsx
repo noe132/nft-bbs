@@ -23,8 +23,16 @@ export const pollingContentsTask = async () => {
     listOptions.startTrx = groupStatus.startTrx;
   }
   const contents = await QuorumLightNodeSDK.chain.Content.list(listOptions);
-  if (contents.length > 0) {
-    await handleContents(group.groupId, contents);
+  const uniqueContents: Array<IContent> = [];
+  const trxIds = new Set<string>();
+  contents.forEach((v) => {
+    if (!trxIds.has(v.TrxId)) {
+      trxIds.add(v.TrxId);
+      uniqueContents.push(v);
+    }
+  });
+  if (uniqueContents.length > 0) {
+    await handleContents(group.groupId, uniqueContents);
   }
   if (contents.length < LIMIT) {
     bus.emit('loadedData');
@@ -58,7 +66,7 @@ const handleContents = async (groupId: string, contents: IContent[]) => {
       startTrx: contents[contents.length - 1].TrxId,
     };
     groupStatus.startTrx = contents[contents.length - 1].TrxId;
-    GroupStatusModel.put(groupStatus);
+    await GroupStatusModel.put(groupStatus);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(err);

@@ -8,7 +8,6 @@ import {
 import { bus } from '~/utils';
 import { keyService } from '~/service/key';
 
-
 export const handleComments = async (items: IContent[] = []) => {
   if (items.length === 0) { return; }
   const existedComments = await CommentModel.bulkGet(items.map((item) => item.TrxId));
@@ -71,6 +70,7 @@ export const handleComments = async (items: IContent[] = []) => {
           actionTrxId: comment.trxId,
           fromUserAddress: comment.userAddress,
           timestamp: Date.now(),
+          actionTimestamp: comment.timestamp,
         });
       } else if (parentReplyComment?.userAddress === myUserAddress || parentThreadComment?.userAddress === myUserAddress) {
         // notification reply to comment
@@ -83,6 +83,7 @@ export const handleComments = async (items: IContent[] = []) => {
           actionTrxId: comment.trxId,
           fromUserAddress: comment.userAddress,
           timestamp: Date.now(),
+          actionTimestamp: comment.timestamp,
         });
       }
     }

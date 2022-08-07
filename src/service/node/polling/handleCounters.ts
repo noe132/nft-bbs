@@ -128,6 +128,7 @@ const handleItems = async (counterName: CounterName, items: IContent[]) => {
         actionTrxId: item.TrxId,
         fromUserAddress,
         timestamp: Date.now(),
+        actionTimestamp: parseInt(String(item.TimeStamp / 1000000), 10),
       });
     }
   }
@@ -146,6 +147,7 @@ const handleItems = async (counterName: CounterName, items: IContent[]) => {
         actionTrxId: item.TrxId,
         fromUserAddress,
         timestamp: Date.now(),
+        actionTimestamp: parseInt(String(item.TimeStamp / 1000000), 10),
       });
     }
   }

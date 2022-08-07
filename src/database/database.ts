@@ -26,7 +26,7 @@ export default class Database extends Dexie {
 
     runPreviousMigrations();
 
-    this.version(2).stores({
+    this.version(3).stores({
       posts: [
         'trxId',
         'userAddress',
@@ -78,6 +78,17 @@ export default class Database extends Dexie {
         'groupId',
         'startTrx',
       ].join(','),
+    }).upgrade(async () => {
+      await Promise.all([
+        'posts',
+        'comments',
+        'profiles',
+        'counters',
+        'uniqueCounters',
+        'images',
+        'notifications',
+        'groupStatus',
+      ].map((v) => this.table(v).clear()));
     });
 
     this.posts = this.table('posts');

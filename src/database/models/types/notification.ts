@@ -25,4 +25,5 @@ export interface INotification {
   actionTrxId: string
   fromUserAddress: string
   timestamp: number
+  actionTimestamp: number
 }

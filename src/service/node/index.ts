@@ -4,7 +4,7 @@ import {
   init as initDatabase,
   ProfileModel, CommentModel, PostModel, CounterModel, UniqueCounterModel, NotificationModel,
   ICounterTrxContent, ICommentTrxContent, IComment, IPost, IProfile, IProfileTrxContent, IPostTrxContent,
-  TrxType, TrxStorage, TrxStatus, CounterName, NotificationObjectType, INotification, NotificationStatus, NotificationType, IImageTrxContent, ImageModel,
+  TrxType, TrxStorage, TrxStatus, CounterName, NotificationObjectType, INotification, NotificationStatus, NotificationType, IImageTrxContent, ImageModel, ICounter,
 } from '~/database';
 import { bus, PollingTask, runLoading, sleep } from '~/utils';
 import { pollingContentsTask } from './polling';
@@ -61,6 +61,7 @@ const state = observable({
   },
   counter: {
     handledCounterTrxIds: new Set<string>(),
+    map: new Map<string, ICounter>(),
   },
   get myProfile() {
     return this.profile.map.get(keyService.state.keys.address);
@@ -127,73 +128,6 @@ const submitProfile = async (params: { name: string, avatar: string }) => {
     };
     await ProfileModel.bulkPut([profile]);
     await updateProfile();
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-  }
-};
-
-const updateCounter = async (params: {
-  item: IComment | IPost
-  type: 'comment' | 'post'
-  counterName: CounterName
-}) => {
-  const group = QuorumLightNodeSDK.cache.Group.list()[0];
-  const { item, counterName, type } = params;
-  const trxId = item.trxId;
-  try {
-    const countedKey = [CounterName.commentLike, CounterName.postLike].includes(counterName) ? 'liked' : 'disliked';
-    const countKey = [CounterName.commentLike, CounterName.postLike].includes(counterName) ? 'likeCount' : 'dislikeCount';
-    const trxContent: ICounterTrxContent = {
-      type: TrxType.counter,
-      name: counterName,
-      objectId: trxId,
-      value: item.extra![countedKey] ? -1 : 1,
-    };
-    const res = await QuorumLightNodeSDK.chain.Trx.create({
-      groupId: group.groupId,
-      object: {
-        content: JSON.stringify(trxContent),
-        type: 'Note',
-      },
-      aesKey: group.cipherKey,
-      privateKey: keyService.state.keys.privateKey,
-    });
-    // eslint-disable-next-line no-console
-    console.log(res);
-    await CounterModel.create({
-      trxId: res.trx_id,
-    });
-    runInAction(() => {
-      state.counter.handledCounterTrxIds.add(res.trx_id);
-    });
-
-    const uniqueCounter = {
-      name: counterName,
-      objectId: item.trxId,
-      userAddress: keyService.state.keys.address,
-    };
-    await (item.extra![countedKey] ? UniqueCounterModel.bulkDelete([uniqueCounter]) : UniqueCounterModel.bulkAdd([uniqueCounter]));
-
-    runInAction(() => {
-      item.summary = {
-        ...item.summary,
-        [countKey]: item.summary[countKey] + (item.extra![countedKey] ? -1 : 1),
-      };
-    });
-
-    const clone = JSON.parse(JSON.stringify(item));
-    delete clone.extra;
-    if (type === 'post') {
-      await PostModel.bulkPut([clone as IPost]);
-    }
-    if (type === 'comment') {
-      await CommentModel.bulkPut([clone as IComment]);
-    }
-
-    runInAction(() => {
-      item.extra![countedKey] = !item.extra![countedKey];
-    });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error(err);
@@ -464,6 +398,75 @@ const notification = {
   },
 };
 
+const counter = {
+  update: async (params: {
+    item: IComment | IPost
+    type: 'comment' | 'post'
+    counterName: CounterName
+  }) => {
+    const group = QuorumLightNodeSDK.cache.Group.list()[0];
+    const { item, counterName, type } = params;
+    const trxId = item.trxId;
+    try {
+      const countedKey = [CounterName.commentLike, CounterName.postLike].includes(counterName) ? 'liked' : 'disliked';
+      const countKey = [CounterName.commentLike, CounterName.postLike].includes(counterName) ? 'likeCount' : 'dislikeCount';
+      const trxContent: ICounterTrxContent = {
+        type: TrxType.counter,
+        name: counterName,
+        objectId: trxId,
+        value: item.extra![countedKey] ? -1 : 1,
+      };
+      const res = await QuorumLightNodeSDK.chain.Trx.create({
+        groupId: group.groupId,
+        object: {
+          content: JSON.stringify(trxContent),
+          type: 'Note',
+        },
+        aesKey: group.cipherKey,
+        privateKey: keyService.state.keys.privateKey,
+      });
+      // eslint-disable-next-line no-console
+      console.log(res);
+      await CounterModel.create({
+        trxId: res.trx_id,
+      });
+      runInAction(() => {
+        state.counter.handledCounterTrxIds.add(res.trx_id);
+      });
+
+      const uniqueCounter = {
+        name: counterName,
+        objectId: item.trxId,
+        userAddress: keyService.state.keys.address,
+      };
+      await (item.extra![countedKey] ? UniqueCounterModel.bulkDelete([uniqueCounter]) : UniqueCounterModel.bulkAdd([uniqueCounter]));
+
+      runInAction(() => {
+        item.summary = {
+          ...item.summary,
+          [countKey]: item.summary[countKey] + (item.extra![countedKey] ? -1 : 1),
+        };
+      });
+
+      const clone = JSON.parse(JSON.stringify(item));
+      delete clone.extra;
+      if (type === 'post') {
+        await PostModel.bulkPut([clone as IPost]);
+      }
+      if (type === 'comment') {
+        await CommentModel.bulkPut([clone as IComment]);
+      }
+
+      runInAction(() => {
+        item.extra![countedKey] = !item.extra![countedKey];
+      });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+    }
+  },
+};
+
 const busListeners = {
   loadedData: action(() => {
     state.loadedData = true;
@@ -644,9 +647,9 @@ export const nodeService = {
   post,
   comment,
   notification,
+  counter,
   joinGroup,
   postImage,
 
-  updateCounter,
   submitProfile,
 };

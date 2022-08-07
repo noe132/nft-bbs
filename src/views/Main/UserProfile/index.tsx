@@ -54,7 +54,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
-      () => nodeService.updateCounter({
+      () => nodeService.counter.update({
         type: 'post',
         item: post,
         counterName: type,

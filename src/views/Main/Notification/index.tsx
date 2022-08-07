@@ -99,9 +99,9 @@ export const Notification = observer((props: { className?: string }) => {
                         <span className="text-rum-orange text-16 mr-3">
                           {fromProfileName}
                         </span>
-                        <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
+                        <Tooltip title={format(v.actionTimestamp, 'yyyy-MM-dd HH:mm:ss')}>
                           <span className="text-gray-af text-12 mr-3">
-                            {ago(v.timestamp)}
+                            {ago(v.actionTimestamp)}
                           </span>
                         </Tooltip>
                         <span className="text-14 text-white">

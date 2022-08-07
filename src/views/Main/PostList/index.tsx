@@ -38,7 +38,7 @@ export const PostList = observer((props: { className?: string }) => {
     if (state.likeLoadingMap.get(post.trxId)) { return; }
     runLoading(
       (l) => { state.likeLoadingMap.set(post.trxId, l); },
-      () => nodeService.updateCounter({
+      () => nodeService.counter.update({
         type: 'post',
         item: post,
         counterName: type,

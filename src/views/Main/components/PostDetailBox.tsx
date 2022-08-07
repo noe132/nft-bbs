@@ -32,7 +32,7 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
-      () => nodeService.updateCounter({
+      () => nodeService.counter.update({
         type: 'post',
         item: props.post,
         counterName: type,

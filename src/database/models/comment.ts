@@ -21,6 +21,8 @@ export const create = async (comment: IComment) => {
 };
 
 export const bulkAdd = async (comments: IComment[]) => {
+  // console.trace('add');
+  // console.log(comments);
   const db = getDatabase();
   await db.comments.bulkAdd(comments);
 };
