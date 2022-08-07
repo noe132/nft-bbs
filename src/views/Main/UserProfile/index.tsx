@@ -30,8 +30,8 @@ export const UserProfile = observer((props: { className?: string }) => {
       return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
     },
     get viewProfile() {
-      if (viewService.state.page[0] === 'userprofile') {
-        return viewService.state.page[1];
+      if (viewService.state.page.page[0] === 'userprofile') {
+        return viewService.state.page.page[1];
       }
       return null;
     },

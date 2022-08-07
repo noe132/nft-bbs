@@ -46,9 +46,8 @@ const state = observable({
     },
   },
   comment: {
-    trxIds: [] as Array<string>,
+    // trxIds: [] as Array<string>,
     map: new Map<string, IComment>(),
-    loading: false,
     taskId: 0,
   },
   profile: {
@@ -257,28 +256,16 @@ const post = {
 };
 
 const comment = {
-  getTaskId: action(() => {
-    state.comment.taskId += 1;
-    return state.comment.taskId;
-  }),
   load: async (postTrxId: string) => {
-    if (state.comment.loading) { return; }
-    runInAction(() => { state.comment.trxIds = []; });
-    const taskId = comment.getTaskId();
-    await runLoading(
-      (l) => { state.comment.loading = l; },
-      async () => {
-        const comments = await CommentModel.list({
-          objectId: postTrxId,
-          currentUserAddress: keyService.state.keys.address,
-        });
-        if (state.comment.taskId !== taskId) { return; }
-        runInAction(() => {
-          state.comment.trxIds = comments.map((v) => v.trxId);
-          comments.forEach((v) => state.comment.map.set(v.trxId, v));
-        });
-      },
-    );
+    const comments = await CommentModel.list({
+      objectId: postTrxId,
+      currentUserAddress: keyService.state.keys.address,
+    });
+    runInAction(() => {
+      comments.forEach((v) => state.comment.map.set(v.trxId, v));
+    });
+    const trxIds = comments.map((v) => v.trxId);
+    return trxIds;
   },
   submit: async (params: { objectId: string, threadId: string, replyId: string, content: string }) => {
     const trxContent: ICommentTrxContent = {
@@ -314,7 +301,6 @@ const comment = {
     }))[0];
 
     runInAction(() => {
-      state.comment.trxIds.push(dbComment.trxId);
       state.comment.map.set(dbComment.trxId, dbComment);
     });
 

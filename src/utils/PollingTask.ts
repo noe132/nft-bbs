@@ -7,8 +7,7 @@ export class PollingTask {
   public constructor(
     task: (...args: Array<any>) => unknown,
     private interval: number,
-    startNow = false,
-    runOnStart = false,
+    startNow = true,
   ) {
     this.task = async () => {
       if (this.stopFlag) { return; }
@@ -21,7 +20,7 @@ export class PollingTask {
       }, this.interval);
     };
     if (startNow) {
-      this.start(runOnStart);
+      this.task();
     }
   }
 

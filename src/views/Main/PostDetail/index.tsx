@@ -5,6 +5,7 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { Button, Fade, InputBase, Tooltip } from '@mui/material';
+import { Close } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
@@ -18,7 +19,6 @@ import { ago, runLoading } from '~/utils';
 
 import { PostDetailBox } from '../components/PostDetailBox';
 import { UserCard } from '../components/UserCard';
-import { Close } from '@mui/icons-material';
 
 interface UserCardItem {
   el: HTMLElement
@@ -34,6 +34,7 @@ interface UserCardItem {
 
 export const PostDetail = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
+    commentTrxIds: [] as Array<string>,
     replyTo: {
       open: false,
       comment: null as null | IComment,
@@ -46,16 +47,16 @@ export const PostDetail = observer((props: { className?: string }) => {
     commentPosting: false,
     highlightedComments: new Set<string>(),
     get post() {
-      return viewService.state.page[0] === 'postdetail'
-        ? viewService.state.page[1]
+      return viewService.state.page.page[0] === 'postdetail'
+        ? viewService.state.page.page[1]
         : null;
     },
     commentChildrenWeakMap: new WeakMap<IComment, Array<string>>(),
     get comments() {
-      return nodeService.state.comment.trxIds.map((v) => nodeService.state.comment.map.get(v)!);
+      return state.commentTrxIds.map((v) => nodeService.state.comment.map.get(v)!);
     },
     get commentTree() {
-      nodeService.state.comment.trxIds.forEach((trxId) => {
+      state.commentTrxIds.forEach((trxId) => {
         const comment = nodeService.state.comment.map.get(trxId)!;
         if (comment.threadId) {
           const parent = nodeService.state.comment.map.get(comment.threadId);
@@ -68,7 +69,7 @@ export const PostDetail = observer((props: { className?: string }) => {
           }
         }
       });
-      return nodeService.state.comment.trxIds
+      return state.commentTrxIds
         .map((v) => nodeService.state.comment.map.get(v)!)
         .filter((v) => !v.threadId);
 
@@ -168,6 +169,7 @@ export const PostDetail = observer((props: { className?: string }) => {
           },
       }),
     );
+    state.commentTrxIds.push(comment.trxId);
     runInAction(() => {
       if (type === 'direct') {
         state.commentInput = '';
@@ -184,12 +186,19 @@ export const PostDetail = observer((props: { className?: string }) => {
     });
   };
 
-  useEffect(action(() => {
+  const loadComments = async () => {
     if (state.post) {
-      nodeService.comment.load(state.post.trxId);
+      const commentTrxIds = await nodeService.comment.load(state.post.trxId);
+      runInAction(() => {
+        state.commentTrxIds = commentTrxIds;
+      });
     }
-    const highlightedId = viewService.state.page[0] === 'postdetail' && viewService.state.page.length === 3
-      ? viewService.state.page[2]
+  };
+
+  useEffect(action(() => {
+    loadComments();
+    const highlightedId = viewService.state.page.page[0] === 'postdetail' && viewService.state.page.page.length === 3
+      ? viewService.state.page.page[2]
       : '';
     if (highlightedId) {
       state.highlightedComments.add(highlightedId);
@@ -384,8 +393,8 @@ const CommentItem = observer((props: CommentItemProps) => {
       return props.highlightedComments.has(props.comment.trxId);
     },
     get needToHighlight() {
-      const highlightedId = viewService.state.page[0] === 'postdetail' && viewService.state.page.length === 3
-        ? viewService.state.page[2]
+      const highlightedId = viewService.state.page.page[0] === 'postdetail' && viewService.state.page.page.length === 3
+        ? viewService.state.page.page[2]
         : '';
       return highlightedId === props.comment.trxId;
     },

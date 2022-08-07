@@ -8,14 +8,28 @@ type Pages = ['postlist']
 | ['userprofile', IProfile];
 
 const state = observable({
-  stack: [['postlist']] as Array<Pages>,
+  stack: [{ page: ['postlist'], id: 1 }] as Array<{ page: Pages, id: number }>,
+  id: 1,
   get page() {
     return this.stack.at(-1)!;
   },
 });
 
+const genId = () => {
+  state.id += 1;
+  return state.id;
+};
+
 const pushPage = action((...args: Pages) => {
-  state.stack.push(args);
+  if (['notification', 'newpost'].includes(args[0])) {
+    const index = state.stack.findIndex((v) => v.page[0] === args[0]);
+    if (index !== -1) {
+      const page = state.stack.splice(index, 1);
+      state.stack.push(page[0]);
+      return;
+    }
+  }
+  state.stack.push({ page: args, id: genId() });
 });
 
 const back = action(() => {

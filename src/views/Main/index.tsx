@@ -38,7 +38,7 @@ export const Main = observer(() => (
           newpost: NewPost,
           userprofile: UserProfile,
           notification: Notification,
-        }[v[0]];
+        }[v.page[0]];
         return (
           <Scrollable
             className={classNames(
@@ -47,7 +47,7 @@ export const Main = observer(() => (
             )}
             light
             wide
-            key={i}
+            key={v.id}
             wrapperClassName="flex-col"
           >
             <PageComponent />

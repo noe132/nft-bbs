@@ -33,7 +33,7 @@ export const Header = observer((props: { className?: string }) => {
     filter: 'all' as HotestFilter,
 
     get viewPage() {
-      return viewService.state.page[0]!;
+      return viewService.state.page.page[0]!;
     },
     get profile() {
       return nodeService.state.myProfile;
@@ -102,8 +102,8 @@ export const Header = observer((props: { className?: string }) => {
     state.userDropdown = false;
     if (!state.profile) { return; }
     if (
-      viewService.state.page[0] === 'userprofile'
-      && viewService.state.page[1]?.userAddress === state.profile.userAddress
+      viewService.state.page.page[0] === 'userprofile'
+      && viewService.state.page.page[1]?.userAddress === state.profile.userAddress
     ) {
       return;
     }
