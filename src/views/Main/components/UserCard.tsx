@@ -31,13 +31,15 @@ export const UserCard = (props: Props) => (
       {/* TODO: */}
       加入于 2022年1月 · 共发表 42 帖
     </div>
-    <Button
-      className="rounded-full text-16 px-5 py-1 mt-6 self-center"
-      variant="outlined"
-      color="rum"
-    >
-      <WineIcon className="text-22 mr-3 mb-px" />
-      给TA买一杯
-    </Button>
+    {false && (
+      <Button
+        className="rounded-full text-16 px-5 py-1 mt-6 self-center"
+        variant="outlined"
+        color="rum"
+      >
+        <WineIcon className="text-22 mr-3 mb-px" />
+        给TA买一杯
+      </Button>
+    )}
   </div>
 );

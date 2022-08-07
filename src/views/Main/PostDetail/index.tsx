@@ -438,14 +438,16 @@ const CommentItem = observer((props: CommentItemProps) => {
             </div>
           </div>
           <div className="flex gap-x-2">
-            <Button
-              className="text-link-soft text-14 font-normal hidden group-hover:flex"
-              variant="text"
-              color="inherit"
-            >
-              <WineIcon className="mr-1 -mt-[2px] text-16" />
-              给TA买一杯
-            </Button>
+            {false && (
+              <Button
+                className="text-link-soft text-14 font-normal hidden group-hover:flex"
+                variant="text"
+                color="inherit"
+              >
+                <WineIcon className="mr-1 -mt-[2px] text-16" />
+                给TA买一杯
+              </Button>
+            )}
             <Button
               className="text-link-soft text-14 font-normal"
               variant="text"

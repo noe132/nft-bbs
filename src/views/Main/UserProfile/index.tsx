@@ -129,14 +129,16 @@ export const UserProfile = observer((props: { className?: string }) => {
             </div>
             {!state.selfProfile && (
               <div className="flex flex-center flex-none">
-                <Button
-                  className="rounded-full text-16 px-4 self-center"
-                  variant="outlined"
-                  color="rum"
-                >
-                  <WineIcon className="text-20 mr-2 mb-px" />
-                  给TA买一杯
-                </Button>
+                {false && (
+                  <Button
+                    className="rounded-full text-16 px-4 self-center"
+                    variant="outlined"
+                    color="rum"
+                  >
+                    <WineIcon className="text-20 mr-2 mb-px" />
+                    给TA买一杯
+                  </Button>
+                )}
               </div>
             )}
           </div>

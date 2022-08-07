@@ -214,7 +214,7 @@ export const Header = observer((props: { className?: string }) => {
             <div className="" />
           )}
 
-          {state.searchMode && (
+          {state.searchMode && state.viewPage === 'postlist' && (
             <div className="flex flex-1 items-center">
               <Input
                 className="flex-1 max-w-[550px] text-white text-14 pb-px"
