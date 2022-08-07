@@ -156,12 +156,17 @@ export const Header = observer((props: { className?: string }) => {
         props.className,
       )}
     >
-      <img
+      <button
         className="absolute left-4 flex-none w-7 h-auto s1240:hidden"
-        src={RumLogo}
-        srcSet={`${RumLogo2x} 2x, ${RumLogo3x} 3x,`}
-        alt=""
-      />
+        onClick={() => viewService.backToTop()}
+      >
+        <img
+          className=""
+          src={RumLogo}
+          srcSet={`${RumLogo2x} 2x, ${RumLogo3x} 3x,`}
+          alt=""
+        />
+      </button>
       <div className="flex w-[1100px] justify-between self-stretch gap-x-4">
         <div className="flex items-center flex-1">
           <img

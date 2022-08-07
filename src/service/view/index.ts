@@ -24,9 +24,14 @@ const back = action(() => {
   }
 });
 
+const backToTop = action(() => {
+  state.stack.length = 1;
+});
+
 export const viewService = {
   state,
 
   pushPage,
   back,
+  backToTop,
 };
