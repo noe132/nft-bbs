@@ -96,8 +96,8 @@ export const Join = observer(() => {
 
   const handleShowLoginDialog = action(() => {
     state.passwordPopup = true;
-    state.privateKey = store('privateKey');
-    state.password = store('password');
+    state.privateKey = store('privateKey') ?? '';
+    state.password = store('password') ?? '';
     state.rememberPassword = state.canLogin;
   });
 

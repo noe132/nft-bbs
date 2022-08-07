@@ -2,6 +2,7 @@ import { ImageZoomView } from './imageZoom/ImageZoomView';
 import { SnackbarContainer } from './snackbar/SnackbarContainer';
 import { langService } from './lang';
 import { nodeService } from './node';
+import { viewService } from './view';
 
 export * from './imageZoom';
 export * from './key';
@@ -12,6 +13,7 @@ export * from './view';
 
 export const initService = () => {
   (window as any).nodeService = nodeService;
+  (window as any).viewService = viewService;
 
   const disposes = [
     langService.init(),

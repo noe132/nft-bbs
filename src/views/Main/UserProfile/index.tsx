@@ -37,7 +37,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     },
     get profile() {
       if (this.viewProfile) {
-        return nodeService.state.profile.map.get(this.viewProfile.userAddress);
+        return nodeService.state.profile.map.get(this.viewProfile.userAddress) || this.viewProfile;
       }
       return null;
     },
