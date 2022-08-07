@@ -13,7 +13,7 @@ export const bulkPut = async (notifications: INotification[]) => {
 
 export const list = (p: {groupId: string}) => {
   const db = getDatabase();
-  return db.notifications.where({ groupId: p.groupId }).reverse().sortBy('timestamp');
+  return db.notifications.where({ groupId: p.groupId }).reverse().sortBy('actionTimestamp');
 };
 
 export const getUnreadCount = (p: {groupId: string}) => {

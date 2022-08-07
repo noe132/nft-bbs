@@ -29,6 +29,7 @@ export const Foldable = observer((props: Props) => {
     get duration() {
       return props.duration ?? 300;
     },
+    firstRender: true,
   }));
 
   const root = React.createRef<HTMLDivElement>();
@@ -127,13 +128,17 @@ export const Foldable = observer((props: Props) => {
     // }), state.duration);
   };
 
-  useEffect(() => {
+  useEffect(action(() => {
+    if (state.firstRender) {
+      state.firstRender = false;
+      return;
+    }
     if (props.fold) {
       doFold();
     } else {
       doExpand();
     }
-  }, [props.fold]);
+  }), [props.fold]);
 
   return (
     <div

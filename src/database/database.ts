@@ -67,6 +67,7 @@ export default class Database extends Dexie {
       notifications: [
         '++id',
         'timestamp',
+        'actionTimestamp',
         'groupId',
         'type',
         'status',
