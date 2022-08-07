@@ -44,6 +44,7 @@ export const PostDetail = observer((props: { className?: string }) => {
     commentSort: 'latest' as 'latest' | 'oldest',
     commentInput: '',
     commentPosting: false,
+    highlightedComments: new Set<string>(),
     get post() {
       return viewService.state.page[0] === 'postdetail'
         ? viewService.state.page[1]
@@ -183,11 +184,17 @@ export const PostDetail = observer((props: { className?: string }) => {
     });
   };
 
-  useEffect(() => {
+  useEffect(action(() => {
     if (state.post) {
       nodeService.comment.load(state.post.trxId);
     }
-  }, []);
+    const highlightedId = viewService.state.page[0] === 'postdetail' && viewService.state.page.length === 3
+      ? viewService.state.page[2]
+      : '';
+    if (highlightedId) {
+      state.highlightedComments.add(highlightedId);
+    }
+  }), []);
 
   return (
     <div
@@ -276,6 +283,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                   onOpenUserCard={handleOpenUserCard}
                   onReply={handleReply}
                   weakMap={state.commentChildrenWeakMap}
+                  highlightedComments={state.highlightedComments}
                 />
               ))}
             </div>
@@ -366,23 +374,43 @@ interface CommentItemProps {
   onOpenUserCard: (e: React.MouseEvent, v: IComment) => unknown
   onReply: (e: React.MouseEvent, v: IComment) => unknown
   weakMap: WeakMap<IComment, Array<string>>
+  highlightedComments: Set<string>
 }
 
 const CommentItem = observer((props: CommentItemProps) => {
   const state = useLocalObservable(() => ({
     expand: true,
-    highlight: false,
+    get highlight() {
+      return props.highlightedComments.has(props.comment.trxId);
+    },
     get needToHighlight() {
       const highlightedId = viewService.state.page[0] === 'postdetail' && viewService.state.page.length === 3
         ? viewService.state.page[2]
         : '';
       return highlightedId === props.comment.trxId;
     },
+    get replyTo() {
+      if (!props.comment.replyId) { return null; }
+      const commentRepliedTo = nodeService.state.comment.map.get(props.comment.replyId);
+      if (!commentRepliedTo) { return null; }
+      return commentRepliedTo.extra?.userProfile?.name || commentRepliedTo.extra?.userProfile?.userAddress.slice(0, 10);
+    },
   }));
+  const rootBox = useRef<HTMLDivElement>(null);
 
   const handleClearHighlight = action(() => {
     if (state.highlight) {
-      state.highlight = false;
+      props.highlightedComments.delete(props.comment.trxId);
+    }
+  });
+
+  const handleJumpToRepliedComment = action(() => {
+    const node = document.querySelector(`[data-comment-trx-id="${props.comment.replyId}"]`);
+    props.highlightedComments.add(props.comment.replyId);
+    if (node) {
+      scrollIntoView(node, {
+        behavior: 'smooth',
+      });
     }
   });
 
@@ -390,12 +418,10 @@ const CommentItem = observer((props: CommentItemProps) => {
     .map((v) => nodeService.state.comment.map.get(v)!);
 
   useEffect(action(() => {
-    if (state.needToHighlight) {
-      state.highlight = true;
+    if (state.highlight) {
       setTimeout(() => {
-        const node = document.querySelector(`[data-comment-trx-id="${props.comment.trxId}"]`);
-        if (node) {
-          scrollIntoView(node, {
+        if (rootBox.current) {
+          scrollIntoView(rootBox.current, {
             behavior: 'smooth',
           });
         }
@@ -406,7 +432,7 @@ const CommentItem = observer((props: CommentItemProps) => {
   return (
     <div
       className={classNames(
-        'comment-box px-4 duration-200',
+        'comment-box duration-200',
         state.highlight && 'bg-blue-400/20',
         props.className,
       )}
@@ -414,6 +440,7 @@ const CommentItem = observer((props: CommentItemProps) => {
       style={{
         transitionProperty: 'background-color',
       }}
+      ref={rootBox}
       data-comment-trx-id={props.comment.trxId}
     >
       <div className="py-4 group">
@@ -432,6 +459,14 @@ const CommentItem = observer((props: CommentItemProps) => {
                   {ago(props.comment.timestamp)}
                 </span>
               </Tooltip>
+              {!!state.replyTo && (
+                <span
+                  className="text-12 text-gray-af opacity-50 mr-4 cursor-pointer"
+                  onClick={handleJumpToRepliedComment}
+                >
+                  回复 {state.replyTo}
+                </span>
+              )}
               <span className="text-12 text-gray-af opacity-50">
                 {props.comment.storage === TrxStorage.cache ? '同步中' : '已同步'}
               </span>
@@ -473,8 +508,9 @@ const CommentItem = observer((props: CommentItemProps) => {
             comment={subComments[0]}
             topComment={props.topComment || props.comment}
             onOpenUserCard={props.onOpenUserCard}
-            onReply={(e) => props.onReply(e, props.topComment || props.comment)}
+            onReply={(e) => props.onReply(e, subComments[0])}
             weakMap={props.weakMap}
+            highlightedComments={props.highlightedComments}
           />
           <Foldable fold={!state.expand}>
             {subComments.slice(1).map((v) => (
@@ -484,8 +520,9 @@ const CommentItem = observer((props: CommentItemProps) => {
                 comment={v}
                 topComment={props.topComment || props.comment}
                 onOpenUserCard={props.onOpenUserCard}
-                onReply={(e) => props.onReply(e, props.topComment || props.comment)}
+                onReply={(e) => props.onReply(e, v)}
                 weakMap={props.weakMap}
+                highlightedComments={props.highlightedComments}
               />
             ))}
           </Foldable>
