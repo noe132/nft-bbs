@@ -4,7 +4,7 @@ import { runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import { Button, Tooltip } from '@mui/material';
-import { Share, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
+import { ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 
 import { ago, renderPostMarkdown, runLoading } from '~/utils';
 import { imageZoomService, viewService, nodeService, snackbarService } from '~/service';
@@ -29,6 +29,10 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
   };
 
   const handleUpdatePostCounter = (type: CounterName) => {
+    if (!nodeService.state.logined) {
+      snackbarService.show('请先登录');
+      return;
+    }
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
@@ -144,13 +148,13 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
           </Button>
         </div>
 
-        <Button
+        {/* <Button
           className="text-link-soft"
           variant="text"
           onClick={() => snackbarService.show('TODO')}
         >
           <Share className="mr-2 text-22" />分享
-        </Button>
+        </Button> */}
       </div>
     </div>
   );

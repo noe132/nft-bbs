@@ -7,7 +7,7 @@ import scrollIntoView from 'scroll-into-view-if-needed';
 import { Button, Fade, InputBase, Tooltip } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
-import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
+import CommentMinusIcon from 'boxicons/svg/regular/bx-comment-minus.svg?fill-icon';
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
@@ -236,6 +236,7 @@ export const PostDetail = observer((props: { className?: string }) => {
               color="rum"
               variant="contained"
               onClick={() => handlePostComment('direct')}
+              disabled={!nodeService.state.logined}
               loading={state.commentPosting}
             >
               发布评论
@@ -248,7 +249,7 @@ export const PostDetail = observer((props: { className?: string }) => {
           className="flex-col bg-black/70 mt-5 gap-x-6"
           ref={commentBox}
         >
-          <div className="flex justify-between items-center border-white/20 border-b px-16 py-4">
+          <div className="flex justify-between items-center border-white/20 border-b px-12 py-4">
             <div className="text-14">
               <button
                 className={classNames(
@@ -273,7 +274,7 @@ export const PostDetail = observer((props: { className?: string }) => {
               </button>
             </div>
             <div className="flex flex-center text-white text-14">
-              <CommentDetailIcon className="mr-2 -mb-[2px] text-16" />
+              <CommentMinusIcon className="mr-2 -mb-[3px] text-20" />
               {state.comments.length} 条评论
             </div>
           </div>
@@ -481,26 +482,30 @@ const CommentItem = observer((props: CommentItemProps) => {
               </span>
             </div>
           </div>
-          <div className="flex gap-x-2">
+          <div className="flex gap-x-2 h-[34px] items-center">
             {false && (
               <Button
                 className="text-link-soft text-14 font-normal hidden group-hover:flex"
                 variant="text"
                 color="inherit"
+                size="small"
               >
                 <WineIcon className="mr-1 -mt-[2px] text-16" />
                 给TA买一杯
               </Button>
             )}
-            <Button
-              className="text-link-soft text-14 font-normal"
-              variant="text"
-              color="inherit"
-              onClick={(e) => props.onReply(e, props.comment)}
-            >
-              <ReplyIcon className="mr-1 -mt-[2px] text-24" />
-              回复
-            </Button>
+            {nodeService.state.logined && (
+              <Button
+                className="text-link-soft text-14 font-normal"
+                variant="text"
+                color="inherit"
+                size="small"
+                onClick={(e) => props.onReply(e, props.comment)}
+              >
+                <ReplyIcon className="mr-1 -mt-[2px] text-24" />
+                回复
+              </Button>
+            )}
           </div>
         </div>
 

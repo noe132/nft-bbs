@@ -12,8 +12,8 @@ import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { ScrollToTopButton, BackButton, UserAvatar } from '~/components';
-import { keyService, nodeService, viewService } from '~/service';
-import { CounterName, IPost } from '~/database';
+import { keyService, nodeService, snackbarService, viewService } from '~/service';
+import { CommentModel, CounterName, IPost } from '~/database';
 import { ago, runLoading } from '~/utils';
 import { editProfile } from '~/modals';
 
@@ -25,6 +25,9 @@ export const UserProfile = observer((props: { className?: string }) => {
     likeLoading: false,
     posts: [] as Array<IPost>,
     loading: true,
+
+    fistPostTime: 0,
+    totalPosts: 0,
     get nfts() {
       const list = Array(4).fill(0).map((_, i) => i);
       return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
@@ -51,6 +54,10 @@ export const UserProfile = observer((props: { className?: string }) => {
   };
 
   const handleUpdatePostCounter = (post: IPost, type: CounterName) => {
+    if (!nodeService.state.logined) {
+      snackbarService.show('请先登录');
+      return;
+    }
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
@@ -62,21 +69,31 @@ export const UserProfile = observer((props: { className?: string }) => {
     );
   };
 
-  const loadPosts = () => {
+  const loadData = () => {
     runLoading(
       (l) => { state.loading = l; },
       async () => {
-        if (!state.profile) { return; }
-        const posts = await nodeService.post.getPosts(state.profile.userAddress);
+        const userAddress = state.profile?.userAddress;
+        if (!userAddress) { return; }
+        const [posts, comment] = await Promise.all([
+          nodeService.post.getPosts(userAddress),
+          CommentModel.getUserFirstComment(userAddress),
+        ]);
+        const minPostTimestamp = posts.length
+          ? posts.reduce((p, c) => Math.min(p, c.timestamp), Number.MAX_SAFE_INTEGER)
+          : 0;
+        const timestamp = Math.min(minPostTimestamp, comment?.timestamp ?? 0);
         runInAction(() => {
           state.posts = posts;
+          state.fistPostTime = timestamp;
+          state.totalPosts = posts.length;
         });
       },
     );
   };
 
   useEffect(() => {
-    loadPosts();
+    loadData();
   }, []);
 
   if (!state.profile) { return null; }
@@ -150,14 +167,14 @@ export const UserProfile = observer((props: { className?: string }) => {
             )}
           >
             <div className="ml-16 text-14">
-              {/* TODO: */}
-              加入于 2022年1月 · 共发表 42 帖
+              {!!state.fistPostTime && `加入于 ${format(state.fistPostTime, 'yyyy-MM')}`}
+              {!!state.fistPostTime && ' · '}
+              共发表 {state.totalPosts} 帖
             </div>
           </div>
         </div>
 
         <div className="w-[800px] bg-black/70 flex-col gap-y-12 py-10 px-16 mt-6">
-          {/* TODO: get user posts */}
           {state.posts.map((v) => (
             <div key={v.trxId}>
               <div
@@ -235,9 +252,13 @@ export const UserProfile = observer((props: { className?: string }) => {
               !state.selfProfile && 'text-gray-9c',
             )}
           >
-            我持有的 NFT
+            {state.selfProfile ? '我' : 'Ta'}
+            持有的 NFT
           </div>
-          <div className="flex-col gap-y-4 mt-4">
+          <div className="text-center mt-4 text-12">
+            功能开发中
+          </div>
+          {/* <div className="flex-col gap-y-4 mt-4">
             {state.nfts.map((row, i) => (
               <div
                 className="flex gap-x-4 flex-center"
@@ -245,16 +266,16 @@ export const UserProfile = observer((props: { className?: string }) => {
               >
                 {row.map((_, j) => (
                   <div
-                    className="flex w-22 h-22 p-1 border border-black/15"
+                    className="flex w-22 h-22 p-1 border border-white/70"
                     key={j}
                   >
-                    <div className="flex-1 self-stretch bg-red-100" />
+                    <div className="flex-1 self-stretch bg-white/80" />
                   </div>
                 ))}
               </div>
             ))}
-          </div>
-          {state.selfProfile && (
+          </div> */}
+          {false && state.selfProfile && (
             <div className="text-center mt-4">
               <ClickAwayListener onClickAway={action(() => { state.nftTradeTooltip = false; })}>
                 <Tooltip

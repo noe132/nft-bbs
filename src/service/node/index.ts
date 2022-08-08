@@ -2,9 +2,10 @@ import QuorumLightNodeSDK, { IContent, IGroup } from 'quorum-light-node-sdk';
 import { action, observable, runInAction } from 'mobx';
 import {
   init as initDatabase,
-  ProfileModel, CommentModel, PostModel, CounterModel, UniqueCounterModel, NotificationModel,
+  ProfileModel, CommentModel, PostModel, CounterModel, UniqueCounterModel, NotificationModel, ImageModel,
   ICounterTrxContent, ICommentTrxContent, IComment, IPost, IProfile, IProfileTrxContent, IPostTrxContent,
-  TrxType, TrxStorage, TrxStatus, CounterName, NotificationObjectType, INotification, NotificationStatus, NotificationType, IImageTrxContent, ImageModel, ICounter,
+  TrxType, TrxStorage, TrxStatus, CounterName, IImageTrxContent, ICounter,
+  NotificationStatus, NotificationType, NotificationObjectType, INotification,
 } from '~/database';
 import { bus, PollingTask, runLoading, sleep } from '~/utils';
 import { pollingContentsTask } from './polling';
@@ -167,7 +168,8 @@ const post = {
     if (state.post.taskId !== taskId) { return; }
     runInAction(() => {
       state.post.trxIds = data.map((v) => v.trxId);
-      state.post.done = data.length < state.post.limit;
+      // state.post.done = data.length < state.post.limit;
+      state.post.done = true;
       state.post.loading = false;
     });
   },

@@ -40,6 +40,13 @@ export const get = async (trxId: string) => {
   return packedPosts[0];
 };
 
+export const getByUser = async (userAddress: string) => {
+  const db = getDatabase();
+  const posts = await db.posts.where({ userAddress }).sortBy('timestamp');
+  const packedPosts = await packPosts(posts, { currentUserAddress: '' });
+  return packedPosts;
+};
+
 export const bulkGet = async (trxIds: string[], options?: {
   currentUserAddress?: string
 }) => {

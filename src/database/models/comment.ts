@@ -45,6 +45,14 @@ export const bulkGet = async (trxIds: string[], options?: {
   return comments;
 };
 
+export const getUserFirstComment = async (userAddress: string) => {
+  const db = getDatabase();
+  const comments = await db.comments.where({ userAddress }).sortBy('timestamp');
+  if (!comments.length) { return null; }
+  const packedPosts = await packComments([comments[0]], { currentUserAddress: '' });
+  return packedPosts[0];
+};
+
 export const list = async (
   options: {
     objectId: string

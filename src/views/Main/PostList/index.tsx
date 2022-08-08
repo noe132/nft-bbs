@@ -9,7 +9,7 @@ import { Button, CircularProgress, IconButton, Popover, Tooltip } from '@mui/mat
 
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 import LockIcon from 'boxicons/svg/regular/bx-lock-alt.svg?fill-icon';
-import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
+// import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 
@@ -35,6 +35,10 @@ export const PostList = observer((props: { className?: string }) => {
   };
 
   const handleUpdatePostCounter = (post: IPost, type: CounterName) => {
+    if (!nodeService.state.logined) {
+      snackbarService.show('请先登录');
+      return;
+    }
     if (state.likeLoadingMap.get(post.trxId)) { return; }
     runLoading(
       (l) => { state.likeLoadingMap.set(post.trxId, l); },
@@ -186,7 +190,7 @@ export const PostList = observer((props: { className?: string }) => {
             <Button
               className="rounded-full text-16 px-5 py-[7px]"
               variant="outlined"
-              color={[].length ? 'dark-blue' : 'rum'}
+              color={nodeService.state.logined ? 'rum' : 'dark-blue'}
               onClick={handleNewPost}
             >
               <EditIcon className="text-22 mr-3 mb-px" />
@@ -200,24 +204,27 @@ export const PostList = observer((props: { className?: string }) => {
           ref={nftSmallIconBox}
         >
           <div className="flex gap-x-5">
-            <Tooltip title={<ExpandIcon className="text-20 -mx-1" />}>
+            {/* <Tooltip title={<ExpandIcon className="text-20 -mx-1" />}>
               <button
                 className="flex items-stretch w-9 h-9 p-1 border border-white/80"
                 onClick={action(() => { state.ntfPopup = true; })}
               >
                 <div className="flex flex-center flex-1 bg-white" />
               </button>
-            </Tooltip>
-            <Tooltip title={<ExpandIcon className="text-20 -mx-1" />}>
-              <button
-                className="flex items-stretch w-9 h-9 p-1 border border-white/80"
-                onClick={action(() => { state.ntfPopup = true; })}
-              >
-                <div className="flex flex-center flex-1 bg-white/20">
-                  <LockIcon className="text-white text-18" />
-                </div>
-              </button>
-            </Tooltip>
+            </Tooltip> */}
+            {/* <Tooltip title={<ExpandIcon className="text-20 -mx-1" />}> */}
+            {Array(2).fill(0).map((_, i) => (
+              <Tooltip key={i} title="通过所持 NFT 进行权限验证功能开发中">
+                <button
+                  className="flex items-stretch w-9 h-9 p-1 border border-white/80"
+                  // onClick={action(() => { state.ntfPopup = true; })}
+                >
+                  <div className="flex flex-center flex-1 bg-white/20">
+                    <LockIcon className="text-white text-18" />
+                  </div>
+                </button>
+              </Tooltip>
+            ))}
           </div>
         </div>
 

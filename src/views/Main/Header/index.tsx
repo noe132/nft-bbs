@@ -177,21 +177,23 @@ export const Header = observer((props: { className?: string }) => {
           />
           {!state.searchMode && state.viewPage === 'postlist' && (
             <div className="flex gap-x-4">
-              <Tabs
-                value={state.tab}
-                TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
-              >
-                {/* {['最新', '最热'].map((v, i) => ( */}
-                {['最新'].map((v, i) => (
-                  <Tab
-                    className="text-gray-9c text-20 h-[60px] px-8"
-                    classes={{ selected: '!text-rum-orange' }}
-                    label={v}
-                    key={i}
-                    onClick={() => handleChangeTab(i)}
-                  />
-                ))}
-              </Tabs>
+              {false && (
+                <Tabs
+                  value={state.tab}
+                  TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
+                >
+                  {/* {['最新', '最热'].map((v, i) => ( */}
+                  {['最新'].map((v, i) => (
+                    <Tab
+                      className="text-gray-9c text-20 h-[60px] px-8"
+                      classes={{ selected: '!text-rum-orange' }}
+                      label={v}
+                      key={i}
+                      onClick={() => handleChangeTab(i)}
+                    />
+                  ))}
+                </Tabs>
+              )}
               {state.tab === 1 && (
                 <div className="flex flex-center gap-x-2">
                   {([['周', 'week'], ['月', 'month'], ['年', 'year'], ['一直', 'all']] as const).map(([t, v], i) => (
@@ -373,49 +375,52 @@ export const Header = observer((props: { className?: string }) => {
         </div>
       </Popover>
 
-      <Menu
-        className="mt-1"
-        open={state.menu}
-        anchorEl={menuButton.current}
-        onClose={action(() => { state.menu = false; })}
-        anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
-        transformOrigin={{ horizontal: 'center', vertical: 'top' }}
-        disableScrollLock
-      >
-        {/* <MenuItem onClick={action(() => { state.menu = false; state.langMenu = true; })}>
-          <div className="flex gap-x-3 mr-2">
-            <LanguageIcon className="text-black text-20" />
-            <div className="flex-col gap-y-[2px]">
-              <div className="text-14">
-                Language
-              </div>
-              <div className="text-12 text-gray-9c">
-                {langService.state.langName}
+      {process.env.NODE_ENV === 'development' && (
+        <Menu
+          className="mt-1"
+          open={state.menu}
+          anchorEl={menuButton.current}
+          onClose={action(() => { state.menu = false; })}
+          anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
+          transformOrigin={{ horizontal: 'center', vertical: 'top' }}
+          disableScrollLock
+        >
+          <MenuItem>开发专用菜单</MenuItem>
+          {/* <MenuItem onClick={action(() => { state.menu = false; state.langMenu = true; })}>
+            <div className="flex gap-x-3 mr-2">
+              <LanguageIcon className="text-black text-20" />
+              <div className="flex-col gap-y-[2px]">
+                <div className="text-14">
+                  Language
+                </div>
+                <div className="text-12 text-gray-9c">
+                  {langService.state.langName}
+                </div>
               </div>
             </div>
-          </div>
-        </MenuItem> */}
-        <MenuItem onClick={() => handleChangeAccount('1')}>
-          <div className="flex gap-x-3 mr-2">
-            使用账号1
-          </div>
-        </MenuItem>
-        <MenuItem onClick={() => handleChangeAccount('2')}>
-          <div className="flex gap-x-3 mr-2">
-            使用账号2
-          </div>
-        </MenuItem>
-        <MenuItem onClick={() => handleChangeAccount('new')}>
-          <div className="flex gap-x-3 mr-2">
-            使用新号
-          </div>
-        </MenuItem>
-        <MenuItem onClick={() => handleClearData()}>
-          <div className="flex gap-x-3 mr-2">
-            清除数据
-          </div>
-        </MenuItem>
-      </Menu>
+          </MenuItem> */}
+          <MenuItem onClick={() => handleChangeAccount('1')}>
+            <div className="flex gap-x-3 mr-2">
+              使用账号1
+            </div>
+          </MenuItem>
+          <MenuItem onClick={() => handleChangeAccount('2')}>
+            <div className="flex gap-x-3 mr-2">
+              使用账号2
+            </div>
+          </MenuItem>
+          <MenuItem onClick={() => handleChangeAccount('new')}>
+            <div className="flex gap-x-3 mr-2">
+              使用新号
+            </div>
+          </MenuItem>
+          <MenuItem onClick={() => handleClearData()}>
+            <div className="flex gap-x-3 mr-2">
+              清除数据
+            </div>
+          </MenuItem>
+        </Menu>
+      )}
 
       <Menu
         className="mt-1"

@@ -24,7 +24,6 @@ export const Notification = observer((props: { className?: string }) => {
   }));
 
   const handleViewItem = async (v: INotification) => {
-    // TODO: goto post and locate comment
     const post = await nodeService.post.getPost(v.objectId);
     if (!post) { return; }
     viewService.pushPage('postdetail', post, v.actionTrxId);
@@ -185,7 +184,7 @@ export const Notification = observer((props: { className?: string }) => {
             <Button
               className="rounded-full text-16 px-5 py-[7px]"
               variant="outlined"
-              color="rum"
+              color={nodeService.state.logined ? 'rum' : 'dark-blue'}
               onClick={handleNewPost}
             >
               <EditIcon className="text-22 mr-3 mb-px" />

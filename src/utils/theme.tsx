@@ -85,7 +85,7 @@ export const themeDarkOption = createTheme({
     },
     action: {
       disabled: 'rgba(255, 255, 255, 0.6)',
-      disabledBackground: 'rgba(255, 255, 255, 0.24)',
+      disabledBackground: 'rgba(255, 255, 255, 0.3)',
     },
   },
 });
