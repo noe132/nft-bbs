@@ -1,14 +1,15 @@
+import { useEffect } from 'react';
 import classNames from 'classnames';
+import { runInAction } from 'mobx';
+import { observer, useLocalObservable } from 'mobx-react-lite';
+import { format } from 'date-fns';
 import { Button } from '@mui/material';
 import { ChevronRight } from '@mui/icons-material';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
-import { viewService } from '~/service';
+
+import { nodeService, viewService } from '~/service';
 import { CommentModel, IProfile, PostModel } from '~/database';
 import { UserAvatar } from '~/components';
-import { observer, useLocalObservable } from 'mobx-react-lite';
-import { useEffect } from 'react';
-import { runInAction } from 'mobx';
-import { format } from 'date-fns';
 
 interface Props {
   className?: string
@@ -19,6 +20,12 @@ export const UserCard = observer((props: Props) => {
   const state = useLocalObservable(() => ({
     fistPostTime: 0,
     totalPosts: 0,
+
+    get profile() {
+      const userAddress = props.profile?.userAddress;
+      const profile = userAddress ? nodeService.state.profile.map.get(userAddress) : null;
+      return profile ?? props.profile;
+    },
   }));
 
   const loadUserData = async () => {
@@ -47,16 +54,16 @@ export const UserCard = observer((props: Props) => {
     <div className={classNames('flex-col relative bg-black/70 py-5 px-5', props.className)}>
       <div
         className="flex items-center self-stretch cursor-pointer"
-        onClick={() => props.profile && viewService.pushPage('userprofile', props.profile)}
+        onClick={() => state.profile && viewService.pushPage('userprofile', state.profile)}
       >
-        <UserAvatar className="mr-3" profile={props.profile} size={48} />
+        <UserAvatar className="mr-3" profile={state.profile} size={48} />
         <div className="text-rum-orange text-16 flex-1">
-          {props.profile?.name || props.profile?.userAddress.slice(0, 10)}
+          {state.profile?.name || state.profile?.userAddress.slice(0, 10)}
         </div>
         <ChevronRight className="text-link-soft text-26 -mr-2" />
       </div>
       <div className="text-gray-9c text-14 mt-3">
-        {props.profile?.intro}
+        {state.profile?.intro}
       </div>
       <div className="border-t border-white/45 mt-4 w-full" />
       <div className="mt-4 text-white text-14">

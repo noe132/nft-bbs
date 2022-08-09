@@ -20,6 +20,11 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
         props.post.content.matchAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g),
       ).map((_sub, _g1, g2) => [g2 as any as string, '']),
     ),
+    get profile() {
+      const userAddress = props.post.extra?.userProfile?.userAddress;
+      const profile = userAddress ? nodeService.state.profile.map.get(userAddress) : null;
+      return profile ?? props.post.extra?.userProfile;
+    },
   }));
 
   const handlePostClick = (e: React.MouseEvent) => {
@@ -87,12 +92,12 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
         {props.post.title || '无标题'}
       </div>
       <div className="flex items-center gap-x-4 mt-6 mx-16">
-        <UserAvatar profile={props.post.extra?.userProfile} />
+        <UserAvatar profile={state.profile} />
         <div
           className="text-14 text-rum-orange cursor-pointer"
-          onClick={() => props.post.extra?.userProfile && viewService.pushPage('userprofile', props.post.extra.userProfile)}
+          onClick={() => state.profile && viewService.pushPage('userprofile', state.profile)}
         >
-          {props.post.extra?.userProfile?.name || props.post.extra?.userProfile?.userAddress.slice(0, 10)}
+          {state.profile?.name || state.profile?.userAddress.slice(0, 10)}
         </div>
         <Tooltip title={format(props.post.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
           <div className="text-12 text-gray-a7">

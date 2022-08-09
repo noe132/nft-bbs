@@ -4,8 +4,7 @@ import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import scrollIntoView from 'scroll-into-view-if-needed';
-import { Button, Fade, InputBase, Tooltip } from '@mui/material';
-import { Close } from '@mui/icons-material';
+import { Button, ClickAwayListener, Fade, InputBase, Tooltip } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import CommentMinusIcon from 'boxicons/svg/regular/bx-comment-minus.svg?fill-icon';
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
@@ -27,10 +26,6 @@ interface UserCardItem {
   in: boolean
   profile?: IProfile
 }
-
-// interface CommentTreeItem extends IComment {
-//   children?: Array<CommentTreeItem>
-// }
 
 export const PostDetail = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -299,23 +294,19 @@ export const PostDetail = observer((props: { className?: string }) => {
             </div>
 
             {state.userCards.map((v) => (
-              <Fade
-                in={v.in}
+              <ClickAwayListener
+                onClickAway={() => handleRemoveUserCard(v)}
                 key={v.id}
               >
-                <div
-                  className="absolute right-0 -mr-5 translate-x-full w-[280px]"
-                  style={{
-                    top: `${v.top}px`,
-                  }}
-                >
-                  <Close
-                    className="absolute right-0 top-0 text-white z-10 cursor-pointer"
-                    onClick={() => handleRemoveUserCard(v)}
-                  />
-                  <UserCard profile={v.profile} />
-                </div>
-              </Fade>
+                <Fade in={v.in}>
+                  <div
+                    className="absolute right-0 -mr-5 translate-x-full w-[280px]"
+                    style={{ top: `${v.top}px` }}
+                  >
+                    <UserCard profile={v.profile} />
+                  </div>
+                </Fade>
+              </ClickAwayListener>
             ))}
           </div>
 
@@ -405,6 +396,11 @@ const CommentItem = observer((props: CommentItemProps) => {
       if (!commentRepliedTo) { return null; }
       return commentRepliedTo.extra?.userProfile?.name || commentRepliedTo.extra?.userProfile?.userAddress.slice(0, 10);
     },
+    get profile() {
+      const userAddress = props.comment.extra?.userProfile?.userAddress;
+      const profile = userAddress ? nodeService.state.profile.map.get(userAddress) : null;
+      return profile ?? props.comment.extra?.userProfile;
+    },
   }));
   const rootBox = useRef<HTMLDivElement>(null);
 
@@ -456,13 +452,13 @@ const CommentItem = observer((props: CommentItemProps) => {
       <div className="py-4 group">
         <div className="flex justify-between">
           <div className="flex items-center gap-x-4">
-            <UserAvatar profile={props.comment.extra?.userProfile} size={28} />
+            <UserAvatar profile={state.profile} size={28} />
             <div className="">
               <button
                 className="text-16 text-rum-orange mr-4"
                 onClick={(e) => props.onOpenUserCard(e, props.comment)}
               >
-                {props.comment.extra?.userProfile?.name || props.comment.extra?.userProfile?.userAddress.slice(0, 10)}
+                {state.profile?.name || state.profile?.userAddress.slice(0, 10)}
               </button>
               <Tooltip title={format(props.comment.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
                 <span className="text-12 text-gray-af mr-4">
