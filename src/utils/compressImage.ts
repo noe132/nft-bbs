@@ -10,8 +10,11 @@ const drawImage = (img: HTMLImageElement, width: number, height: number, quality
 };
 const MAX_SIZE = 200 * 1024;
 
-export const compressImage = async (file: Blob) => {
-  if (file.size < MAX_SIZE) {
+/**
+ * @param maxSize - in byte (default 200kb)
+ */
+export const compressImage = async (file: Blob, maxSize = MAX_SIZE) => {
+  if (file.size < maxSize) {
     return {
       img: file,
       mineType: file.type,
@@ -40,7 +43,7 @@ export const compressImage = async (file: Blob) => {
   let newImage;
   for (const quality of qualities) {
     newImage = await drawImage(img, width, height, quality);
-    if (newImage && newImage.size < MAX_SIZE) {
+    if (newImage && newImage.size < maxSize) {
       break;
     }
   }
@@ -53,4 +56,14 @@ export const compressImage = async (file: Blob) => {
       mineType: 'image/jpeg',
     }
     : null;
+};
+
+export const blobToDataUrl = (blob: Blob) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(blob);
+  return new Promise<string>((rs) => {
+    reader.addEventListener('loadend', () => {
+      rs(reader.result as string);
+    });
+  });
 };

@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
-import { Button, CircularProgress, Tooltip } from '@mui/material';
+import { Button, CircularProgress, IconButton, Tooltip } from '@mui/material';
 import { AlternateEmail, ThumbDownAlt, ThumbUpAlt } from '@mui/icons-material';
 
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
@@ -15,6 +15,8 @@ import { UserAvatar, BackButton, ScrollToTopButton } from '~/components';
 import { nodeService, snackbarService, viewService } from '~/service';
 import { INotification, NotificationObjectType, NotificationType } from '~/database';
 import { ago } from '~/utils';
+import { GroupAvatar } from '~/components/GroupAvatar';
+import { editGroupInfo } from '~/modals';
 
 export const Notification = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -174,8 +176,16 @@ export const Notification = observer((props: { className?: string }) => {
 
       <div className="w-[280px]">
         <div className="flex-col gap-y-9 flex-center relative bg-black/70 h-[240px] pt-16 mt-16">
-          <div className="w-25 h-25 rounded-full overflow-hidden bg-white absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
-            <div className="bg-blue-400/70 rounded-full h-full w-full" />
+          <div className="overflow-hidden absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
+            <IconButton
+              className="p-0 group text-white"
+              onClick={editGroupInfo}
+            >
+              <GroupAvatar className="flex cursor-pointer border border-white/80 overflow-hidden" size={100} />
+              <div className="absolute inset-0 flex-center bg-white/10 hidden rounded-full group-hover:flex">
+                <EditIcon className="text-30 text-white/70" />
+              </div>
+            </IconButton>
           </div>
           <div className="text-white text-center text-18">
             {nodeService.state.groupName}

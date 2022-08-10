@@ -1,8 +1,9 @@
 export * as CommentModel from '~/database/models/comment';
 export * as CounterModel from '~/database/models/counter';
+export * as GroupInfoModel from '~/database/models/groupInfo';
+export * as GroupStatusModel from '~/database/models/groupStatus';
+export * as ImageModel from '~/database/models/image';
 export * as NotificationModel from '~/database/models/notification';
 export * as PostModel from '~/database/models/post';
 export * as ProfileModel from '~/database/models/profile';
 export * as UniqueCounterModel from '~/database/models/uniqueCounter';
-export * as GroupStatusModel from '~/database/models/groupStatus';
-export * as ImageModel from '~/database/models/image';

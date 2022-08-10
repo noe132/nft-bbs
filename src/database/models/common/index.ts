@@ -16,4 +16,5 @@ export enum TrxType {
   counter = 'counter',
   discounter = 'discounter',
   image = 'image',
+  groupInfo = 'group_info',
 }

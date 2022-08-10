@@ -9,6 +9,7 @@ import {
   IImage,
   INotification,
   IGroupStatus,
+  IGroupInfo,
 } from './models/types';
 
 export default class Database extends Dexie {
@@ -20,13 +21,14 @@ export default class Database extends Dexie {
   images: Dexie.Table<IImage, number>;
   notifications: Dexie.Table<INotification, number>;
   groupStatus: Dexie.Table<IGroupStatus, number>;
+  groupInfo: Dexie.Table<IGroupInfo, number>;
 
   public constructor() {
     super(DATABASE_NAME);
 
-    runPreviousMigrations();
+    runPreviousMigrations(this);
 
-    this.version(3).stores({
+    this.version(4).stores({
       posts: [
         'trxId',
         'userAddress',
@@ -79,17 +81,12 @@ export default class Database extends Dexie {
         'groupId',
         'startTrx',
       ].join(','),
-    }).upgrade(async () => {
-      await Promise.all([
-        'posts',
-        'comments',
-        'profiles',
-        'counters',
-        'uniqueCounters',
-        'images',
-        'notifications',
-        'groupStatus',
-      ].map((v) => this.table(v).clear()));
+      groupInfo: [
+        '++id',
+        'groupId',
+        'trxId',
+        'timestamp',
+      ].join(','),
     });
 
     this.posts = this.table('posts');
@@ -100,6 +97,7 @@ export default class Database extends Dexie {
     this.images = this.table('images');
     this.notifications = this.table('notifications');
     this.groupStatus = this.table('groupStatus');
+    this.groupInfo = this.table('groupInfo');
   }
 
   public async clearAllTable() {
@@ -112,9 +110,10 @@ export default class Database extends Dexie {
       this.images,
       this.notifications,
       this.groupStatus,
+      this.groupInfo,
     ];
     await this.transaction('rw', tables, async () => {
-      await Promise.all(tables.map((v) => v.clear()));
+      await Promise.allSettled(tables.map((v) => v.clear()));
     });
   }
 }

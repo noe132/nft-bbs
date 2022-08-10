@@ -5,7 +5,7 @@ import {
   ProfileModel, CommentModel, PostModel, CounterModel, UniqueCounterModel, NotificationModel, ImageModel,
   ICounterTrxContent, ICommentTrxContent, IComment, IPost, IProfile, IProfileTrxContent, IPostTrxContent,
   TrxType, TrxStorage, TrxStatus, CounterName, IImageTrxContent, ICounter,
-  NotificationStatus, NotificationType, NotificationObjectType, INotification,
+  NotificationStatus, NotificationType, NotificationObjectType, INotification, IGroupInfoTrxContent, GroupInfoModel, ContentTrxType,
 } from '~/database';
 import { bus, PollingTask, runLoading, sleep } from '~/utils';
 import { pollingContentsTask } from './polling';
@@ -62,6 +62,10 @@ const state = observable({
   counter: {
     handledCounterTrxIds: new Set<string>(),
     map: new Map<string, ICounter>(),
+  },
+  groupInfo: {
+    avatar: '',
+    desc: '',
   },
   get myProfile() {
     return this.profile.map.get(keyService.state.keys.address);
@@ -455,12 +459,53 @@ const counter = {
   },
 };
 
+const group = {
+  editInfo: async (info: any) => {
+    const trxContent: IGroupInfoTrxContent = {
+      type: TrxType.groupInfo,
+      ...info,
+    };
+    const group = QuorumLightNodeSDK.cache.Group.list()[0];
+    const res = await QuorumLightNodeSDK.chain.Trx.create({
+      groupId: group.groupId,
+      object: {
+        content: JSON.stringify(trxContent),
+        type: 'Note',
+      },
+      aesKey: group.cipherKey,
+      privateKey: keyService.state.keys.privateKey,
+    });
+    const item = {
+      ...trxContent,
+      groupId: group.groupId,
+      trxId: res.trx_id,
+      storage: TrxStorage.cache,
+      timestamp: Date.now(),
+    };
+    await GroupInfoModel.create(item);
+    const dbItem = await GroupInfoModel.getLatest();
+    if (dbItem) {
+      runInAction(() => {
+        state.groupInfo.avatar = dbItem.avatar;
+        state.groupInfo.desc = dbItem.desc;
+      });
+    }
+  },
+  update: async () => {
+    const item = await GroupInfoModel.getLatest();
+    if (item) {
+      state.groupInfo.avatar = item.avatar;
+      state.groupInfo.desc = item.desc;
+    }
+  },
+};
+
 const busListeners = {
   loadedData: action(() => {
     state.loadedData = true;
   }),
   content: action((content: IContent) => {
-    let jsonResult: ICommentTrxContent | IPostTrxContent | IProfileTrxContent | ICounterTrxContent | undefined;
+    let jsonResult: ContentTrxType | undefined;
     try {
       jsonResult = JSON.parse(content.Data.content);
     } catch (e) {}
@@ -521,6 +566,11 @@ const busListeners = {
         }
       }
     }
+
+    if (jsonResult.type === TrxType.groupInfo) {
+      state.groupInfo.avatar = jsonResult.avatar;
+      state.groupInfo.desc = jsonResult.desc;
+    }
   }),
   notification: action((notification: INotification) => {
     // ignore dislike
@@ -556,17 +606,6 @@ const joinGroup = async (
 
   state.pollingTask = new PollingTask(pollingContentsTask, 3000, true);
 };
-
-export interface ISubmitAttributedToPayload {
-  name?: string
-  content: string
-  image?: Array<{
-    mediaType: string
-    name: string
-    content: string
-  }>
-  attributedTo: Array<Record<string, string>>
-}
 
 const postImage = async (imgBlob: Blob, mineType: string) => {
   const group = state.group!;
@@ -636,6 +675,7 @@ export const nodeService = {
   comment,
   notification,
   counter,
+  group,
   joinGroup,
   postImage,
 

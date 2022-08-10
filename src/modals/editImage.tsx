@@ -14,10 +14,11 @@ const AVATAR_SIZE = 120;
 
 interface EditProfileParams {
   avatar: File
+  maxSize?: number
 }
 
-export const editAvatar = action((props: EditProfileParams) => {
-  const p = createPromise<string | null>();
+export const editImage = action((props: EditProfileParams) => {
+  const p = createPromise<Blob | null>();
   modalViewState.push({
     component: editAvatarDialog,
     resolve: p.rs,
@@ -27,7 +28,7 @@ export const editAvatar = action((props: EditProfileParams) => {
 });
 
 interface ModalProps extends EditProfileParams {
-  rs: (v: string | null) => unknown
+  rs: (v: Blob | null) => unknown
 }
 
 const editAvatarDialog = observer((props: ModalProps) => {
@@ -35,7 +36,7 @@ const editAvatarDialog = observer((props: ModalProps) => {
     open: true,
   }));
 
-  const handleConfirm = action((imgBase64: string) => {
+  const handleConfirm = action((imgBase64: Blob) => {
     props.rs(imgBase64);
     state.open = false;
   });
@@ -73,7 +74,7 @@ interface Props {
   className?: string
   avatar: File
   onCancel?: () => unknown
-  onConfirm: (imgBase64: string) => unknown
+  onConfirm: (img: Blob) => unknown
 }
 export const EditAvatarView = observer((props: Props) => {
   const state = useLocalObservable(() => ({
@@ -89,12 +90,12 @@ export const EditAvatarView = observer((props: Props) => {
       (l) => { state.loading = l; },
       async () => {
         const crop = avatarEditorRef.current!.getCroppingRect();
-        const imageBase64 = await getCroppedImg(
+        const img = await getCroppedImg(
           props.avatar,
           crop,
           AVATAR_SIZE,
         );
-        props.onConfirm(imageBase64);
+        props.onConfirm(img);
       },
     );
   };
@@ -205,5 +206,17 @@ const getCroppedImg = async (
     state.dHeight,
   );
 
-  return canvas.toDataURL('image/jpeg', 1);
+  return new Promise<Blob>((rs, rj) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          rs(blob);
+        } else {
+          rj();
+        }
+      },
+      'image/jpeg',
+      1,
+    );
+  });
 };

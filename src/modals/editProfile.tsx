@@ -6,12 +6,12 @@ import { Close } from '@mui/icons-material';
 import { Dialog, FormControl, IconButton, InputLabel, OutlinedInput } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
-import { createPromise, runLoading, ThemeLight } from '~/utils';
+import { blobToDataUrl, createPromise, runLoading, ThemeLight } from '~/utils';
 import { nodeService, snackbarService } from '~/service';
 import { UserAvatar } from '~/components';
 
 import { modalViewState } from './helper/modalViewState';
-import { editAvatar } from './editAvatar';
+import { editImage } from './editImage';
 
 interface EditProfileParams {
   avatar?: string
@@ -96,12 +96,12 @@ export const EditProfileView = observer((props: Props) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) { return; }
-    const avatar = await editAvatar({ avatar: file });
-    if (avatar) {
-      runInAction(() => {
-        state.avatar = avatar;
-      });
-    }
+    const avatar = await editImage({ avatar: file });
+    if (!avatar) { return; }
+    const avatarDataUrl = await blobToDataUrl(avatar);
+    runInAction(() => {
+      state.avatar = avatarDataUrl;
+    });
   };
 
   const handleSubmitProfile = async () => {
@@ -139,16 +139,6 @@ export const EditProfileView = observer((props: Props) => {
           <CamaraIcon className="text-12" />
         </div>
       </div>
-      {/* <ImageEditor
-        className="opacity-0 !absolute !m-0 -inset-px"
-        width={200}
-        placeholderWidth={90}
-        editorPlaceholderWidth={200}
-        imageUrl={state.avatar}
-        getImageUrl={(url: string) => {
-          state.avatar = url;
-        }}
-      /> */}
       <FormControl size="small">
         <InputLabel>昵称</InputLabel>
         <OutlinedInput

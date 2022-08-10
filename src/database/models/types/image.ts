@@ -1,7 +1,7 @@
 import { TrxStorage, TrxType } from '../common';
 
 export interface IImageTrxContent {
-  type: TrxType
+  type: TrxType.image
   mineType: string
   content: string
 }

@@ -13,10 +13,11 @@ import LockIcon from 'boxicons/svg/regular/bx-lock-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 
-import { ScrollToTopButton } from '~/components';
+import { ScrollToTopButton, GroupAvatar } from '~/components';
 import { viewService, nodeService, snackbarService } from '~/service';
 import { ago, runLoading, ThemeLight } from '~/utils';
 import { CounterName, IPost, TrxStorage } from '~/database';
+import { editGroupInfo } from '~/modals';
 
 export const PostList = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -180,8 +181,16 @@ export const PostList = observer((props: { className?: string }) => {
 
       <div className="w-[280px]">
         <div className="flex-col gap-y-9 flex-center relative bg-black/70 h-[240px] pt-16 mt-16">
-          <div className="w-25 h-25 rounded-full overflow-hidden bg-white absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
-            <div className="bg-blue-400/70 rounded-full h-full w-full" />
+          <div className="overflow-hidden absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
+            <IconButton
+              className="p-0 group text-white"
+              onClick={editGroupInfo}
+            >
+              <GroupAvatar className="flex cursor-pointer border border-white/80 overflow-hidden" size={100} />
+              <div className="absolute inset-0 flex-center bg-white/10 hidden rounded-full group-hover:flex">
+                <EditIcon className="text-30 text-white/70" />
+              </div>
+            </IconButton>
           </div>
           <div className="text-white text-center text-18">
             {nodeService.state.groupName}

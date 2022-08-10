@@ -9,7 +9,7 @@ export enum CounterName {
 }
 
 export interface ICounterTrxContent {
-  type: TrxType
+  type: TrxType.counter
   name: CounterName
   value: number
   objectId: string

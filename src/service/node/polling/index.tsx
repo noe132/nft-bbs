@@ -9,6 +9,7 @@ import { handleCounters } from './handleCounters';
 import { handlePosts } from './handlePosts';
 import { handleProfiles } from './handleProfiles';
 import { handleImages } from './handleImages';
+import { handleGroupInfo } from './handleGroupInfo';
 
 const LIMIT = 500;
 
@@ -56,6 +57,7 @@ const handleContents = async (groupId: string, contents: IContent[]) => {
     await handleCounters(contentsGroupedByType[TrxType.counter]);
     await handleProfiles(contentsGroupedByType[TrxType.profile]);
     await handleImages(contentsGroupedByType[TrxType.image]);
+    await handleGroupInfo(contentsGroupedByType[TrxType.groupInfo]);
 
     for (const content of contents) {
       bus.emit('content', content);
