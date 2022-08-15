@@ -318,13 +318,15 @@ export const Header = observer((props: { className?: string }) => {
               {nodeService.state.logined ? nodeService.state.profileName : '游客'}
             </span>
           </div>
-          <IconButton
-            className="text-white"
-            onClick={action(() => { state.menu = true; })}
-            ref={menuButton}
-          >
-            <MoreVert />
-          </IconButton>
+          {process.env.NODE_ENV === 'development' && (
+            <IconButton
+              className="text-white"
+              onClick={action(() => { state.menu = true; })}
+              ref={menuButton}
+            >
+              <MoreVert />
+            </IconButton>
+          )}
         </div>
       </div>
     </div>
