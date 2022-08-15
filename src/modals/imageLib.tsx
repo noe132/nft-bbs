@@ -81,7 +81,8 @@ const A = observer((props: { rs: (file: Blob) => unknown }) => {
 
   const handleInputKeyDown = action((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') { return; }
-    const value = e.target.value;
+    const target = e.target as HTMLInputElement;
+    const value = target.value;
     state.images = [];
     state.page = 1;
     state.isFetched = false;

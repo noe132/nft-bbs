@@ -164,8 +164,8 @@ export const PostDetail = observer((props: { className?: string }) => {
           },
       }),
     );
-    state.commentTrxIds.push(comment.trxId);
     runInAction(() => {
+      state.commentTrxIds.push(comment.trxId);
       if (type === 'direct') {
         state.commentInput = '';
       } else {
