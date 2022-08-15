@@ -135,8 +135,8 @@ export const EditProfileView = observer((props: Props) => {
         onClick={() => fileInput.current?.click()}
       >
         <UserAvatar className="shadow-2" avatar={state.avatar} size={80} />
-        <div className="absolute right-0 bottom-0 border-black border rounded-full bg-white p-px hidden group-hover:block">
-          <CamaraIcon className="text-12" />
+        <div className="absolute right-0 bottom-0 border-black border rounded-full bg-white p-[2px] hidden group-hover:block">
+          <CamaraIcon className="text-16" />
         </div>
       </div>
       <FormControl size="small">

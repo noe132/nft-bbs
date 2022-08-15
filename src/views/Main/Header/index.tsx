@@ -8,6 +8,7 @@ import { Check, Close, MoreVert, NotificationsNone, Search } from '@mui/icons-ma
 import { Badge, Button, IconButton, Input, Menu, MenuItem, Popover, Tab, Tabs } from '@mui/material';
 
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
+import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import RumLogo from '~/assets/icons/logo.png';
 import RumLogo2x from '~/assets/icons/logo@2x.png';
 import RumLogo3x from '~/assets/icons/logo@3x.png';
@@ -366,9 +367,15 @@ export const Header = observer((props: { className?: string }) => {
               </div>
             </UserAvatar>
           </button>
-          <div className="mt-4">
-            {nodeService.state.profileName}
-          </div>
+          <button
+            className="mt-4 cursor-pointer flex flex-center"
+            onClick={handleEditProfile}
+          >
+            <span className="align-center truncate max-w-[200px]">
+              {nodeService.state.profileName}
+            </span>
+            <EditAltIcon className="inline-block text-17" />
+          </button>
           <Button
             className="rounded-full font-normal pb-0 pt-px px-8 mt-4 text-12"
             variant="outlined"
