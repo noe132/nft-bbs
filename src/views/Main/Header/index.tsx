@@ -14,12 +14,12 @@ import RumLogo3x from '~/assets/icons/logo@3x.png';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 import { ThemeLight } from '~/utils';
 import {
-  nodeService, langService, viewService,
+  nodeService, langService, viewService, keyService,
   AllLanguages, langName, HotestFilter,
 } from '~/service';
 import { editProfile } from '~/modals';
 import { ACCOUNT1, ACCOUNT2 } from '~/utils/testAccount';
-import { getDatabase } from '~/database';
+import { getDatabase, TrxType } from '~/database';
 import { UserAvatar } from '~/components';
 
 export const Header = observer((props: { className?: string }) => {
@@ -100,14 +100,24 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleOpenUserProfile = action(() => {
     state.userDropdown = false;
-    if (!state.profile) { return; }
     if (
       viewService.state.page.page[0] === 'userprofile'
-      && viewService.state.page.page[1]?.userAddress === state.profile.userAddress
+      && viewService.state.page.page[1]?.userAddress === state.profile?.userAddress
     ) {
       return;
     }
-    viewService.pushPage('userprofile', state.profile);
+    if (!state.profile) {
+      viewService.pushPage('userprofile', {
+        avatar: '',
+        userAddress: keyService.state.keys.address,
+        groupId: nodeService.state.group!.groupId,
+        type: TrxType.profile,
+        name: '',
+        intro: '',
+      });
+    } else {
+      viewService.pushPage('userprofile', state.profile);
+    }
   });
 
   const handleChangeAccount = (type: '1' | '2' | 'new') => {

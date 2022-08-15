@@ -175,6 +175,11 @@ export const UserProfile = observer((props: { className?: string }) => {
         </div>
 
         <div className="w-[800px] bg-black/70 flex-col gap-y-12 py-10 px-16 mt-6">
+          {!state.posts.length && !state.loading && (
+            <div className="text-white/70 text-14">
+              Ta还没有发布过帖子
+            </div>
+          )}
           {state.posts.map((v) => (
             <div key={v.trxId}>
               <div
