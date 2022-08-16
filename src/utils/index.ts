@@ -89,3 +89,14 @@ export const createPromise = <T extends unknown = void>() => {
 
   return { p, rs, rj };
 };
+
+export const chooseImgByPixelRatio = (params: { x1: string, x2?: string, x3?: string }) => {
+  const ratio = window.devicePixelRatio;
+  if (ratio >= 3 && params.x3) {
+    return params.x3;
+  }
+  if (ratio >= 2 && params.x2) {
+    return params.x2;
+  }
+  return params.x1;
+};

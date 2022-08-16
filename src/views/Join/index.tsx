@@ -9,8 +9,11 @@ import {
   FormControlLabel, IconButton, InputLabel, OutlinedInput,
 } from '@mui/material';
 import { ChevronLeft, Close, Visibility, VisibilityOff } from '@mui/icons-material';
+import { LoadingButton } from '@mui/lab';
 import PasteIcon from 'boxicons/svg/regular/bx-paste.svg?fill-icon';
 
+import bgImg1x from '~/assets/images/rum_barrel_bg.jpg';
+import bgImg2x from '~/assets/images/rum_barrel_bg@2x.jpg';
 import bgImg3x from '~/assets/images/rum_barrel_bg@3x.jpg';
 import logoImg from '~/assets/icons/rumsystem.svg';
 import RumLogo from '~/assets/icons/logo.png';
@@ -18,7 +21,7 @@ import RumLogo2x from '~/assets/icons/logo@2x.png';
 import RumLogo3x from '~/assets/icons/logo@3x.png';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
-import { ThemeLight } from '~/utils';
+import { chooseImgByPixelRatio, runLoading, ThemeLight } from '~/utils';
 import { keyService, nodeService, snackbarService } from '~/service';
 import { getDatabase } from '~/database';
 import { GroupAvatar } from '~/components';
@@ -42,6 +45,7 @@ export const Join = observer(() => {
     group: null as null | IGroup,
     step: Step.SavedLoginCheck,
     languageMenu: false,
+    createWalletLoading: false,
     get canLogin() {
       return !!this.password && !!this.keystore;
     },
@@ -146,18 +150,23 @@ export const Join = observer(() => {
     db.clearAllTable();
   };
 
-  const handleCreateNewWallet = async () => {
+  const handleCreateNewWallet = () => {
     if (!state.password) {
       runInAction(() => {
         state.password = '123';
+        state.passwordVisibility = true;
       });
     }
-    const data = await keyService.createRandom(state.password);
-    runInAction(() => {
-      state.keystore = data.keystore;
-      state.password = '123';
-    });
-    snackbarService.show('已创建新钱包，请保存好私钥和密码。');
+    runLoading(
+      (l) => { state.createWalletLoading = l; },
+      async () => {
+        const data = await keyService.createRandom(state.password);
+        runInAction(() => {
+          state.keystore = data.keystore;
+        });
+        snackbarService.show('已创建新钱包，请保存好keystore和密码。');
+      },
+    );
   };
 
   const handleSelectFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -265,7 +274,7 @@ export const Join = observer(() => {
       <div
         className="flex-col flex-1 bg-cover bg-center"
         style={{
-          backgroundImage: `url('${bgImg3x}')`,
+          backgroundImage: `url('${chooseImgByPixelRatio({ x1: bgImg1x, x2: bgImg2x, x3: bgImg3x })}')`,
         }}
       >
         <div className="flex flex-center flex-1">
@@ -508,14 +517,16 @@ export const Join = observer(() => {
                 />
               </div>
               <div className="flex gap-x-4">
-                <Button
+                <LoadingButton
                   className="rounded-full text-16 px-10 py-2"
                   color="primary"
                   variant="outlined"
                   onClick={handleCreateNewWallet}
+                  loading={state.createWalletLoading}
                 >
+                  {JSON.stringify(state.createWalletLoading)}
                   创建新钱包
-                </Button>
+                </LoadingButton>
                 <Button
                   className="rounded-full text-16 px-10 py-2"
                   color="link"

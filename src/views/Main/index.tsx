@@ -2,6 +2,8 @@ import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 import { CircularProgress } from '@mui/material';
 
+import bgImg1x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash.jpg';
+import bgImg2x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@2x.jpg';
 import bgImg3x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@3x.jpg';
 import { nodeService, viewService } from '~/service';
 import { Scrollable } from '~/components';
@@ -12,13 +14,15 @@ import { PostDetail } from './PostDetail';
 import { NewPost } from './NewPost';
 import { UserProfile } from './UserProfile';
 import { Notification } from './Notification';
+import { chooseImgByPixelRatio } from '~/utils';
+
 
 export const Main = observer(() => (
   <div className="h-[100vh] flex-col">
     <div
       className="fixed z-[-1] inset-[-8px] bg-cover bg-center blur-[4px]"
       style={{
-        backgroundImage: `url('${bgImg3x}')`,
+        backgroundImage: `url('${chooseImgByPixelRatio({ x1: bgImg1x, x2: bgImg2x, x3: bgImg3x })}')`,
       }}
     />
     {!nodeService.state.loadedData && (
