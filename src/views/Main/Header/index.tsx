@@ -5,7 +5,7 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
 import { ethers } from 'ethers';
 import { Check, Close, MoreVert, NotificationsNone, Search } from '@mui/icons-material';
-import { Badge, Button, IconButton, Input, Menu, MenuItem, Popover, Tab, Tabs } from '@mui/material';
+import { Badge, Button, FormControl, IconButton, Input, InputLabel, Menu, MenuItem, OutlinedInput, Popover, Tab, Tabs } from '@mui/material';
 
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
@@ -16,7 +16,7 @@ import RumLogo3x from '~/assets/icons/logo@3x.png';
 import { ThemeLight } from '~/utils';
 import {
   nodeService, langService, viewService, keyService,
-  AllLanguages, langName, HotestFilter,
+  AllLanguages, langName, HotestFilter, dialogService,
 } from '~/service';
 import { editProfile } from '~/modals';
 import { ACCOUNT1, ACCOUNT2 } from '~/utils/testAccount';
@@ -121,7 +121,7 @@ export const Header = observer((props: { className?: string }) => {
     }
   });
 
-  const handleChangeAccount = (type: '1' | '2' | 'new') => {
+  const handleChangeAccount = async (type: '1' | '2' | 'new') => {
     let wallet;
     if (type === '1') {
       const privateKey = ACCOUNT1.privateKey;
@@ -132,11 +132,14 @@ export const Header = observer((props: { className?: string }) => {
     } else {
       wallet = ethers.Wallet.createRandom();
     }
-
-    // const password = '123';
-    store('privateKey', wallet.privateKey);
-    // store('password', password);
-    store.remove('password');
+    const password = '123';
+    const keystore = await wallet.encrypt(password, {
+      scrypt: {
+        N: 64,
+      },
+    });
+    store('keystore', keystore);
+    store('password', password);
     const db = getDatabase();
     db.delete();
     window.location.reload();
@@ -146,6 +149,42 @@ export const Header = observer((props: { className?: string }) => {
     const db = getDatabase();
     db.delete();
     window.location.reload();
+  };
+
+  const handleShowAccountInfo = () => {
+    dialogService.open({
+      title: '账号信息',
+      content: (
+        <div className="flex-col gap-y-4 py-2 w-[400px]">
+          <FormControl size="small">
+            <InputLabel>keystore</InputLabel>
+            <OutlinedInput
+              className="text-14 break-all"
+              size="small"
+              label="keystore"
+              type="text"
+              multiline
+              rows={10}
+              onFocus={(e) => e.target.select()}
+              value={keyService.state.keys.keystore}
+            />
+          </FormControl>
+          <FormControl size="small">
+            <InputLabel>password</InputLabel>
+            <OutlinedInput
+              size="small"
+              label="keystore"
+              type="text"
+              multiline
+              onFocus={(e) => e.target.select()}
+              value={keyService.state.keys.password}
+            />
+          </FormControl>
+        </div>
+      ),
+      noCancelButton: true,
+      maxWidth: 0,
+    });
   };
 
   const handleLogin = action(() => {
@@ -329,15 +368,13 @@ export const Header = observer((props: { className?: string }) => {
               {nodeService.state.logined ? nodeService.state.profileName : '游客'}
             </span>
           </div>
-          {process.env.NODE_ENV === 'development' && (
-            <IconButton
-              className="text-white"
-              onClick={action(() => { state.menu = true; })}
-              ref={menuButton}
-            >
-              <MoreVert />
-            </IconButton>
-          )}
+          <IconButton
+            className="text-white"
+            onClick={action(() => { state.menu = true; })}
+            ref={menuButton}
+          >
+            <MoreVert />
+          </IconButton>
         </div>
       </div>
     </div>
@@ -394,52 +431,69 @@ export const Header = observer((props: { className?: string }) => {
         </div>
       </Popover>
 
-      {process.env.NODE_ENV === 'development' && (
-        <Menu
-          className="mt-1"
-          open={state.menu}
-          anchorEl={menuButton.current}
-          onClose={action(() => { state.menu = false; })}
-          anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
-          transformOrigin={{ horizontal: 'center', vertical: 'top' }}
-          disableScrollLock
-        >
-          <MenuItem>开发专用菜单</MenuItem>
-          {/* <MenuItem onClick={action(() => { state.menu = false; state.langMenu = true; })}>
-            <div className="flex gap-x-3 mr-2">
-              <LanguageIcon className="text-black text-20" />
-              <div className="flex-col gap-y-[2px]">
-                <div className="text-14">
-                  Language
-                </div>
-                <div className="text-12 text-gray-9c">
-                  {langService.state.langName}
-                </div>
+      <Menu
+        className="mt-1"
+        open={state.menu}
+        anchorEl={menuButton.current}
+        onClose={action(() => { state.menu = false; })}
+        anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: 'center', vertical: 'top' }}
+        disableScrollLock
+      >
+        {/* <MenuItem onClick={action(() => { state.menu = false; state.langMenu = true; })}>
+          <div className="flex gap-x-3 mr-2">
+            <LanguageIcon className="text-black text-20" />
+            <div className="flex-col gap-y-[2px]">
+              <div className="text-14">
+                Language
+              </div>
+              <div className="text-12 text-gray-9c">
+                {langService.state.langName}
               </div>
             </div>
-          </MenuItem> */}
+          </div>
+        </MenuItem> */}
+        {([
+          { text: '我的账号信息', onClick: handleShowAccountInfo },
+          process.env.NODE_ENV === 'development' && { text: '使用账号1', onClick: () => handleChangeAccount('1') },
+          process.env.NODE_ENV === 'development' && { text: '使用账号2', onClick: () => handleChangeAccount('2') },
+          // process.env.NODE_ENV === 'development' && { text: '使用新号', onClick: () => handleChangeAccount('new') },
+          process.env.NODE_ENV === 'development' && { text: '清除缓存数据', onClick: () => handleClearData() },
+        ] as const).filter(<T extends unknown>(v: T | false): v is T => !!v).map((v, i) => (
+          <MenuItem onClick={v.onClick} key={i}>
+            <div className="flex gap-x-3 mr-2">
+              {v.text}
+            </div>
+          </MenuItem>
+        ))}
+        {/* <MenuItem onClick={() => handleChangeAccount('1')}>
+          <div className="flex gap-x-3 mr-2">
+            asd
+          </div>
+        </MenuItem>
+        {process.env.NODE_ENV === 'development' && [
           <MenuItem onClick={() => handleChangeAccount('1')}>
             <div className="flex gap-x-3 mr-2">
               使用账号1
             </div>
-          </MenuItem>
+          </MenuItem>,
           <MenuItem onClick={() => handleChangeAccount('2')}>
             <div className="flex gap-x-3 mr-2">
               使用账号2
             </div>
-          </MenuItem>
+          </MenuItem>,
           <MenuItem onClick={() => handleChangeAccount('new')}>
             <div className="flex gap-x-3 mr-2">
               使用新号
             </div>
-          </MenuItem>
+          </MenuItem>,
           <MenuItem onClick={() => handleClearData()}>
             <div className="flex gap-x-3 mr-2">
               清除数据
             </div>
-          </MenuItem>
-        </Menu>
-      )}
+          </MenuItem>,
+        ]} */}
+      </Menu>
 
       <Menu
         className="mt-1"

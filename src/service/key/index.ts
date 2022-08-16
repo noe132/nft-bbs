@@ -32,15 +32,10 @@ const createRandom = async (password: string) => {
   };
 };
 
-const validate = async (privateKey: string, password: string) => {
-  const wallet = new ethers.Wallet(privateKey);
-  const keystore = await wallet.encrypt(password, {
-    scrypt: {
-      N: 64,
-    },
-  });
+const validate = async (keystore: string, password: string) => {
+  const wallet = await ethers.Wallet.fromEncryptedJson(keystore, password);
   return {
-    keystore: keystore.replaceAll('\\', ''),
+    keystore,
     password,
     address: wallet.address,
     privateKey: wallet.privateKey,

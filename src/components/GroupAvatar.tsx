@@ -8,13 +8,14 @@ interface AvatarProps {
   size?: number
   children?: React.ReactNode
   avatar?: string
+  groupName?: string
   onClick?: (e: React.MouseEvent) => unknown
 }
 
 export const GroupAvatar = (props: AvatarProps) => {
   const state = useLocalObservable(() => ({
     get firstLetter() {
-      return nodeService.state.groupName.at(0) ?? '';
+      return (props.groupName || nodeService.state.groupName).at(0) ?? '';
     },
   }));
 
@@ -23,8 +24,9 @@ export const GroupAvatar = (props: AvatarProps) => {
   return (
     <div
       className={classNames(
-        'relative w-7 h-7 bg-white bg-cover rounded-full',
+        'w-7 h-7 bg-white bg-cover rounded-full',
         props.className,
+        !props.className?.includes('absolute') && 'relative',
       )}
       style={{
         width: `${props.size ?? 100}px`,

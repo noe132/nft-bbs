@@ -3,7 +3,9 @@ import { SnackbarContainer } from './snackbar/SnackbarContainer';
 import { langService } from './lang';
 import { nodeService } from './node';
 import { viewService } from './view';
+import { DialogContainer } from './dialog/DialogContainer';
 
+export * from './dialog';
 export * from './imageZoom';
 export * from './key';
 export * from './lang';
@@ -27,4 +29,5 @@ export const initService = () => {
 export const ServiceViews = () => (<>
   <ImageZoomView />
   <SnackbarContainer />
+  <DialogContainer />
 </>);

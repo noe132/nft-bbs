@@ -21,6 +21,7 @@ import RumLogo3x from '~/assets/icons/logo@3x.png';
 import { ThemeLight } from '~/utils';
 import { keyService, nodeService, snackbarService } from '~/service';
 import { getDatabase } from '~/database';
+import { GroupAvatar } from '~/components';
 
 enum Step {
   SavedLoginCheck = 0,
@@ -32,8 +33,9 @@ enum Step {
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
     seedUrl: store('seedUrl') || 'rum://seed?v=1&e=0&n=0&b=j-uDl10GR2SjzkIezJh-Ug&c=sigrO3Tw3qyIFd9iua_lSklgaIgDTOUOoLw9gsP2qXQ&g=UuP9crb_R6uSBsi0TTLoTQ&k=A-ewQEGu2QDeStlZp4zE7Iuxuk6tOU2_ZrPYulh99-IH&s=4UTftLoe677RVBbSLE_3WWWpoVvPmUTZlWBo8vfQ7Bwe9AVYYKRvjHDH_OYJiufmdtLyCW74BhN2piOMDqKxUgA&t=FwhjTJUPU7A&a=NFT%E8%AE%BA%E5%9D%9B%E4%BA%A7%E5%93%81%E5%86%85%E6%B5%8B%E4%B8%93%E7%94%A8&y=group_timeline&u=https%3A%2F%2F103.61.39.95%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyI1MmUzZmQ3Mi1iNmZmLTQ3YWItOTIwNi1jOGI0NGQzMmU4NGQiXSwiZXhwIjoxODE3MzY1Njc0LCJuYW1lIjoiYWxsb3ctNTJlM2ZkNzItYjZmZi00N2FiLTkyMDYtYzhiNDRkMzJlODRkIiwicm9sZSI6Im5vZGUifQ.70qEKkDT6l-OUQx_d0U8muoDTTbGGBK5IHjf4_6scVQ',
-    passwordPopup: false,
-    privateKey: '',
+    keystorePopup: false,
+    // privateKey: '',
+    keystore: '',
     password: '',
     passwordVisibility: false,
     rememberPassword: false,
@@ -41,7 +43,7 @@ export const Join = observer(() => {
     step: Step.SavedLoginCheck,
     languageMenu: false,
     get canLogin() {
-      return !!this.password && !!this.privateKey;
+      return !!this.password && !!this.keystore;
     },
   }));
 
@@ -94,9 +96,28 @@ export const Join = observer(() => {
     }
   };
 
-  const handleShowLoginDialog = action(() => {
-    state.passwordPopup = true;
-    state.privateKey = store('privateKey') ?? '';
+  const handleAutoLogin = async () => {
+    const keystore = store('keystore') ?? '';
+    let password = store('password') ?? '123';
+    let keyData: Awaited<ReturnType<typeof keyService.validate>> | undefined;
+    try {
+      if (keystore) {
+        keyData = await keyService.validate(keystore, password);
+      }
+    } catch (e) {}
+    if (!keyData) {
+      password = '123';
+      keyData = await keyService.createRandom(password);
+    }
+    nodeService.joinGroup(state.seedUrl, keyData);
+    store('keystore', keyData.keystore);
+    store('seedUrl', state.seedUrl);
+    store('password', password);
+  };
+
+  const handleShowKeystoreDialog = action(() => {
+    state.keystorePopup = true;
+    state.keystore = store('keystore') ?? '';
     state.password = store('password') ?? '';
     state.rememberPassword = state.canLogin;
   });
@@ -104,12 +125,12 @@ export const Join = observer(() => {
   const handleLoginConfirm = async () => {
     let data;
     try {
-      data = await keyService.validate(state.privateKey, state.password);
+      data = await keyService.validate(state.keystore, state.password);
     } catch (e) {
       snackbarService.error('私钥或密码错误');
       return;
     }
-    store('privateKey', state.privateKey);
+    store('keystore', state.keystore);
     store('seedUrl', state.seedUrl);
     if (state.rememberPassword) {
       store('password', state.password);
@@ -127,12 +148,14 @@ export const Join = observer(() => {
 
   const handleCreateNewWallet = async () => {
     if (!state.password) {
-      snackbarService.show('请输入密码');
-      return;
+      runInAction(() => {
+        state.password = '123';
+      });
     }
     const data = await keyService.createRandom(state.password);
     runInAction(() => {
-      state.privateKey = data.privateKey;
+      state.keystore = data.keystore;
+      state.password = '123';
     });
     snackbarService.show('已创建新钱包，请保存好私钥和密码。');
   };
@@ -150,12 +173,12 @@ export const Join = observer(() => {
 
   const savedLoginCheck = async () => {
     const seedUrl = store('seedUrl');
-    const privateKey = store('privateKey');
+    const keystore = store('keystore');
     const password = store('password');
-    if (seedUrl && privateKey && password) {
+    if (seedUrl && keystore && password) {
       let data;
       try {
-        data = await keyService.validate(privateKey, password);
+        data = await keyService.validate(keystore, password);
       } catch (e) {
         snackbarService.error('私钥或密码错误');
         return;
@@ -362,23 +385,23 @@ export const Join = observer(() => {
                   <ChevronLeft className="text-24 -mt-px" />
                   返回重新输入种子
                 </Button>
-                <div className="w-25 h-25 rounded-full overflow-hidden bg-white absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
+                <GroupAvatar
+                  className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3"
+                  groupName={state.group?.groupName ?? ''}
+                  size={100}
+                />
+                {/* <div className="w-25 h-25 rounded-full overflow-hidden bg-white absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
                   <div className="bg-blue-400/70 rounded-full h-full w-full" />
-                </div>
+                </div> */}
                 <div className="mt-0 text-gray-f2 text-18 truncate max-w-[400px]">
                   {state.group?.groupName}
                 </div>
 
-                {/* <div className="mt-4 text-gray-f2 text-16 max-w-[320px] truncate-3">
-                  种子网络的简介可以继续写继续写继续写继续写继续写继续写继续写继续写继续写继续写这么多字
-                  种子网络的简介可以继续写继续写继续写继续写继续写继续写继续写继续写继续写继续写这么多字
-                  种子网络的简介可以继续写继续写继续写继续写继续写继续写继续写继续写继续写继续写这么多字
-                </div> */}
                 <Button
                   className="text-rum-orange rounded-full text-16 px-12 py-2 mt-4"
                   color="inherit"
                   variant="outlined"
-                  onClick={handleShowLoginDialog}
+                  onClick={handleAutoLogin}
                 >
                   注册/登录
                 </Button>
@@ -388,6 +411,14 @@ export const Join = observer(() => {
                 >
                   以游客身份进入
                 </button>
+                <Button
+                  className="absolute text-gray-9c text-12 mt-4 bottom-2 right-2 px-2 normal-case"
+                  variant="text"
+                  size="small"
+                  onClick={handleShowKeystoreDialog}
+                >
+                  输入keystore
+                </Button>
               </div>
             )}
           </div>
@@ -417,14 +448,14 @@ export const Join = observer(() => {
     </div>
     <ThemeLight>
       <Dialog
-        open={state.passwordPopup}
-        onClose={action(() => { state.passwordPopup = false; })}
+        open={state.keystorePopup}
+        onClose={action(() => { state.keystorePopup = false; })}
       >
         {true && (
           <div className="flex-col relative text-black w-[400px]">
             <IconButton
               className="absolute top-2 right-2"
-              onClick={action(() => { state.passwordPopup = false; })}
+              onClick={action(() => { state.keystorePopup = false; })}
             >
               <Close />
             </IconButton>
@@ -434,15 +465,15 @@ export const Join = observer(() => {
               </div>
               <div className="flex-col gap-y-4 w-[250px] items-stretch">
                 <FormControl size="small">
-                  <InputLabel>私钥</InputLabel>
+                  <InputLabel>keystore</InputLabel>
                   <OutlinedInput
                     size="small"
-                    label="私钥"
+                    label="keystore"
                     type="text"
                     multiline
-                    rows={3}
-                    value={state.privateKey}
-                    onChange={action((e) => { state.privateKey = e.target.value; })}
+                    rows={5}
+                    value={state.keystore}
+                    onChange={action((e) => { state.keystore = e.target.value; })}
                   />
                 </FormControl>
                 <FormControl size="small">
@@ -502,7 +533,7 @@ export const Join = observer(() => {
           <div className="flex-col relative w-[400px] h-[350px]">
             <IconButton
               className="absolute top-2 right-2"
-              onClick={action(() => { state.passwordPopup = false; })}
+              onClick={action(() => { state.keystorePopup = false; })}
             >
               <Close />
             </IconButton>
