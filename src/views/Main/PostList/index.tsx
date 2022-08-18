@@ -1,23 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import classNames from 'classnames';
-import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
 import { ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
-import { Button, CircularProgress, IconButton, Popover, Tooltip } from '@mui/material';
+import { Button, CircularProgress, Tooltip } from '@mui/material';
 
-import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
-import LockIcon from 'boxicons/svg/regular/bx-lock-alt.svg?fill-icon';
-// import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
-import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 
-import { ScrollToTopButton, GroupAvatar } from '~/components';
+import { ScrollToTopButton, GroupSideBox, NFTSideBox } from '~/components';
 import { viewService, nodeService, snackbarService } from '~/service';
-import { ago, runLoading, ThemeLight } from '~/utils';
+import { ago, runLoading } from '~/utils';
 import { CounterName, IPost, TrxStorage } from '~/database';
-import { editGroupInfo } from '~/modals';
 
 export const PostList = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -28,8 +22,6 @@ export const PostList = observer((props: { className?: string }) => {
       return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
     },
   }));
-
-  const nftSmallIconBox = useRef<HTMLDivElement>(null);
 
   const handleOpenPost = (post: IPost) => {
     viewService.pushPage('postdetail', post);
@@ -49,14 +41,6 @@ export const PostList = observer((props: { className?: string }) => {
         counterName: type,
       }),
     );
-  };
-
-  const handleNewPost = () => {
-    if (!nodeService.state.logined) {
-      snackbarService.show('请先登录');
-      return;
-    }
-    viewService.pushPage('newpost');
   };
 
   useEffect(() => {
@@ -180,124 +164,9 @@ export const PostList = observer((props: { className?: string }) => {
       </div>
 
       <div className="w-[280px]">
-        <div className="flex-col gap-y-9 flex-center relative bg-black/70 h-[240px] pt-16 mt-16">
-          <div className="overflow-hidden absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
-            <IconButton
-              className="p-0 group text-white"
-              onClick={editGroupInfo}
-            >
-              <GroupAvatar className="flex cursor-pointer border border-white/80 overflow-hidden" size={100} />
-              <div className="absolute inset-0 flex-center bg-white/10 hidden rounded-full group-hover:flex">
-                <EditIcon className="text-30 text-white/70" />
-              </div>
-            </IconButton>
-          </div>
-          <div className="text-white text-center text-18">
-            {nodeService.state.groupName}
-          </div>
-          <Tooltip title={!nodeService.state.logined ? '请先登录' : ''}>
-            <Button
-              className="rounded-full text-16 px-5 py-[7px]"
-              variant="outlined"
-              color={nodeService.state.logined ? 'rum' : 'dark-blue'}
-              onClick={handleNewPost}
-            >
-              <EditIcon className="text-22 mr-3 mb-px" />
-              发布新帖
-            </Button>
-          </Tooltip>
-        </div>
+        <GroupSideBox className="mt-16" showNewPost />
 
-        <div
-          className="flex-col flex-center relative mt-8"
-          ref={nftSmallIconBox}
-        >
-          <div className="flex gap-x-5">
-            {/* <Tooltip title={<ExpandIcon className="text-20 -mx-1" />}>
-              <button
-                className="flex items-stretch w-9 h-9 p-1 border border-white/80"
-                onClick={action(() => { state.ntfPopup = true; })}
-              >
-                <div className="flex flex-center flex-1 bg-white" />
-              </button>
-            </Tooltip> */}
-            {/* <Tooltip title={<ExpandIcon className="text-20 -mx-1" />}> */}
-            {Array(2).fill(0).map((_, i) => (
-              <Tooltip key={i} title="通过所持 NFT 进行权限验证功能开发中">
-                <button
-                  className="flex items-stretch w-9 h-9 p-1 border border-white/80"
-                  // onClick={action(() => { state.ntfPopup = true; })}
-                >
-                  <div className="flex flex-center flex-1 bg-white/20">
-                    <LockIcon className="text-white text-18" />
-                  </div>
-                </button>
-              </Tooltip>
-            ))}
-          </div>
-        </div>
-
-        <ThemeLight>
-          <Popover
-            className="mt-6"
-            open={state.ntfPopup}
-            anchorEl={nftSmallIconBox.current}
-            onClose={action(() => { state.ntfPopup = false; })}
-            transformOrigin={{
-              horizontal: 'center',
-              vertical: 'top',
-            }}
-            anchorOrigin={{
-              horizontal: 'center',
-              vertical: 'bottom',
-            }}
-            disableScrollLock
-          >
-            <div className="flex-col items-center relative w-[280px]">
-              <IconButton
-                className="absolute top-1 right-1"
-                size="small"
-                onClick={action(() => { state.ntfPopup = false; })}
-              >
-                <CollapseIcon className="text-link text-20" />
-              </IconButton>
-
-              <div className="flex-col gap-y-4 mt-8">
-                {state.nfts.map((row, i) => (
-                  <div
-                    className="flex gap-x-4 flex-center"
-                    key={i}
-                  >
-                    {row.map((_, j) => (
-                      <div
-                        className="flex w-22 h-22 p-1 border border-black/15"
-                        key={j}
-                      >
-                        <div className="flex-1 self-stretch bg-red-100" />
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-
-              <div className="text-gray-9c text-center text-12 py-4">
-                当前没有持有任何 NFT
-              </div>
-
-              <div className="border-t self-stretch mx-5" />
-              <div className="flex self-stretch">
-                <Button
-                  className="px-5 py-4 flex-1"
-                  variant="text"
-                  color="link"
-                  size="large"
-                >
-                  关联钱包
-                </Button>
-              </div>
-            </div>
-          </Popover>
-        </ThemeLight>
+        <NFTSideBox className="mt-8" />
       </div>
     </div>
   );

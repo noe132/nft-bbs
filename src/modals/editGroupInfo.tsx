@@ -8,7 +8,7 @@ import { LoadingButton } from '@mui/lab';
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import { blobToDataUrl, compressImage, createPromise, runLoading, ThemeLight } from '~/utils';
 import { nodeService, snackbarService } from '~/service';
-import { GroupAvatar } from '~/components';
+import { GroupAvatar } from '~/components/GroupAvatar';
 
 import { modalViewState } from './helper/modalViewState';
 import { editImage } from './editImage';

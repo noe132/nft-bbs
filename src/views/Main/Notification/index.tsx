@@ -3,20 +3,17 @@ import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
-import { Button, CircularProgress, IconButton, Tooltip } from '@mui/material';
+import { Button, CircularProgress, Tooltip } from '@mui/material';
 import { AlternateEmail, ThumbDownAlt, ThumbUpAlt } from '@mui/icons-material';
 
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
-import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
-import { UserAvatar, BackButton, ScrollToTopButton } from '~/components';
-import { nodeService, snackbarService, viewService } from '~/service';
+import { UserAvatar, BackButton, ScrollToTopButton, GroupSideBox, NFTSideBox } from '~/components';
+import { nodeService, viewService } from '~/service';
 import { INotification, NotificationObjectType, NotificationType } from '~/database';
 import { ago } from '~/utils';
-import { GroupAvatar } from '~/components/GroupAvatar';
-import { editGroupInfo } from '~/modals';
 
 export const Notification = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -29,14 +26,6 @@ export const Notification = observer((props: { className?: string }) => {
     const post = await nodeService.post.getPost(v.objectId);
     if (!post) { return; }
     viewService.pushPage('postdetail', post, v.actionTrxId);
-  };
-
-  const handleNewPost = () => {
-    if (!nodeService.state.logined) {
-      snackbarService.show('请先登录');
-      return;
-    }
-    viewService.pushPage('newpost');
   };
 
   useEffect(() => {
@@ -175,33 +164,9 @@ export const Notification = observer((props: { className?: string }) => {
       </div>
 
       <div className="w-[280px]">
-        <div className="flex-col gap-y-9 flex-center relative bg-black/70 h-[240px] pt-16 mt-16">
-          <div className="overflow-hidden absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
-            <IconButton
-              className="p-0 group text-white"
-              onClick={editGroupInfo}
-            >
-              <GroupAvatar className="flex cursor-pointer border border-white/80 overflow-hidden" size={100} />
-              <div className="absolute inset-0 flex-center bg-white/10 hidden rounded-full group-hover:flex">
-                <EditIcon className="text-30 text-white/70" />
-              </div>
-            </IconButton>
-          </div>
-          <div className="text-white text-center text-18">
-            {nodeService.state.groupName}
-          </div>
-          <Tooltip title={!nodeService.state.logined ? '请先登录' : ''}>
-            <Button
-              className="rounded-full text-16 px-5 py-[7px]"
-              variant="outlined"
-              color={nodeService.state.logined ? 'rum' : 'dark-blue'}
-              onClick={handleNewPost}
-            >
-              <EditIcon className="text-22 mr-3 mb-px" />
-              发布新帖
-            </Button>
-          </Tooltip>
-        </div>
+        <GroupSideBox className="mt-16" showNewPost />
+
+        <NFTSideBox className="mt-8" />
       </div>
     </div>
   );

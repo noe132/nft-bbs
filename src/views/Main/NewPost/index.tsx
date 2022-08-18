@@ -13,7 +13,7 @@ import HeadingIcon from 'boxicons/svg/regular/bx-heading.svg?fill-icon';
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
 import { compressImage, renderPostMarkdown, runLoading, SCHEMA_PREFIX } from '~/utils';
-import { BackButton, UserAvatar } from '~/components';
+import { BackButton, UserAvatar, GroupSideBox, NFTSideBox } from '~/components';
 import { nodeService, snackbarService, viewService } from '~/service';
 import { selectImage } from '~/modals';
 
@@ -268,26 +268,9 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       </div>
 
       <div className="w-[280px]">
-        <div className="flex-col flex-center relative bg-black/70 pt-24 mt-18">
-          <div className="w-25 h-25 rounded-full overflow-hidden bg-white absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
-            <div className="bg-blue-400/70 rounded-full h-full w-full" />
-          </div>
-          <div className="text-white text-center text-18">
-            {nodeService.state.groupName}
-          </div>
+        <GroupSideBox className="mt-16" />
 
-          <div className="border-t border-white/60 text-14 text-white m-5 pt-5">
-            - 尊重原创 <br />
-            请不要发布任何盗版下载链接，包括软件、音乐、电影等等。<br />
-            <br />
-            - 友好互助<br />
-            保持对陌生人的友善。用知识去帮助别人。<br />
-            <br />
-            - 支持 Markdown<br />
-            支持 GitHub Flavored Markdown 文本标记语法。<br />
-            在正式提交之前，你可以点击本页面上的“预览”来查看实际渲染效果。<br />
-          </div>
-        </div>
+        <NFTSideBox className="mt-8" />
       </div>
     </div>
   );
