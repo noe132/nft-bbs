@@ -109,7 +109,7 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
       <div className="relative">
         <PostImageZoomButton className="text-24 -mt-2 ml-2 text-white" />
         <div
-          className="post-detail-box text-white mx-16"
+          className="post-detail-box text-white mx-16 pt-2"
           dangerouslySetInnerHTML={{ __html: state.content }}
           onClick={handlePostClick}
         />
@@ -132,7 +132,7 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
             {!!props.post.summary.likeCount && (
               <ThumbUpAlt className="mr-2 text-22" />
             )}
-            {props.post.summary.likeCount || '点赞'}
+            {props.post.summary.likeCount || '赞'}
           </Button>
           <Button
             className={classNames(
@@ -149,7 +149,7 @@ export const PostDetailBox = observer((props: { className?: string, post: IPost 
             {!!props.post.summary.dislikeCount && (
               <ThumbDownAlt className="mr-2 text-22" />
             )}
-            {props.post.summary.dislikeCount || '点踩'}
+            {props.post.summary.dislikeCount || '踩'}
           </Button>
         </div>
 

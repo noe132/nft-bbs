@@ -20,7 +20,7 @@ import { chooseImgByPixelRatio } from '~/utils';
 export const Main = observer(() => (
   <div className="h-[100vh] flex-col">
     <div
-      className="fixed z-[-1] inset-[-8px] bg-cover bg-center blur-[4px]"
+      className="fixed z-[-1] inset-[-8px] bg-cover bg-center"
       style={{
         backgroundImage: `url('${chooseImgByPixelRatio({ x1: bgImg1x, x2: bgImg2x, x3: bgImg3x })}')`,
       }}

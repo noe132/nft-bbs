@@ -4,7 +4,7 @@ import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import scrollIntoView from 'scroll-into-view-if-needed';
-import { Button, ClickAwayListener, Fade, InputBase, Tooltip } from '@mui/material';
+import { Button, ClickAwayListener, Fade, IconButton, InputBase, Tooltip } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import CommentMinusIcon from 'boxicons/svg/regular/bx-comment-minus.svg?fill-icon';
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
@@ -18,6 +18,7 @@ import { ago, runLoading } from '~/utils';
 
 import { PostDetailBox } from '../components/PostDetailBox';
 import { UserCard } from '../components/UserCard';
+import { Close } from '@mui/icons-material';
 
 interface UserCardItem {
   el: HTMLElement
@@ -326,6 +327,13 @@ export const PostDetail = observer((props: { className?: string }) => {
                   @{state.replyTo.comment?.extra?.userProfile?.name || state.replyTo.comment?.extra?.userProfile?.userAddress.slice(0, 10)}
                 </span>
               </div>
+              <IconButton
+                className="absolute right-[10px] top-[10px]"
+                size="small"
+                onClick={action(() => { state.replyTo.open = false; })}
+              >
+                <Close className="text-white/80 text-20" />
+              </IconButton>
               <textarea
                 className={classNames(
                   'mt-1 text-14 h-[144px] text-white px-3 py-2 bg-transparent resize-none rounded',

@@ -205,7 +205,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                     {!!v.summary.likeCount && (
                       <ThumbUpAlt className="mr-2 text-18" />
                     )}
-                    {v.summary.likeCount || '点赞'}
+                    {v.summary.likeCount || '赞'}
                   </Button>
                   <Button
                     className="text-link-soft text-14 px-2 min-w-0"
@@ -219,7 +219,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                     {!!v.summary.dislikeCount && (
                       <ThumbDownAlt className="mr-2 text-18" />
                     )}
-                    {v.summary.dislikeCount || '点踩'}
+                    {v.summary.dislikeCount || '踩'}
                   </Button>
                   <Button
                     className="text-link-soft text-14 px-2 min-w-0"

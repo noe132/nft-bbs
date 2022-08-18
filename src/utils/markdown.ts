@@ -4,6 +4,7 @@ import type StateCore from 'markdown-it/lib/rules_core/state_core';
 import mdanchor from 'markdown-it-anchor';
 import mdtasklist from 'markdown-it-task-lists';
 import DOMPurify from 'dompurify';
+import { string } from 'fp-ts';
 
 export const createBaseRenderer = (options?: mdit.Options) => {
   const renderer = mdit({
@@ -31,9 +32,21 @@ export const createBaseRenderer = (options?: mdit.Options) => {
 };
 
 export const defaultRenderer = createBaseRenderer();
-export const renderPostMarkdown = (md: string) => DOMPurify.sanitize(defaultRenderer.render(md.replaceAll(/\n+/g, '\n\n')), {
-  ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|blob|rum):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
-});
+export const renderPostMarkdown = (md: string) => {
+  let id = 0;
+  const replaceMap = new Map<string, string>();
+  let processedMD = md.replaceAll(/(```[\s\S]+?```)/g, (sub) => {
+    id += 1;
+    const placeholder = `$$$$####!!!!${id}!!!!####$$$$`;
+    replaceMap.set(placeholder, sub);
+    return placeholder;
+  });
+  processedMD = processedMD.replaceAll(/\n+/g, '\n\n');
+  processedMD = processedMD.replaceAll(/(\$\$\$\$####!!!!\d+!!!!####\$\$\$\$)/g, (sub) => replaceMap.get(sub) ?? '');
+  return DOMPurify.sanitize(defaultRenderer.render(processedMD), {
+    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|blob|rum):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
+  });
+};
 
 const modifyToken = (token: any, mdfn: any, env: any) => {
   // create attrObj for convenient get/set of attributes
