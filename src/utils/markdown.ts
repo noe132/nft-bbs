@@ -4,7 +4,6 @@ import type StateCore from 'markdown-it/lib/rules_core/state_core';
 import mdanchor from 'markdown-it-anchor';
 import mdtasklist from 'markdown-it-task-lists';
 import DOMPurify from 'dompurify';
-import { string } from 'fp-ts';
 
 export const createBaseRenderer = (options?: mdit.Options) => {
   const renderer = mdit({
