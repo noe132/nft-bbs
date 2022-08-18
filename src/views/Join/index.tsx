@@ -524,7 +524,6 @@ export const Join = observer(() => {
                   onClick={handleCreateNewWallet}
                   loading={state.createWalletLoading}
                 >
-                  {JSON.stringify(state.createWalletLoading)}
                   创建新钱包
                 </LoadingButton>
                 <Button
