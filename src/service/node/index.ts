@@ -491,7 +491,7 @@ const group = {
       });
     }
   },
-  update: async () => {
+  updateInfo: async () => {
     const item = await GroupInfoModel.getLatest();
     if (item) {
       state.groupInfo.avatar = item.avatar;
@@ -599,6 +599,7 @@ const joinGroup = async (
 
   await updateProfile();
   await updateUnreadCount();
+  await group.updateInfo();
 
   runInAction(() => {
     state.group = QuorumLightNodeSDK.cache.Group.list()[0];

@@ -94,7 +94,7 @@ export const EditGroupInfoView = observer((props: Props) => {
   };
 
   const loadGroupInfo = async () => {
-    await nodeService.group.update();
+    await nodeService.group.updateInfo();
     runInAction(() => {
       state.avatar = nodeService.state.groupInfo.avatar;
       state.desc = nodeService.state.groupInfo.desc;
