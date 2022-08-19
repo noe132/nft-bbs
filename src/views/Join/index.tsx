@@ -131,7 +131,7 @@ export const Join = observer(() => {
     try {
       data = await keyService.validate(state.keystore, state.password);
     } catch (e) {
-      snackbarService.error('私钥或密码错误');
+      snackbarService.error('keystore或密码错误');
       return;
     }
     store('keystore', state.keystore);
@@ -189,7 +189,7 @@ export const Join = observer(() => {
       try {
         data = await keyService.validate(keystore, password);
       } catch (e) {
-        snackbarService.error('私钥或密码错误');
+        snackbarService.error('keystore或密码错误');
         return;
       }
       try {

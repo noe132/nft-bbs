@@ -92,6 +92,7 @@ export const PostDetail = observer((props: { className?: string }) => {
   }));
 
   const commentBox = useRef<HTMLDivElement>(null);
+  const replyTextarea = useRef<HTMLTextAreaElement>(null);
 
   const handleOpenUserCard = action((e: React.MouseEvent, v: IComment) => {
     let commentBox: null | HTMLElement = null;
@@ -135,6 +136,9 @@ export const PostDetail = observer((props: { className?: string }) => {
       open: true,
       content: '',
     };
+    setTimeout(() => {
+      replyTextarea.current?.focus();
+    });
   });
 
   const handlePostComment = async (type: 'direct' | 'reply') => {
@@ -225,7 +229,11 @@ export const PostDetail = observer((props: { className?: string }) => {
               placeholder="在这里写下你的评论…"
               value={state.commentInput}
               onChange={action((e) => { state.commentInput = e.target.value; })}
-              // size="small"
+              onKeyDown={(e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                  handlePostComment('direct');
+                }
+              }}
             />
             <LoadingButton
               className="rounded-l-none"
@@ -340,7 +348,16 @@ export const PostDetail = observer((props: { className?: string }) => {
                   'outline-none border border-white/20 hover:border-white/80',
                   'focus:border-white focus:border-2 focus:px-[11px] focus:py-[7px]',
                 )}
+                ref={replyTextarea}
                 value={state.replyTo.content}
+                onKeyDown={action((e) => {
+                  if (e.key === 'Escape') {
+                    state.replyTo.open = false;
+                  }
+                  if (e.ctrlKey && e.key === 'Enter') {
+                    handlePostComment('reply');
+                  }
+                })}
                 onChange={action((e) => { state.replyTo.content = e.target.value; })}
               />
               <div className="flex justify-between">

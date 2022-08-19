@@ -11,7 +11,8 @@ export const create = async (comment: IGroupInfo) => {
 
 export const getLatest = async () => {
   const db = getDatabase();
-  return db.groupInfo.orderBy('timestamp').last();
+  const items = await db.groupInfo.where({ isOwner: 1 }).sortBy('timestamp');
+  return items.at(-1) ?? null;
 };
 
 export const bulkGet = async (trxIds: string[]) => {

@@ -42,7 +42,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       );
     },
     get canPost() {
-      return !!this.title && !!this.postContent;
+      return !!this.title.trim() && this.titleLength <= 100 && !!this.postContent.trim();
     },
   }));
   const codeMirrorBox = createRef<HTMLDivElement>();
@@ -92,7 +92,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
           return `${g1}(${SCHEMA_PREFIX}${img?.trxId})`;
         });
 
-        await nodeService.post.create(state.title, postContent);
+        await nodeService.post.create(state.title.trim(), postContent);
         snackbarService.show('发布成功');
         viewService.back();
       },
@@ -110,6 +110,11 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       lineWrapping: true,
       extraKeys: {
         'Enter': 'newlineAndIndentContinueMarkdownList',
+        'Ctrl-Enter': () => {
+          if (state.canPost) {
+            handlePost();
+          }
+        },
         'Tab': 'tabAndIndentMarkdownList',
         'Shift-Tab': 'shiftTabAndUnindentMarkdownList',
       },

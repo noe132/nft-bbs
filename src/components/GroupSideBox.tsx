@@ -1,10 +1,10 @@
 import { Button, IconButton, Tooltip } from '@mui/material';
-import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 import classNames from 'classnames';
-import { observer } from 'mobx-react-lite';
+import { observer, useLocalObservable } from 'mobx-react-lite';
+import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
 import { editGroupInfo } from '~/modals/editGroupInfo';
-import { nodeService, snackbarService, viewService } from '~/service';
+import { keyService, nodeService, snackbarService, viewService } from '~/service';
 
 import { GroupAvatar } from './GroupAvatar';
 
@@ -14,6 +14,12 @@ interface Props {
 }
 
 export const GroupSideBox = observer((props: Props) => {
+  const state = useLocalObservable(() => ({
+    get isGroupOwner() {
+      return keyService.state.keys.address === nodeService.state.groupOwnerAddress;
+    },
+  }));
+
   const handleNewPost = () => {
     if (!nodeService.state.logined) {
       snackbarService.show('请先登录');
@@ -33,6 +39,7 @@ export const GroupSideBox = observer((props: Props) => {
         <IconButton
           className="p-0 group text-white"
           onClick={editGroupInfo}
+          disabled={!state.isGroupOwner}
         >
           <GroupAvatar className="flex cursor-pointer border border-white/80 overflow-hidden" size={100} />
           <div className="absolute inset-0 flex-center bg-white/10 hidden rounded-full group-hover:flex">

@@ -18,6 +18,7 @@ export const handleGroupInfo = async (items: IContent[] = []) => {
         storage: TrxStorage.chain,
         timestamp: parseInt(String(item.TimeStamp / 1000000), 10),
         trxId: item.TrxId,
+        isOwner: item.SenderPubkey === group.ownerPubKey ? 1 : 0,
       };
     });
   const toPut = existed.map((v) => ({

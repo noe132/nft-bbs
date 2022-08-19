@@ -31,6 +31,11 @@ const state = observable({
   pollingTask: null as null | PollingTask,
 
   group: null as null | IGroup,
+  get groupOwnerAddress() {
+    return nodeService.state.group?.ownerPubKey
+      ? QuorumLightNodeSDK.utils.pubkeyToAddress(nodeService.state.group.ownerPubKey)
+      : '';
+  },
 
   post: {
     mode: { type: 'latest' } as PostListLoadMode,
@@ -475,14 +480,14 @@ const group = {
       aesKey: group.cipherKey,
       privateKey: keyService.state.keys.privateKey,
     });
-    const item = {
+    await GroupInfoModel.create({
       ...trxContent,
       groupId: group.groupId,
       trxId: res.trx_id,
       storage: TrxStorage.cache,
       timestamp: Date.now(),
-    };
-    await GroupInfoModel.create(item);
+      isOwner: 1,
+    });
     const dbItem = await GroupInfoModel.getLatest();
     if (dbItem) {
       runInAction(() => {

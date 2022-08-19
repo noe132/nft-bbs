@@ -11,4 +11,5 @@ export interface IGroupInfo extends IGroupInfoTrxContent {
   storage: TrxStorage
   groupId: string
   timestamp: number
+  isOwner: 0 | 1
 }
