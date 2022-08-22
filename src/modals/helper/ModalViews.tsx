@@ -14,7 +14,7 @@ export const ModalViews = observer(() => (<>
           if (index !== -1) {
             modalViewState.list.splice(index, 1);
           }
-        }));
+        }), 1000);
       }}
     />
   ))}

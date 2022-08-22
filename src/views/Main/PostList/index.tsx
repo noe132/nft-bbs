@@ -12,6 +12,7 @@ import { ScrollToTopButton, GroupSideBox, NFTSideBox } from '~/components';
 import { viewService, nodeService, snackbarService } from '~/service';
 import { ago, runLoading } from '~/utils';
 import { CounterName, IPost, TrxStorage } from '~/database';
+import { showTrxDetail } from '~/modals';
 
 export const PostList = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -127,9 +128,12 @@ export const PostList = observer((props: { className?: string }) => {
                   </div>
                 </div>
                 <div className="flex flex-center gap-x-4">
-                  <div className="text-link-soft text-12 opacity-50">
+                  <button
+                    className="text-link-soft text-12 opacity-50"
+                    onClick={() => v.storage === TrxStorage.chain && showTrxDetail(v.trxId)}
+                  >
                     {v.storage === TrxStorage.cache ? '同步中' : '已同步'}
-                  </div>
+                  </button>
                   <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
                     <div className="text-12 text-link-soft">
                       {ago(v.timestamp)}

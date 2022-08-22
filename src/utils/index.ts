@@ -6,6 +6,7 @@ export * from './bus';
 export * from './compressImage';
 export * from './constants';
 export * from './markdown';
+export * from './setClipboard';
 export * from './theme';
 export * from './useScreenSize';
 

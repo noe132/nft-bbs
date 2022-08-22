@@ -5,7 +5,9 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { Button, ClickAwayListener, Fade, IconButton, InputBase, Tooltip } from '@mui/material';
+import { Close } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
+
 import CommentMinusIcon from 'boxicons/svg/regular/bx-comment-minus.svg?fill-icon';
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
@@ -14,11 +16,11 @@ import UnfoldIcon from '~/assets/icons/icon_unfold.svg?fill-icon';
 import { IComment, IProfile, TrxStorage } from '~/database';
 import { BackButton, ScrollToTopButton, Foldable, UserAvatar } from '~/components';
 import { nodeService, snackbarService, viewService } from '~/service';
+import { showTrxDetail } from '~/modals';
 import { ago, runLoading } from '~/utils';
 
 import { PostDetailBox } from '../components/PostDetailBox';
 import { UserCard } from '../components/UserCard';
-import { Close } from '@mui/icons-material';
 
 interface UserCardItem {
   el: HTMLElement
@@ -498,9 +500,16 @@ const CommentItem = observer((props: CommentItemProps) => {
                   回复 {state.replyTo}
                 </span>
               )}
-              <span className="text-12 text-gray-af opacity-50">
+
+              <button
+                className="text-12 text-gray-af opacity-50"
+                onClick={() => props.comment.storage === TrxStorage.chain && showTrxDetail(props.comment.trxId)}
+              >
                 {props.comment.storage === TrxStorage.cache ? '同步中' : '已同步'}
-              </span>
+              </button>
+              {/* <span className="text-12 text-gray-af opacity-50">
+                {props.comment.storage === TrxStorage.cache ? '同步中' : '已同步'}
+              </span> */}
             </div>
           </div>
           <div className="flex gap-x-2 h-[34px] items-center">
