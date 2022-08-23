@@ -110,14 +110,14 @@ const updateUnreadCount = async () => {
   });
 };
 
-const submitProfile = async (params: { name: string, avatar: string }) => {
+const submitProfile = async (params: { name: string, avatar: string, intro: string }) => {
   const group = QuorumLightNodeSDK.cache.Group.list()[0];
   try {
     const trxContent: IProfileTrxContent = {
       type: TrxType.profile,
       name: params.name,
       avatar: params.avatar,
-      intro: '',
+      intro: params.intro,
     };
     const res = await QuorumLightNodeSDK.chain.Trx.create({
       groupId: group.groupId,
@@ -245,7 +245,6 @@ const post = {
       timestamp: Date.now(),
     };
     await PostModel.create(post);
-    // TODO:
     const dbPost = (await PostModel.bulkGet([post.trxId], {
       currentUserAddress: keyService.state.keys.address,
     }))[0];

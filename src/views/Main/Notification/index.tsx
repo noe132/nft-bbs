@@ -11,7 +11,7 @@ import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-i
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { UserAvatar, BackButton, ScrollToTopButton, GroupSideBox, NFTSideBox } from '~/components';
-import { nodeService, viewService } from '~/service';
+import { nodeService, snackbarService, viewService } from '~/service';
 import { INotification, NotificationObjectType, NotificationType } from '~/database';
 import { ago } from '~/utils';
 
@@ -52,6 +52,7 @@ export const Notification = observer((props: { className?: string }) => {
               variant="text"
               color="inherit"
               size="small"
+              onClick={() => snackbarService.show('已全部标为已读')}
             >
               全部已读
             </Button>

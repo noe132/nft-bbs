@@ -122,7 +122,11 @@ export const UserProfile = observer((props: { className?: string }) => {
               color="link"
               variant="text"
               size="small"
-              onClick={() => editProfile({ name: state.profile!.name, avatar: state.profile!.avatar })}
+              onClick={() => editProfile({
+                name: state.profile!.name,
+                avatar: state.profile!.avatar,
+                intro: state.profile!.intro,
+              })}
             >
               <EditIcon className="text-18 -mt-px mr-1" />
               修改身份资料

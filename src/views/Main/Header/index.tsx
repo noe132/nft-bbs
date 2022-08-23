@@ -4,8 +4,12 @@ import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
 import { ethers } from 'ethers';
+import QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import { Check, Close, MoreVert, NotificationsNone, Search } from '@mui/icons-material';
-import { Badge, Button, FormControl, IconButton, Input, InputLabel, Menu, MenuItem, OutlinedInput, Popover, Tab, Tabs } from '@mui/material';
+import {
+  Badge, Button, FormControl, IconButton, Input,
+  InputLabel, Menu, MenuItem, OutlinedInput, Popover, Tab, Tabs,
+} from '@mui/material';
 
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
@@ -96,6 +100,7 @@ export const Header = observer((props: { className?: string }) => {
     editProfile({
       avatar: state.profile?.avatar ?? '',
       name: state.profile?.name ?? '',
+      intro: state.profile?.intro ?? '',
     });
   });
 
@@ -142,6 +147,7 @@ export const Header = observer((props: { className?: string }) => {
     store('password', password);
     const db = getDatabase();
     db.delete();
+    QuorumLightNodeSDK.cache.Group.clear();
     window.location.reload();
   };
 
@@ -195,6 +201,7 @@ export const Header = observer((props: { className?: string }) => {
   const handleLogout = action(() => {
     state.userDropdown = false;
     store.remove('password');
+    QuorumLightNodeSDK.cache.Group.clear();
     handleClearData();
   });
 

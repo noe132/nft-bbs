@@ -82,6 +82,7 @@ export const Join = observer(() => {
     }
     if (state.step === Step.PrepareJoinGroup) {
       try {
+        QuorumLightNodeSDK.cache.Group.clear();
         await nodeService.joinGroup(state.seedUrl);
       } catch (e) {
         snackbarService.error(`加入失败 (${(e as Error).message})`);

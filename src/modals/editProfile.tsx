@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { Close } from '@mui/icons-material';
-import { Dialog, FormControl, IconButton, InputLabel, OutlinedInput } from '@mui/material';
+import { Dialog, FormControl, FormHelperText, IconButton, InputLabel, OutlinedInput } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import { blobToDataUrl, createPromise, runLoading, ThemeLight } from '~/utils';
@@ -16,6 +16,7 @@ import { editImage } from './editImage';
 interface EditProfileParams {
   avatar?: string
   name?: string
+  intro?: string
   showSkip?: boolean
 }
 
@@ -66,6 +67,7 @@ const EditProfileDialog = observer((props: ModalProps) => {
             onSkip={handleSkip}
             avatar={props.avatar}
             name={props.name}
+            intro={props.intro}
             showSkip={props.showSkip}
           />
         </div>
@@ -79,6 +81,7 @@ interface Props {
   className?: string
   avatar?: string
   name?: string
+  intro?: string
   showSkip?: boolean
   onSkip?: () => unknown
   onConfirm: () => unknown
@@ -87,7 +90,17 @@ export const EditProfileView = observer((props: Props) => {
   const state = useLocalObservable(() => ({
     avatar: props.avatar ?? '',
     name: props.name ?? '',
+    intro: props.intro ?? '',
     loading: false,
+
+    get introLength() {
+      return Math.ceil(
+        this.intro.split('').reduce(
+          (p, c) => p + (c.charCodeAt(0) > 256 ? 1 : 0.5),
+          0,
+        ),
+      );
+    },
   }));
 
   const fileInput = useRef<HTMLInputElement>(null);
@@ -105,6 +118,7 @@ export const EditProfileView = observer((props: Props) => {
   };
 
   const handleSubmitProfile = async () => {
+    if (state.introLength > 200) { return; }
     if (!state.name || state.loading) { return; }
     await runLoading(
       (l) => { state.loading = l; },
@@ -112,6 +126,7 @@ export const EditProfileView = observer((props: Props) => {
         await nodeService.submitProfile({
           name: state.name,
           avatar: state.avatar,
+          intro: state.intro,
         });
         snackbarService.show('修改成功');
         props.onConfirm();
@@ -139,15 +154,31 @@ export const EditProfileView = observer((props: Props) => {
           <CamaraIcon className="text-16" />
         </div>
       </div>
-      <FormControl size="small">
-        <InputLabel>昵称</InputLabel>
-        <OutlinedInput
-          label="昵称"
-          size="small"
-          value={state.name}
-          onChange={action((e) => { state.name = e.target.value; })}
-        />
-      </FormControl>
+      <div className="flex-col items-stertch gap-y-4">
+        <FormControl size="small">
+          <InputLabel>昵称</InputLabel>
+          <OutlinedInput
+            label="昵称"
+            size="small"
+            value={state.name}
+            onChange={action((e) => { state.name = e.target.value; })}
+          />
+        </FormControl>
+        <FormControl size="small" error={state.introLength > 200}>
+          <InputLabel>简介</InputLabel>
+          <OutlinedInput
+            label="简介"
+            size="small"
+            multiline
+            rows={3}
+            value={state.intro}
+            onChange={action((e) => { state.intro = e.target.value; })}
+          />
+          <FormHelperText>
+            {state.introLength} / 200
+          </FormHelperText>
+        </FormControl>
+      </div>
       {props.showSkip && (
         <button className="text-gray-9c rounded-full text-14">
           暂时跳过
