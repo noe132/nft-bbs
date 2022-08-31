@@ -13,4 +13,4 @@ export enum TrxType {
 }
 
 // export const API_BASE_URL = 'http://localhost:8002/api';
-export const API_BASE_URL = `${location.protocol}//${location.hostname}:8002/api`;
+export const API_BASE_URL = `${location.protocol}//${location.hostname}:${location.port}/api`;
