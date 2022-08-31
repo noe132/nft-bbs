@@ -1,5 +1,3 @@
-const path = require('path');
-
 module.exports = {
   'globals': {
     'document': false,
@@ -19,13 +17,22 @@ module.exports = {
 
   'root': true,
 
+  // 'parserOptions': {
+  //   project: [
+  //     './client/tsconfig.json',
+  //     './server/tsconfig.json',
+  //   ],
+  // },
+
   'settings': {
-    'import/resolver': {
-      // 'typescript': {},
-      'typescript': {
-        'project': path.join(__dirname, 'tsconfig.json'),
-      },
-    },
+    // 'import/resolver': {
+    //   'typescript': {
+    //     'project': [
+    //       path.join(__dirname, 'client/tsconfig.json'),
+    //       path.join(__dirname, 'server/tsconfig.json'),
+    //     ],
+    //   },
+    // },
   },
 
   'overrides': [{
@@ -44,15 +51,19 @@ module.exports = {
       '*.ts',
       '*.tsx',
     ],
-    parserOptions: {
-      project: 'tsconfig.json',
-      tsconfigRootDir: __dirname,
-    },
+    // parserOptions: {
+    //   project: 'tsconfig.json',
+    //   tsconfigRootDir: __dirname,
+    // },
     'rules': {
       'react/react-in-jsx-scope': 'off',
       'import/no-unresolved': ['error', { ignore: ['generated-routes'] }],
       '@typescript-eslint/array-type': 'off',
       '@typescript-eslint/explicit-member-accessibility': 'off',
+      // bug: https://github.com/typescript-eslint/typescript-eslint/issues/5407
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
+      // has bug
+      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
 
       '@typescript-eslint/member-ordering': 'off',
       '@typescript-eslint/naming-convention': [

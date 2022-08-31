@@ -1,21 +1,22 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
-/npm-debug.log*
-/yarn-error.log
+node_modules
+npm-debug.log*
+yarn-error.log
 # /yarn.lock
-/package-lock.json
+package-lock.json
+
+/server/localStorage
 
 # production
-/dist
-/dist_ssr
+/client/dist
+/server/dist
+/server/logs
+/server/config.ts
 
 # misc
 .DS_Store
-
+.idea/
 .vscode/
-/src/routes.ts
-/src/routes-ssr.ts
-/build/dev-config-local.ts
 /cert
