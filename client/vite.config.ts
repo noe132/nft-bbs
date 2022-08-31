@@ -27,6 +27,10 @@ export default async () => {
         '/api': {
           target: 'http://127.0.0.1:8002',
         },
+        '/socket.io': {
+          ws: true,
+          target: 'http://127.0.0.1:8002',
+        },
       },
     },
     publicDir: join(__dirname, 'public'),

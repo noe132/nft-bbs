@@ -7,7 +7,9 @@ export type SocketEventListeners = {
 };
 
 export const initSocket = (listeners: SocketEventListeners) => {
-  const socket = io(`ws${location.protocol.slice(4)}//${location.hostname}:8002/`);
+  const socket = io(`ws${location.protocol.slice(4)}//${location.hostname}:${location.port}/`, {
+    transports: ['websocket'],
+  });
 
   socket.emit('authenticate', keyService.state.keys.address);
 
