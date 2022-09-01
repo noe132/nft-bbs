@@ -96,12 +96,12 @@ export class Comment {
     await AppDataSource.manager.save(comment);
   }
 
-  public static update(trxId: string, params: Partial<EntityConstructorParams<Comment, 'extra'>>) {
-    return AppDataSource.manager.update(Comment, { trxId }, params);
+  public static update(where: FindOptionsWhere<Comment>, params: Partial<EntityConstructorParams<Comment, 'id' | 'extra'>>) {
+    return AppDataSource.manager.update(Comment, where, params);
   }
 
-  public static async get(trxId: string) {
-    return AppDataSource.manager.findOneBy(Comment, { trxId });
+  public static async get(groupId: string, trxId: string) {
+    return AppDataSource.manager.findOneBy(Comment, { groupId, trxId });
   }
 
   public static async getFirst(params: { groupId: string, userAddress: string }) {
@@ -116,8 +116,8 @@ export class Comment {
     return AppDataSource.manager.findBy(Comment, trxIds.map((trxId) => ({ trxId })));
   }
 
-  public static async delete(trxId: string) {
-    await AppDataSource.manager.delete(Comment, { trxId });
+  public static async delete(groupId: string, trxId: string) {
+    await AppDataSource.manager.delete(Comment, { groupId, trxId });
   }
 
   public static async list(params: { limit: number, offset: number } & Pick<FindOptionsWhere<Comment>, 'groupId' | 'objectId'>) {

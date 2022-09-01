@@ -115,10 +115,10 @@ export class Notification {
     return AppDataSource.manager.countBy(Notification, query);
   }
 
-  public static async deleteWith(trxId: string) {
+  public static async deleteWith(groupId: string, trxId: string) {
     const notifications = await AppDataSource.manager.findBy(Notification, [
-      { objectId: trxId },
-      { actionObjectId: trxId },
+      { groupId, objectId: trxId },
+      { groupId, actionObjectId: trxId },
     ]);
     if (!notifications.length) { return null; }
     const deleteResult = await AppDataSource.manager.delete(Notification, notifications);

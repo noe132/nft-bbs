@@ -2,7 +2,7 @@ import { isLeft, tryCatch } from 'fp-ts/lib/Either';
 import { identity } from 'fp-ts/lib/function';
 import { keyBy } from 'lodash';
 import { IContent } from 'quorum-light-node-sdk-nodejs';
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { postTrxContent } from '~/types';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -87,12 +87,12 @@ export class Post {
     await AppDataSource.manager.save(post);
   }
 
-  public static update(trxId: string, params: Partial<EntityConstructorParams<Post, 'id' | 'extra'>>) {
-    return AppDataSource.manager.update(Post, { trxId }, params);
+  public static update(where: FindOptionsWhere<Post>, params: Partial<EntityConstructorParams<Post, 'id' | 'extra'>>) {
+    return AppDataSource.manager.update(Post, where, params);
   }
 
-  public static get(trxId: string) {
-    return AppDataSource.manager.findOneBy(Post, { trxId });
+  public static get(groupId: string, trxId: string) {
+    return AppDataSource.manager.findOneBy(Post, { groupId, trxId });
   }
 
   public static async getFirst(params: { groupId: string, userAddress: string }) {
@@ -108,8 +108,8 @@ export class Post {
     return AppDataSource.manager.findBy(Post, trxIds.map((trxId) => ({ trxId })));
   }
 
-  public static delete(trxId: string) {
-    return AppDataSource.manager.delete(Post, { trxId });
+  public static delete(groupId: string, trxId: string) {
+    return AppDataSource.manager.delete(Post, { groupId, trxId });
   }
 
   public static list(params: {

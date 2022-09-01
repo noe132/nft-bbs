@@ -6,14 +6,13 @@ import { assertValidation, parseIntFromString, truncate } from '~/utils';
 
 export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.get('/:groupId/:trxId', async (req) => {
-    const params = assertValidation(type({ trxId: string }).decode(req.params));
+    const params = assertValidation(type({ groupId: string, trxId: string }).decode(req.params));
     const query = assertValidation(partial({ viewer: string }).decode(req.query));
-    const trxId = params.trxId;
-    const post = await Post.get(trxId);
+    const post = await Post.get(params.groupId, params.trxId);
     if (!post) {
       throw new NotFound();
     }
-    const data = Post.appendExtra(post, { viewer: query.viewer });
+    const data = await Post.appendExtra(post, { viewer: query.viewer });
     return data;
   });
 
@@ -40,7 +39,7 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
     });
     const truncatedLength = parseIntFromString(query.truncatedLength, 0);
     if (truncatedLength) {
-      posts = posts.map((item: any) => {
+      posts = posts.map((item) => {
         item.content = truncate(item.content, truncatedLength);
         return item;
       });

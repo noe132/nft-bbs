@@ -22,13 +22,12 @@ export const handlePost = async (item: IContent) => {
   };
 
   if (trxContent.updatedTrxId) {
-    const updatedPost = await Post.get(trxContent.updatedTrxId);
+    const updatedPost = await Post.get(item.GroupId, trxContent.updatedTrxId);
     if (!updatedPost) { return; }
     if (post.userAddress !== updatedPost.userAddress) {
       pollingLog.warn(`post ${post.trxId} no permission update post`);
     }
-    await Post.update(updatedPost.trxId, {
-      ...updatedPost,
+    await Post.update({ trxId: updatedPost.trxId, groupId: updatedPost.groupId }, {
       content: post.content,
     });
     broadcast('postEdit', { post, updatedTrxId: trxContent.updatedTrxId });
@@ -36,16 +35,16 @@ export const handlePost = async (item: IContent) => {
   }
 
   if (trxContent.deletedTrxId) {
-    const deletedPost = await Post.get(trxContent.deletedTrxId);
+    const deletedPost = await Post.get(item.GroupId, trxContent.deletedTrxId);
     if (!deletedPost) { return; }
     if (post.userAddress !== deletedPost.userAddress) {
       pollingLog.warn(`post ${post.trxId} no permission delete post`);
     }
 
     await Promise.all([
-      Post.delete(deletedPost.trxId),
-      Notification.deleteWith(deletedPost.trxId),
-      UniqueCounter.deleteWith(deletedPost.trxId),
+      Post.delete(deletedPost.groupId, deletedPost.trxId),
+      Notification.deleteWith(deletedPost.groupId, deletedPost.trxId),
+      UniqueCounter.deleteWith(deletedPost.groupId, deletedPost.trxId),
     ]);
     broadcast('postDelete', { post, deletedTrxId: trxContent.deletedTrxId });
     return;

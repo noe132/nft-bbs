@@ -81,8 +81,8 @@ export class UniqueCounter {
     return AppDataSource.manager.countBy(UniqueCounter, queries);
   }
 
-  public static async deleteWith(trxId: string) {
-    const items = await AppDataSource.manager.findBy(UniqueCounter, { objectId: trxId });
+  public static async deleteWith(groupId: string, trxId: string) {
+    const items = await AppDataSource.manager.findBy(UniqueCounter, { groupId, objectId: trxId });
     if (!items.length) { return null; }
     return AppDataSource.manager.delete(UniqueCounter, items);
   }

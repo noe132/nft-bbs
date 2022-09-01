@@ -33,7 +33,7 @@ export const handleCounter = async (item: IContent) => {
   }
 
   if (name.startsWith('post')) {
-    const post = await Post.get(objectId);
+    const post = await Post.get(item.GroupId, objectId);
     if (!post) {
       return;
     }
@@ -46,7 +46,7 @@ export const handleCounter = async (item: IContent) => {
     } else if (name === 'postDislike') {
       post.dislikeCount = count;
     }
-    await Post.update(post.trxId, post);
+    await Post.update({ trxId: post.trxId, groupId: post.groupId }, post);
     if (value > 0 && from !== post.userAddress) {
       const notification = await Notification.add({
         groupId: item.GroupId,
@@ -67,7 +67,7 @@ export const handleCounter = async (item: IContent) => {
   }
 
   if (name.startsWith('comment')) {
-    const comment = await Comment.get(objectId);
+    const comment = await Comment.get(item.GroupId, objectId);
     if (!comment) {
       return;
     }
@@ -80,7 +80,7 @@ export const handleCounter = async (item: IContent) => {
     } else if (name === 'commentDislike') {
       comment.dislikeCount = count;
     }
-    await Comment.update(comment.trxId, comment);
+    await Comment.update({ trxId: comment.trxId, groupId: comment.groupId }, comment);
     if (value > 0 && from !== comment.userAddress) {
       const notification = await Notification.add({
         groupId: item.GroupId,

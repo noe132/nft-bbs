@@ -23,7 +23,7 @@ export const handleComment = async (item: IContent) => {
   };
 
   if (trxContent.updatedTrxId) {
-    const updatedComment = await Comment.get(trxContent.updatedTrxId);
+    const updatedComment = await Comment.get(item.GroupId, trxContent.updatedTrxId);
     if (!updatedComment) { return; }
     if (comment.userAddress !== updatedComment.userAddress) {
       pollingLog.warn(`post ${comment.trxId} no permission update comment`);
@@ -34,28 +34,28 @@ export const handleComment = async (item: IContent) => {
   }
 
   if (trxContent.deletedTrxId) {
-    const deletedComment = await Comment.get(trxContent.deletedTrxId);
+    const deletedComment = await Comment.get(item.GroupId, trxContent.deletedTrxId);
     if (!deletedComment) { return; }
     if (comment.userAddress !== deletedComment.userAddress) {
       pollingLog.warn(`post ${comment.trxId} no permission delete comment`);
     }
 
     await Promise.all([
-      Comment.delete(deletedComment.trxId),
-      Notification.deleteWith(deletedComment.trxId),
-      UniqueCounter.deleteWith(deletedComment.trxId),
+      Comment.delete(deletedComment.groupId, deletedComment.trxId),
+      Notification.deleteWith(deletedComment.groupId, deletedComment.trxId),
+      UniqueCounter.deleteWith(deletedComment.groupId, deletedComment.trxId),
     ]);
 
-    const post = await Post.get(deletedComment.objectId);
+    const post = await Post.get(deletedComment.groupId, deletedComment.objectId);
     if (post) {
       post.commentCount = await Comment.count({
         groupId: post.groupId,
         objectId: deletedComment.objectId,
       });
-      await Post.update(post.trxId, post);
+      await Post.update({ trxId: post.trxId, groupId: post.groupId }, post);
     }
     if (deletedComment.threadId) {
-      const comment = await Comment.get(deletedComment.threadId);
+      const comment = await Comment.get(deletedComment.groupId, deletedComment.threadId);
       if (comment) {
         comment.commentCount = await Comment.count({
           groupId: comment.groupId,
@@ -71,9 +71,9 @@ export const handleComment = async (item: IContent) => {
   broadcast('trx', { trxId: comment.trxId, type: 'comment' });
 
   const commentAuthorAddress = comment.userAddress;
-  const post = await Post.get(comment.objectId);
-  const parentReplyComment = comment.replyId ? await Comment.get(comment.replyId) : null;
-  const parentThreadComment = comment.threadId ? await Comment.get(comment.threadId) : null;
+  const post = await Post.get(comment.groupId, comment.objectId);
+  const parentReplyComment = comment.replyId ? await Comment.get(comment.groupId, comment.replyId) : null;
+  const parentThreadComment = comment.threadId ? await Comment.get(comment.groupId, comment.threadId) : null;
 
   if (post) {
     post.commentCount = await Comment.count({

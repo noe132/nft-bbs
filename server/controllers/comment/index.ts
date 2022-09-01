@@ -6,9 +6,8 @@ import { assertValidation, parseIntFromString, truncate } from '~/utils';
 
 export const commentController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.get('/:groupId/:trxId', async (req) => {
-    const params = assertValidation(type({ trxId: string }).decode(req.params));
-    const trxId = params.trxId;
-    const comment = await Comment.get(trxId);
+    const params = assertValidation(type({ groupId: string, trxId: string }).decode(req.params));
+    const comment = await Comment.get(params.groupId, params.trxId);
     if (!comment) {
       throw new NotFound();
     }
@@ -42,7 +41,7 @@ export const commentController: Parameters<FastifyRegister>[0] = (fastify, _opts
     });
     const truncatedLength = parseIntFromString(query.truncatedLength, 0);
     if (truncatedLength) {
-      comments = comments.map((item: any) => {
+      comments = comments.map((item) => {
         item.content = truncate(item.content, truncatedLength);
         return item;
       });
