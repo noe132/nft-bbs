@@ -214,7 +214,7 @@ export const Header = observer((props: { className?: string }) => {
       )}
     >
       <button
-        className="absolute left-4 flex-none w-7 h-auto s1240:hidden"
+        className="absolute left-5 flex-none w-7 h-auto s1240:hidden"
         onClick={handleClickLogo}
       >
         <img
@@ -226,12 +226,17 @@ export const Header = observer((props: { className?: string }) => {
       </button>
       <div className="flex w-[1100px] justify-between self-stretch gap-x-4">
         <div className="flex items-center flex-1">
-          <img
-            className="flex-none w-7 h-auto hidden s1240:block self-center mr-4"
-            src={RumLogo}
-            srcSet={`${RumLogo2x} 2x, ${RumLogo3x} 3x,`}
-            alt=""
-          />
+          <button
+            className="flex-none h-auto hidden s1240:block self-center mr-4"
+            onClick={handleClickLogo}
+          >
+            <img
+              className="w-7 h-auto self-center"
+              src={RumLogo}
+              srcSet={`${RumLogo2x} 2x, ${RumLogo3x} 3x,`}
+              alt=""
+            />
+          </button>
           {!state.searchMode && state.viewPage === 'postlist' && (
             <div className="flex gap-x-4">
               {false && (

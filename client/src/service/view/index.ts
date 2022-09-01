@@ -33,14 +33,19 @@ const pushPage = action((...args: Pages) => {
   state.stack.push({ page: args, id: genId() });
 });
 
-const back = async () => {
-  if (state.stack.length <= 1) { return; }
+const canBack = async () => {
   for (const v of state.backPreventor) {
     const result = await v();
     if (!result) {
-      return;
+      return false;
     }
   }
+  return true;
+};
+
+const back = async () => {
+  if (state.stack.length <= 1) { return; }
+  if (!await canBack()) { return; }
   runInAction(() => {
     state.stack.pop();
   });
@@ -56,9 +61,12 @@ const addBackPreventor = action((allowed: () => boolean | Promise<boolean>) => {
   });
 });
 
-const backToTop = action(() => {
-  state.stack.length = 1;
-});
+const backToTop = async () => {
+  if (!await canBack()) { return; }
+  runInAction(() => {
+    state.stack.length = 1;
+  });
+};
 
 export const viewService = {
   state,
