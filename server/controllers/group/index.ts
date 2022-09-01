@@ -36,6 +36,8 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
       startTrx: '',
     });
 
+    QuorumLightNodeSDK.cache.Group.add(seedUrl);
+
     return {
       status: 0,
       msg: `group ${groupId} joined`,
