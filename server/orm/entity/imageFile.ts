@@ -1,7 +1,7 @@
 import { isLeft, tryCatch } from 'fp-ts/lib/Either';
 import { identity } from 'fp-ts/lib/function';
 import { IContent } from 'quorum-light-node-sdk-nodejs';
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, EntityManager, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { imageTrxContent } from '~/types';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -50,9 +50,9 @@ export class ImageFile {
     return item;
   }
 
-  public static async add(params: EntityConstructorParams<ImageFile, 'id'>) {
+  public static async add(params: EntityConstructorParams<ImageFile, 'id'>, manager?: EntityManager) {
     const item = ImageFile.create(params);
-    return AppDataSource.manager.save(ImageFile, item);
+    return (manager || AppDataSource.manager).save(ImageFile, item);
   }
 
   public static async get(groupId: string, trxId: string) {

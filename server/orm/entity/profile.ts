@@ -1,7 +1,7 @@
 import { isLeft, tryCatch } from 'fp-ts/lib/Either';
 import { identity } from 'fp-ts/lib/function';
 import { IContent } from 'quorum-light-node-sdk-nodejs';
-import { Column, Entity, Index, FindOptionsWhere, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, FindOptionsWhere, PrimaryGeneratedColumn, EntityManager } from 'typeorm';
 import { profileTrxContent } from '~/types';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -56,18 +56,18 @@ export class Profile {
     return item;
   }
 
-  public static async add(params: EntityConstructorParams<Profile, 'id'>) {
+  public static async add(params: EntityConstructorParams<Profile, 'id'>, manager?: EntityManager) {
     const item = Profile.create(params);
-    return AppDataSource.manager.save(Profile, item);
+    return (manager || AppDataSource.manager).save(Profile, item);
   }
 
   public static async get(params: FindOptionsWhere<Profile>) {
     return AppDataSource.manager.findOneBy(Profile, params);
   }
 
-  public static async bulkGet(params: Array<FindOptionsWhere<Profile>>) {
+  public static async bulkGet(params: Array<FindOptionsWhere<Profile>>, manager?: EntityManager) {
     if (!params.length) { return []; }
-    return AppDataSource.manager.findBy(Profile, params);
+    return (manager || AppDataSource.manager).findBy(Profile, params);
   }
 
   public static generateFallbackProfile(params: { groupId?: string, userAddress: string }): Profile {

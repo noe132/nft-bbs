@@ -8,7 +8,7 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
   fastify.get('/:groupId/:trxId', async (req) => {
     const params = assertValidation(type({ groupId: string, trxId: string }).decode(req.params));
     const query = assertValidation(partial({ viewer: string }).decode(req.query));
-    const post = await Post.get(params.groupId, params.trxId);
+    const post = await Post.get({ groupId: params.groupId, trxId: params.trxId });
     if (!post) {
       throw new NotFound();
     }

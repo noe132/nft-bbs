@@ -2,7 +2,7 @@ import { isLeft, tryCatch } from 'fp-ts/lib/Either';
 import { identity } from 'fp-ts/lib/function';
 import { keyBy } from 'lodash';
 import { IContent } from 'quorum-light-node-sdk-nodejs';
-import { Column, Entity, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { postTrxContent } from '~/types';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -78,21 +78,25 @@ export class Post {
     return item;
   }
 
-  public static async add(params: EntityConstructorParams<Post, 'id' | 'extra'>) {
+  public static async add(params: EntityConstructorParams<Post, 'id' | 'extra'>, manager?: EntityManager) {
     const post = Post.create(params);
-    await AppDataSource.manager.save(post);
+    await (manager || AppDataSource.manager).save(post);
   }
 
-  public static async save(post: Post) {
-    await AppDataSource.manager.save(post);
+  public static async save(post: Post, manager?: EntityManager) {
+    await (manager || AppDataSource.manager).save(post);
   }
 
-  public static update(where: FindOptionsWhere<Post>, params: Partial<EntityConstructorParams<Post, 'id' | 'extra'>>) {
-    return AppDataSource.manager.update(Post, where, params);
+  public static update(
+    where: FindOptionsWhere<Post>,
+    params: Partial<EntityConstructorParams<Post, 'id' | 'extra'>>,
+    manager?: EntityManager,
+  ) {
+    return (manager || AppDataSource.manager).update(Post, where, params);
   }
 
-  public static get(groupId: string, trxId: string) {
-    return AppDataSource.manager.findOneBy(Post, { groupId, trxId });
+  public static get(where: { groupId: string, trxId: string }, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).findOneBy(Post, where);
   }
 
   public static async getFirst(params: { groupId: string, userAddress: string }) {
@@ -103,13 +107,13 @@ export class Post {
   }
 
 
-  public static bulkGet(trxIds: Array<string>) {
+  public static bulkGet(trxIds: Array<string>, manager?: EntityManager) {
     if (!trxIds.length) { return []; }
-    return AppDataSource.manager.findBy(Post, trxIds.map((trxId) => ({ trxId })));
+    return (manager || AppDataSource.manager).findBy(Post, trxIds.map((trxId) => ({ trxId })));
   }
 
-  public static delete(groupId: string, trxId: string) {
-    return AppDataSource.manager.delete(Post, { groupId, trxId });
+  public static delete(where: { groupId: string, trxId: string }, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).delete(Post, where);
   }
 
   public static list(params: {

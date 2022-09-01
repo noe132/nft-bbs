@@ -2,7 +2,7 @@ import { isLeft, tryCatch } from 'fp-ts/lib/Either';
 import { identity } from 'fp-ts/lib/function';
 import { keyBy } from 'lodash';
 import { IContent } from 'quorum-light-node-sdk-nodejs';
-import { Column, Entity, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { CounterName, counterTrxContent } from '~/types';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -59,17 +59,17 @@ export class UniqueCounter {
     return item;
   }
 
-  public static async add(params: EntityConstructorParams<UniqueCounter, 'id'>) {
+  public static async add(params: EntityConstructorParams<UniqueCounter, 'id'>, manager?: EntityManager) {
     const item = UniqueCounter.create(params);
-    return AppDataSource.manager.save(UniqueCounter, item);
+    return (manager || AppDataSource.manager).save(UniqueCounter, item);
   }
 
-  public static async destroy(where: FindOptionsWhere<UniqueCounter>) {
-    return AppDataSource.manager.delete(UniqueCounter, where);
+  public static async destroy(where: FindOptionsWhere<UniqueCounter>, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).delete(UniqueCounter, where);
   }
 
-  public static async has(where: FindOptionsWhere<UniqueCounter>) {
-    const count = await AppDataSource.manager.countBy(UniqueCounter, where);
+  public static async has(where: FindOptionsWhere<UniqueCounter>, manager?: EntityManager) {
+    const count = await (manager || AppDataSource.manager).countBy(UniqueCounter, where);
     return !!count;
   }
 
@@ -77,14 +77,17 @@ export class UniqueCounter {
     return AppDataSource.manager.findBy(UniqueCounter, queries);
   }
 
-  public static async count(queries: FindOptionsWhere<UniqueCounter>) {
-    return AppDataSource.manager.countBy(UniqueCounter, queries);
+  public static async count(queries: FindOptionsWhere<UniqueCounter>, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).countBy(UniqueCounter, queries);
   }
 
-  public static async deleteWith(groupId: string, trxId: string) {
-    const items = await AppDataSource.manager.findBy(UniqueCounter, { groupId, objectId: trxId });
+  public static async deleteWith(where: { groupId: string, trxId: string }, manager?: EntityManager) {
+    const items = await (manager || AppDataSource.manager).findBy(
+      UniqueCounter,
+      { groupId: where.groupId, objectId: where.trxId },
+    );
     if (!items.length) { return null; }
-    return AppDataSource.manager.delete(UniqueCounter, items);
+    return (manager || AppDataSource.manager).delete(UniqueCounter, items);
   }
 
   public static async getCounterMap(p: { counterName: CounterName, userAddress: string, items: Array<Post | Comment> }) {

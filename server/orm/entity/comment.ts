@@ -2,7 +2,7 @@ import { isLeft, tryCatch } from 'fp-ts/lib/Either';
 import { identity } from 'fp-ts/lib/function';
 import { keyBy } from 'lodash';
 import { IContent } from 'quorum-light-node-sdk-nodejs';
-import { Column, Entity, PrimaryColumn, Index, FindOptionsWhere, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, FindOptionsWhere, PrimaryGeneratedColumn, EntityManager } from 'typeorm';
 import { commentTrxContent } from '~/types';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -15,7 +15,7 @@ export class Comment {
   public id?: number;
 
   @Index()
-  @PrimaryColumn({ nullable: false })
+  @Column({ nullable: false })
   public trxId!: string;
 
   @Index()
@@ -87,21 +87,28 @@ export class Comment {
     return item;
   }
 
-  public static async add(params: EntityConstructorParams<Comment, 'id' | 'extra'>) {
+  public static async add(
+    params: EntityConstructorParams<Comment, 'id' | 'extra'>,
+    manager?: EntityManager,
+  ) {
     const item = Comment.create(params);
-    return AppDataSource.manager.save(Comment, item);
+    return (manager || AppDataSource.manager).save(Comment, item);
   }
 
-  public static async save(comment: Comment) {
-    await AppDataSource.manager.save(comment);
+  public static async save(comment: Comment, manager?: EntityManager) {
+    await (manager || AppDataSource.manager).save(comment);
   }
 
-  public static update(where: FindOptionsWhere<Comment>, params: Partial<EntityConstructorParams<Comment, 'id' | 'extra'>>) {
-    return AppDataSource.manager.update(Comment, where, params);
+  public static update(
+    where: FindOptionsWhere<Comment>,
+    params: Partial<EntityConstructorParams<Comment, 'id' | 'extra'>>,
+    manager?: EntityManager,
+  ) {
+    return (manager || AppDataSource.manager).update(Comment, where, params);
   }
 
-  public static async get(groupId: string, trxId: string) {
-    return AppDataSource.manager.findOneBy(Comment, { groupId, trxId });
+  public static async get(where: { groupId: string, trxId: string }, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).findOneBy(Comment, where);
   }
 
   public static async getFirst(params: { groupId: string, userAddress: string }) {
@@ -111,13 +118,13 @@ export class Comment {
     });
   }
 
-  public static async bulkGet(trxIds: Array<string>) {
+  public static async bulkGet(trxIds: Array<string>, manager?: EntityManager) {
     if (!trxIds.length) { return []; }
-    return AppDataSource.manager.findBy(Comment, trxIds.map((trxId) => ({ trxId })));
+    return (manager || AppDataSource.manager).findBy(Comment, trxIds.map((trxId) => ({ trxId })));
   }
 
-  public static async delete(groupId: string, trxId: string) {
-    await AppDataSource.manager.delete(Comment, { groupId, trxId });
+  public static async delete(where: { groupId: string, trxId: string }, manager?: EntityManager) {
+    await (manager || AppDataSource.manager).delete(Comment, where);
   }
 
   public static async list(params: { limit: number, offset: number } & Pick<FindOptionsWhere<Comment>, 'groupId' | 'objectId'>) {
@@ -131,8 +138,8 @@ export class Comment {
     });
   }
 
-  public static async count(query: FindOptionsWhere<Comment>) {
-    return AppDataSource.manager.countBy(Comment, query);
+  public static async count(query: FindOptionsWhere<Comment>, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).countBy(Comment, query);
   }
 
   public static async appendExtra(_items: Comment, options?: { viewer?: string }): Promise<Comment>;

@@ -1,7 +1,7 @@
 import { isLeft, tryCatch } from 'fp-ts/lib/Either';
 import { identity } from 'fp-ts/lib/function';
 import { IContent } from 'quorum-light-node-sdk-nodejs';
-import { Column, Entity, Index, PrimaryColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, EntityManager, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { groupInfoTrxContent } from '~/types';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -12,7 +12,7 @@ export class GroupInfo {
   public id?: number;
 
   @Index()
-  @PrimaryColumn({ nullable: false, unique: true })
+  @Column({ nullable: false, unique: true })
   public trxId!: string;
 
   @Index()
@@ -50,9 +50,9 @@ export class GroupInfo {
     return item;
   }
 
-  public static async add(params: EntityConstructorParams<GroupInfo, 'id'>) {
+  public static async add(params: EntityConstructorParams<GroupInfo, 'id'>, manager?: EntityManager) {
     const item = GroupInfo.create(params);
-    return AppDataSource.manager.save(GroupInfo, item);
+    return (manager || AppDataSource.manager).save(GroupInfo, item);
   }
 
   public static async get(groupId: string) {

@@ -7,7 +7,7 @@ import { assertValidation, parseIntFromString, truncate } from '~/utils';
 export const commentController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.get('/:groupId/:trxId', async (req) => {
     const params = assertValidation(type({ groupId: string, trxId: string }).decode(req.params));
-    const comment = await Comment.get(params.groupId, params.trxId);
+    const comment = await Comment.get({ groupId: params.groupId, trxId: params.trxId });
     if (!comment) {
       throw new NotFound();
     }

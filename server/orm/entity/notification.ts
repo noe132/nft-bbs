@@ -1,4 +1,4 @@
-import { Column, Entity, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
 import { Comment } from './comment';
@@ -73,14 +73,17 @@ export class Notification {
     return item;
   }
 
-  public static async add(params: EntityConstructorParams<Notification, 'id' | 'extra'>) {
+  public static async add(params: EntityConstructorParams<Notification, 'id' | 'extra'>, manager?: EntityManager) {
     const item = Notification.create(params);
-    return AppDataSource.manager.save(Notification, item);
+    return (manager || AppDataSource.manager).save(Notification, item);
   }
 
-  public static async bulkAdd(items: Array<EntityConstructorParams<Notification, 'id' | 'extra'>>) {
+  public static async bulkAdd(
+    items: Array<EntityConstructorParams<Notification, 'id' | 'extra'>>,
+    manager: EntityManager,
+  ) {
     const notifications = items.map((v) => Notification.create(v));
-    return AppDataSource.manager.save(Notification, notifications);
+    return (manager || AppDataSource.manager).save(Notification, notifications);
   }
 
   public static async save(item: Notification) {
@@ -115,19 +118,19 @@ export class Notification {
     return AppDataSource.manager.countBy(Notification, query);
   }
 
-  public static async deleteWith(groupId: string, trxId: string) {
-    const notifications = await AppDataSource.manager.findBy(Notification, [
-      { groupId, objectId: trxId },
-      { groupId, actionObjectId: trxId },
+  public static async deleteWith(where: { groupId: string, trxId: string }, manager?: EntityManager) {
+    const notifications = await (manager || AppDataSource.manager).findBy(Notification, [
+      { groupId: where.groupId, objectId: where.trxId },
+      { groupId: where.groupId, actionObjectId: where.trxId },
     ]);
     if (!notifications.length) { return null; }
-    const deleteResult = await AppDataSource.manager.delete(Notification, notifications);
+    const deleteResult = await (manager || AppDataSource.manager).delete(Notification, notifications);
     return deleteResult;
   }
 
-  public static async appendExtra(items: Notification): Promise<Notification>;
-  public static async appendExtra(items: Array<Notification>): Promise<Array<Notification>>;
-  public static async appendExtra(_items: Array<Notification> | Notification) {
+  public static async appendExtra(items: Notification, manager?: EntityManager): Promise<Notification>;
+  public static async appendExtra(items: Array<Notification>, manager?: EntityManager): Promise<Array<Notification>>;
+  public static async appendExtra(_items: Array<Notification> | Notification, manager?: EntityManager) {
     const items = Array.isArray(_items) ? _items : [_items];
     const commentTrxIds: Array<string> = [];
     const postTrxIds: Array<string> = [];
@@ -144,12 +147,12 @@ export class Notification {
     });
 
     const [posts, comments, profiles] = await Promise.all([
-      Post.bulkGet(postTrxIds),
-      Comment.bulkGet(commentTrxIds),
+      Post.bulkGet(postTrxIds, manager),
+      Comment.bulkGet(commentTrxIds, manager),
       Profile.bulkGet(items.map((v) => ({
         groupId: v.groupId,
         userAddress: v.from,
-      }))),
+      })), manager),
     ]);
 
     items.forEach((item) => {

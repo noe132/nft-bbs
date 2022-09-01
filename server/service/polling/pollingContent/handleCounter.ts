@@ -1,9 +1,10 @@
 import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
+import { EntityManager } from 'typeorm';
 import { UniqueCounter, Post, Comment, Notification } from '~/orm';
 import { trySendSocket } from '~/service/socket';
 import { store, LOADED_DATA_KEY } from '~/utils/';
 
-export const handleCounter = async (item: IContent) => {
+export const handleCounter = async (item: IContent, transactionManager: EntityManager) => {
   const trxContent = UniqueCounter.parseTrxContent(item);
   if (!trxContent) {
     pollingLog.info(`counter ${item.TrxId} failed to validate trxContent`, item.Data.content);
@@ -24,29 +25,33 @@ export const handleCounter = async (item: IContent) => {
   trySendSocket(uniqueCounter.userAddress, 'trx', { trxId: item.TrxId, type: 'uniqueCounter' });
   if (value > 0) {
     // ignore duplicated counter
-    if (await UniqueCounter.has({ groupId: item.GroupId, name, objectId, userAddress: from })) {
+    const hasCounter = await UniqueCounter.has(
+      { groupId: item.GroupId, name, objectId, userAddress: from },
+      transactionManager,
+    );
+    if (hasCounter) {
       return;
     }
-    await UniqueCounter.add(uniqueCounter);
+    await UniqueCounter.add(uniqueCounter, transactionManager);
   } else if (value < 0) {
-    await UniqueCounter.destroy({ name, objectId });
+    await UniqueCounter.destroy({ name, objectId }, transactionManager);
   }
 
   if (name.startsWith('post')) {
-    const post = await Post.get(item.GroupId, objectId);
+    const post = await Post.get({ groupId: item.GroupId, trxId: objectId }, transactionManager);
     if (!post) {
       return;
     }
     const count = await UniqueCounter.count({
       name,
       objectId: post.trxId,
-    });
+    }, transactionManager);
     if (name === 'postLike') {
       post.likeCount = count;
     } else if (name === 'postDislike') {
       post.dislikeCount = count;
     }
-    await Post.update({ trxId: post.trxId, groupId: post.groupId }, post);
+    await Post.update({ trxId: post.trxId, groupId: post.groupId }, post, transactionManager);
     if (value > 0 && from !== post.userAddress) {
       const notification = await Notification.add({
         groupId: item.GroupId,
@@ -59,28 +64,33 @@ export const handleCounter = async (item: IContent) => {
         to: post.userAddress,
         from,
         timestamp: item.TimeStamp / 1000000,
-      });
+      }, transactionManager);
       if (store(LOADED_DATA_KEY)) {
-        trySendSocket(notification.to, 'notification', await Notification.appendExtra(notification));
+        const item = await Notification.appendExtra(notification, transactionManager)
+        trySendSocket(notification.to, 'notification', item);
       }
     }
   }
 
   if (name.startsWith('comment')) {
-    const comment = await Comment.get(item.GroupId, objectId);
+    const comment = await Comment.get({ groupId: item.GroupId, trxId: objectId }, transactionManager);
     if (!comment) {
       return;
     }
     const count = await UniqueCounter.count({
       name,
       objectId: comment.trxId,
-    });
+    }, transactionManager);
     if (name === 'commentLike') {
       comment.likeCount = count;
     } else if (name === 'commentDislike') {
       comment.dislikeCount = count;
     }
-    await Comment.update({ trxId: comment.trxId, groupId: comment.groupId }, comment);
+    await Comment.update(
+      { trxId: comment.trxId, groupId: comment.groupId },
+      comment,
+      transactionManager,
+    );
     if (value > 0 && from !== comment.userAddress) {
       const notification = await Notification.add({
         groupId: item.GroupId,
@@ -93,9 +103,10 @@ export const handleCounter = async (item: IContent) => {
         to: comment.userAddress,
         from,
         timestamp: item.TimeStamp / 1000000,
-      });
+      }, transactionManager);
       if (store(LOADED_DATA_KEY)) {
-        trySendSocket(notification.to, 'notification', await Notification.appendExtra(notification));
+        const item = await Notification.appendExtra(notification, transactionManager);
+        trySendSocket(notification.to, 'notification', item);
       }
     }
   }
