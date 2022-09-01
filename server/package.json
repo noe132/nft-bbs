@@ -6,8 +6,10 @@
    "types": "dist/index.d.ts",
    "scripts": {
       "dev": "nodemon --config ./nodemon.json",
+      "dev:debug": "nodemon --config ./nodemon-debug.json",
       "build": "yarn tsc",
       "start": "ts-node-transpile-only index.ts",
+      "start:prod": "node dist/index.js",
       "typeorm": "node -r tsconfig-paths/register node_modules/typeorm/cli-ts-node-commonjs.js -d ./orm/data-source.ts",
       "reset": "node -r tsconfig-paths/register node_modules/typeorm/cli-ts-node-commonjs.js -d ./orm/data-source.ts schema:drop && ts-node-transpile-only utils/reset.ts",
       "migration": "node -r tsconfig-paths/register node_modules/typeorm/cli-ts-node-commonjs.js -d ./orm/data-source.ts migration:generate"

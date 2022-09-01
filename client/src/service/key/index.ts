@@ -1,7 +1,7 @@
 import { action, observable } from 'mobx';
 import { ethers } from 'ethers';
 
-interface Keys {
+export interface Keys {
   privateKey: string
   keystore: string
   password: string

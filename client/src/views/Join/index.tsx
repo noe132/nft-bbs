@@ -6,9 +6,9 @@ import store from 'store2';
 import QuorumLightNodeSDK, { IGroup } from 'quorum-light-node-sdk';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl,
-  FormControlLabel, IconButton, InputLabel, OutlinedInput,
+  FormControlLabel, IconButton, InputLabel, Menu, MenuItem, OutlinedInput,
 } from '@mui/material';
-import { ChevronLeft, Close, Visibility, VisibilityOff } from '@mui/icons-material';
+import { Check, ChevronLeft, Close, Visibility, VisibilityOff } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 import PasteIcon from 'boxicons/svg/regular/bx-paste.svg?fill-icon';
 
@@ -19,10 +19,10 @@ import logoImg from '~/assets/icons/rumsystem.svg';
 import RumLogo from '~/assets/icons/logo.png';
 import RumLogo2x from '~/assets/icons/logo@2x.png';
 import RumLogo3x from '~/assets/icons/logo@3x.png';
-// import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
+import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
 import { chooseImgByPixelRatio, runLoading, ThemeLight } from '~/utils';
-import { keyService, nodeService, snackbarService } from '~/service';
+import { AllLanguages, keyService, langName, langService, nodeService, snackbarService } from '~/service';
 import { GroupAvatar } from '~/components';
 
 enum Step {
@@ -34,12 +34,8 @@ enum Step {
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
-    // seedUrl: store('seedUrl') || 'rum://seed?v=1&e=0&n=0&b=4q6xzwoZSN2N_8wNgt4qfQ&c=b5XdM7mnLlFx43jASvVQ2GvtFx0mCr09UYlH6273SGA&g=9_zl1xKSRwOcKnKe74Fb7Q&k=Ag_AMFZFuhsAkUGaEJ9om2nDGVmcRDci74j4DqcWXnuW&s=hE-Q-a6nB1CcpW6mnOIDhN7G5yFZ450vpFMMAZKUEtx086PiSqzoLsusT79pm1d9k7khxwK8fDk1DOyGKMFZ6gE&t=FwrY-W_8ye0&a=NFT%E8%AE%BA%E5%9D%9B%E4%BA%A7%E5%93%81%E5%86%85%E6%B5%8B%E4%B8%93%E7%94%A82&y=group_timeline&u=https%3A%2F%2F103.61.39.95%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyJmN2ZjZTVkNy0xMjkyLTQ3MDMtOWMyYS03MjllZWY4MTViZWQiXSwiZXhwIjoxODE4MDU3OTgzLCJuYW1lIjoiYWxsb3ctZjdmY2U1ZDctMTI5Mi00NzAzLTljMmEtNzI5ZWVmODE1YmVkIiwicm9sZSI6Im5vZGUifQ.Hq0pS_h6gOSizdErZuYyTzYkyFj1458jSiZ3wJn_tNY',
-    // seedUrl: 'rum://seed?v=1&e=0&n=0&b=4q6xzwoZSN2N_8wNgt4qfQ&c=b5XdM7mnLlFx43jASvVQ2GvtFx0mCr09UYlH6273SGA&g=9_zl1xKSRwOcKnKe74Fb7Q&k=Ag_AMFZFuhsAkUGaEJ9om2nDGVmcRDci74j4DqcWXnuW&s=hE-Q-a6nB1CcpW6mnOIDhN7G5yFZ450vpFMMAZKUEtx086PiSqzoLsusT79pm1d9k7khxwK8fDk1DOyGKMFZ6gE&t=FwrY-W_8ye0&a=NFT%E8%AE%BA%E5%9D%9B%E4%BA%A7%E5%93%81%E5%86%85%E6%B5%8B%E4%B8%93%E7%94%A82&y=group_timeline&u=https%3A%2F%2F103.61.39.95%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyJmN2ZjZTVkNy0xMjkyLTQ3MDMtOWMyYS03MjllZWY4MTViZWQiXSwiZXhwIjoxODE4MDU3OTgzLCJuYW1lIjoiYWxsb3ctZjdmY2U1ZDctMTI5Mi00NzAzLTljMmEtNzI5ZWVmODE1YmVkIiwicm9sZSI6Im5vZGUifQ.Hq0pS_h6gOSizdErZuYyTzYkyFj1458jSiZ3wJn_tNY',
-    // seedUrl: 'rum://seed?v=1&e=0&n=0&b=Jd-Xt1_ySoWPmCh3tmijVA&c=szMuGxtbOnaz7a-uCdduQtHNKAhMGry_sCWKoKY0Log&g=ITKp_yM8TUq1M22VF2S8TQ&k=Aq9Bdxy03_5-Ngk5xhznF0McJwjw6H1_sgPXzDVC32pb&s=ahsY9PS8zC-bUMm5_FTzq7_TQBHlT4PflbfJRjz1x7lecv79Ydmu_csmOQLtXEqahqJlJD5MjPtSZQcpLwo-dAE&t=Fw_M2UqNnGQ&a=nft-bbs-test&y=group_timeline&u=http%3A%2F%2F127.0.0.1%3A64458%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyIyMTMyYTlmZi0yMzNjLTRkNGEtYjUzMy02ZDk1MTc2NGJjNGQiXSwiZXhwIjoxODE5NDUyMDIxLCJuYW1lIjoiYWxsb3ctMjEzMmE5ZmYtMjMzYy00ZDRhLWI1MzMtNmQ5NTE3NjRiYzRkIiwicm9sZSI6Im5vZGUifQ.k3xfpyoGshC6YHkzlRGyxTcnyjdoMHgTiKDa5WZZR-8',
-    seedUrl: 'rum://seed?v=1&e=0&n=0&b=QaPjfi7LQ4yp2S60ngyJdw&c=fja8EJAAK_ZxLPcyLq-6L7HSKuli68wnhl4ImdwHh_A&g=uZvFqN6-SYGGu9SESABN0w&k=AjlWMMvVpXi9DLpoxmgJgD9ug2fDAaUNQCOhOq5PNfIc&s=bOh-m-h2vCbsS3Z3KBUNoYfB3D3ZyJx3Vf0W2dKibNgNp1Uj_f6U-YSo4MPLZM2QE3ipN7KklOCdoYHS9WT2zgE&t=FxBnshqivLo&a=nft-bbs-test-noe132.com&y=group_timeline&u=https%3A%2F%2Fnoe132.com%3A64459%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyJiOTliYzVhOC1kZWJlLTQ5ODEtODZiYi1kNDg0NDgwMDRkZDMiXSwiZXhwIjoxNjkzNDc4ODU1LCJuYW1lIjoibm9kZWp3dCIsInJvbGUiOiJub2RlIn0.BRl1QD0B-Dpngccs8dtsMzm5j-m_BCvet4XgRJx07cA',
+    seedUrl: store('seedUrl') || 'rum://seed?v=1&e=0&n=0&b=QaPjfi7LQ4yp2S60ngyJdw&c=fja8EJAAK_ZxLPcyLq-6L7HSKuli68wnhl4ImdwHh_A&g=uZvFqN6-SYGGu9SESABN0w&k=AjlWMMvVpXi9DLpoxmgJgD9ug2fDAaUNQCOhOq5PNfIc&s=bOh-m-h2vCbsS3Z3KBUNoYfB3D3ZyJx3Vf0W2dKibNgNp1Uj_f6U-YSo4MPLZM2QE3ipN7KklOCdoYHS9WT2zgE&t=FxBnshqivLo&a=nft-bbs-test-noe132.com&y=group_timeline&u=https%3A%2F%2Fnoe132.com%3A64459%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyJiOTliYzVhOC1kZWJlLTQ5ODEtODZiYi1kNDg0NDgwMDRkZDMiXSwiZXhwIjoxNjkzNDc4ODU1LCJuYW1lIjoibm9kZWp3dCIsInJvbGUiOiJub2RlIn0.BRl1QD0B-Dpngccs8dtsMzm5j-m_BCvet4XgRJx07cA',
     keystorePopup: false,
-    // privateKey: '',
     keystore: '',
     password: '',
     passwordVisibility: false,
@@ -53,15 +49,15 @@ export const Join = observer(() => {
     },
   }));
 
-  // const languageButton = useRef<HTMLButtonElement>(null);
+  const languageButton = useRef<HTMLButtonElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  // const handleChangeLanguage = action((lang: AllLanguages) => {
-  //   langService.switchLang(lang);
-  //   state.languageMenu = false;
-  // });
+  const handleChangeLanguage = action((lang: AllLanguages) => {
+    langService.switchLang(lang);
+    state.languageMenu = false;
+  });
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (state.step === Step.InputSeedUrl) {
       try {
         QuorumLightNodeSDK.cache.Group.add(state.seedUrl);
@@ -85,7 +81,7 @@ export const Join = observer(() => {
     if (state.step === Step.PrepareJoinGroup) {
       try {
         QuorumLightNodeSDK.cache.Group.clear();
-        nodeService.joinGroup(state.seedUrl);
+        await nodeService.joinGroup(state.seedUrl);
       } catch (e) {
         snackbarService.error(`加入失败 (${(e as Error).message})`);
       }
@@ -116,7 +112,12 @@ export const Join = observer(() => {
       password = '123';
       keyData = await keyService.createRandom(password);
     }
-    nodeService.joinGroup(state.seedUrl, keyData);
+
+    try {
+      await nodeService.joinGroup(state.seedUrl, keyData);
+    } catch (e: any) {
+      snackbarService.error(e.message);
+    }
     store('keystore', keyData.keystore);
     store('seedUrl', state.seedUrl);
     store('password', password);
@@ -144,7 +145,7 @@ export const Join = observer(() => {
     } else {
       store('password', '');
     }
-    nodeService.joinGroup(state.seedUrl, data);
+    await nodeService.joinGroup(state.seedUrl, data);
   };
 
   const handleLoginAnonymous = () => {
@@ -182,7 +183,7 @@ export const Join = observer(() => {
   };
 
   const savedLoginCheck = async () => {
-    const seedUrl = state.seedUrl;
+    const seedUrl = store('seedUrl');
     const keystore = store('keystore');
     const password = store('password');
     if (seedUrl && keystore && password) {
@@ -194,14 +195,19 @@ export const Join = observer(() => {
         return;
       }
       try {
-        nodeService.joinGroup(state.seedUrl, data);
+        await nodeService.joinGroup(state.seedUrl, data);
         return;
-      } catch (e) {}
+      } catch (e) {
+        console.error(e);
+        snackbarService.error('自动登录失败');
+        runInAction(() => {
+          state.step = Step.InputSeedUrl;
+        });
+      }
       return;
     }
     runInAction(() => {
       state.step = Step.InputSeedUrl;
-      handleNextStep();
     });
   };
 
@@ -232,46 +238,50 @@ export const Join = observer(() => {
         />
       </a>
       <div className="fixed top-12 right-16 flex items-center flex-none">
-        {/* <Button
-          className="text-[#5fc0e9] px-4"
-          variant="text"
-          ref={languageButton}
-          onClick={action(() => { state.languageMenu = true; })}
-        >
-          <LanguageIcon className="mr-3 text-cyan-blue text-20" />
-          <span className="normal-case text-14">
-            Language
-          </span>
-        </Button>
-
-        <ThemeLight>
-          <Menu
-            className="mt-1"
-            open={state.languageMenu}
-            anchorEl={languageButton.current}
-            onClose={action(() => { state.languageMenu = false; })}
-            anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
-            transformOrigin={{ horizontal: 'center', vertical: 'top' }}
-            disableScrollLock
+        {false && (
+          <Button
+            className="text-[#5fc0e9] px-4"
+            variant="text"
+            ref={languageButton}
+            onClick={action(() => { state.languageMenu = true; })}
           >
-            <MenuItem onClick={() => handleChangeLanguage('en')}>
-              <div className="flex flex-center w-5 mr-2">
-                {langService.state.lang === 'en' && (
-                  <Check className="text-20 text-soft-blue" />
-                )}
-              </div>
-              {langName.en}
-            </MenuItem>
-            <MenuItem onClick={() => handleChangeLanguage('zh-cn')}>
-              <div className="flex flex-center w-5 mr-2">
-                {langService.state.lang === 'zh-cn' && (
-                  <Check className="text-20 text-soft-blue" />
-                )}
-              </div>
-              {langName['zh-cn']}
-            </MenuItem>
-          </Menu>
-        </ThemeLight> */}
+            <LanguageIcon className="mr-3 text-cyan-blue text-20" />
+            <span className="normal-case text-14">
+              Language
+            </span>
+          </Button>
+        )}
+
+        {false && (
+          <ThemeLight>
+            <Menu
+              className="mt-1"
+              open={state.languageMenu}
+              anchorEl={languageButton.current}
+              onClose={action(() => { state.languageMenu = false; })}
+              anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
+              transformOrigin={{ horizontal: 'center', vertical: 'top' }}
+              disableScrollLock
+            >
+              <MenuItem onClick={() => handleChangeLanguage('en')}>
+                <div className="flex flex-center w-5 mr-2">
+                  {langService.state.lang === 'en' && (
+                    <Check className="text-20 text-soft-blue" />
+                  )}
+                </div>
+                {langName.en}
+              </MenuItem>
+              <MenuItem onClick={() => handleChangeLanguage('zh-cn')}>
+                <div className="flex flex-center w-5 mr-2">
+                  {langService.state.lang === 'zh-cn' && (
+                    <Check className="text-20 text-soft-blue" />
+                  )}
+                </div>
+                {langName['zh-cn']}
+              </MenuItem>
+            </Menu>
+          </ThemeLight>
+        )}
       </div>
       <div
         className="flex-col flex-1 bg-cover bg-center"

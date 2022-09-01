@@ -97,6 +97,12 @@ const main = async () => {
   });
   (globalThis as any).s = fastify;
 
+  fastify.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    fastify.getDefaultJsonParser('ignore', 'ignore'),
+  );
+
   fastify.register(cors, {
     credentials: true,
     origin: true,

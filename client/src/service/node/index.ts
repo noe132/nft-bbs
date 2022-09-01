@@ -7,9 +7,9 @@ import type {
 } from 'nft-bbs-server';
 // import { init as initDatabase, TrxType } from '~/database';
 import { runLoading, sleep } from '~/utils';
-import { CommentApi, GroupInfoApi, NotificationApi, PostApi, ProfileApi } from '~/apis';
+import { CommentApi, GroupApi, GroupInfoApi, NotificationApi, PostApi, ProfileApi } from '~/apis';
 import { initSocket, SocketEventListeners } from '~/service/socket';
-import { keyService } from '../key';
+import { Keys, keyService } from '~/service/key';
 
 export type HotestFilter = 'all' | 'year' | 'month' | 'week';
 type PostListLoadMode = {
@@ -775,16 +775,9 @@ const socketEventHandler: SocketEventListeners = {
   }),
 };
 
-const joinGroup = (
-  seedUrl: string,
-  keys?: {
-    privateKey: string
-    password: string
-    keystore: string
-    address: string
-  },
-) => {
+const joinGroup = async (seedUrl: string, keys?: Keys) => {
   QuorumLightNodeSDK.cache.Group.add(seedUrl);
+  await GroupApi.join(seedUrl);
 
   if (keys) {
     keyService.use(keys);

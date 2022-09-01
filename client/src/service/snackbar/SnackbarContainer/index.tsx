@@ -117,7 +117,7 @@ export const SnackbarContainer = observer(() => {
         >
           <SnackbarContent
             className={classNames(
-              'snackbar-item-content',
+              'snackbar-item-content break-all',
               item.item.type === 'plain' && 'bg-button',
             )}
             message={

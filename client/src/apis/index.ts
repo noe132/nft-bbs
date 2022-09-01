@@ -3,5 +3,6 @@ export * as ImageApi from './image';
 export * as NotificationApi from './notification';
 export * as PostApi from './post';
 export * as ProfileApi from './profile';
+export * as GroupApi from './group';
 export * as GroupInfoApi from './groupInfo';
 export * as PixabayApi from './pixabay';

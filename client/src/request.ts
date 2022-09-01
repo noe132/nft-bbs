@@ -1,10 +1,19 @@
 import { sleep } from './utils';
 
 const BASE = '';
-export default async (url: any, options: any = {}) => {
-  const hasEffectMethod = options.method === 'POST' || options.method === 'DELETE' || options.method === 'PUT';
-  if (hasEffectMethod) {
-    options.headers = { 'Content-Type': 'application/json' };
+type RequestOptions = Omit<RequestInit, 'body'> & {
+  base?: string
+  minPendingDuration?: number
+  isTextResponse?: boolean
+  body?: any
+  json?: boolean
+};
+export default async (url: any, options: RequestOptions = {}) => {
+  if (options.json) {
+    options.headers = {
+      ...options.headers,
+      'Content-Type': 'application/json',
+    };
     options.body = JSON.stringify(options.body);
   }
   if (!options.base) {
