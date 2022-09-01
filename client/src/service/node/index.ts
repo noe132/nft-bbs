@@ -136,7 +136,8 @@ const profile = {
       post.getFirstPost(userAddress),
     ]);
     if (userProfile) {
-      const timestamp = Math.min(firstPost?.timestamp ?? 0, firstComment?.timestamp ?? 0);
+      const now = Date.now();
+      const timestamp = Math.min(firstPost?.timestamp ?? now, firstComment?.timestamp ?? now);
       runInAction(() => {
         state.profile.map.set(userAddress, userProfile);
         state.profile.userPostCountMap.set(userAddress, postCount);

@@ -465,7 +465,6 @@ export const Header = observer((props: { className?: string }) => {
           process.env.NODE_ENV === 'development' && { text: '使用账号1', onClick: () => handleChangeAccount('1') },
           process.env.NODE_ENV === 'development' && { text: '使用账号2', onClick: () => handleChangeAccount('2') },
           // process.env.NODE_ENV === 'development' && { text: '使用新号', onClick: () => handleChangeAccount('new') },
-          process.env.NODE_ENV === 'development' && { text: '清除缓存数据', onClick: () => handleClearData() },
         ] as const).filter(<T extends unknown>(v: T | false): v is T => !!v).map((v, i) => (
           <MenuItem onClick={v.onClick} key={i}>
             <div className="flex gap-x-3 mr-2">
