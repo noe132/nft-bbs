@@ -7,7 +7,7 @@
    "scripts": {
       "dev": "nodemon --config ./nodemon.json",
       "dev:debug": "nodemon --config ./nodemon-debug.json",
-      "build": "yarn tsc",
+      "build": "rimraf dist && yarn tsc",
       "start": "ts-node-transpile-only index.ts",
       "start:prod": "node dist/index.js",
       "typeorm": "node -r tsconfig-paths/register node_modules/typeorm/cli-ts-node-commonjs.js -d ./orm/data-source.ts",
@@ -41,6 +41,7 @@
       "@types/lodash": "^4.14.184",
       "@types/module-alias": "^2.0.1",
       "@types/node": "^16.11.10",
+      "rimraf": "^3.0.2",
       "ts-node": "10.7.0",
       "tsconfig-paths": "^4.1.0"
    }

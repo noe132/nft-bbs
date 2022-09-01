@@ -27,9 +27,11 @@ export type {
 const port = 8002;
 
 const main = async () => {
-  try {
-    await fs.stat(path.join(__dirname, './config.ts'));
-  } catch (e) {
+  const result = await Promise.allSettled([
+    fs.stat(path.join(__dirname, './config.js')),
+    fs.stat(path.join(__dirname, './config.ts')),
+  ]);
+  if (result.every((v) => v.status === 'rejected')) {
     // eslint-disable-next-line no-console
     console.log('server/config.js not exists');
     // eslint-disable-next-line no-console
