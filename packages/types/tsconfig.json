@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig-base.json",
+  "compilerOptions": {
+    "composite": true,
+    "baseUrl": ".",
+    "rootDir": ".",
+    "module": "ESNext",
+    "lib": ["ESNext"],
+    "declaration": true,
+    "declarationMap": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "outDir": "dist",
+    "paths": {
+      "~/*": ["./*"]
+    },
+  },
+  "ts-node": {
+    "files": true,
+  },
+  "include": [
+    "src",
+    "index.ts"
+  ]
+}

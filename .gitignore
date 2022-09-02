@@ -7,13 +7,12 @@ yarn-error.log
 # /yarn.lock
 package-lock.json
 
-/server/localStorage
-
 # production
-/client/dist
-/server/dist
-/server/logs
-/server/config.ts
+/packages/*/dist
+/packages/server/logs
+
+/packages/server/config.ts
+/packages/server/localStorage
 
 # misc
 .DS_Store

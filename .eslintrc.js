@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = {
   'globals': {
     'document': false,
@@ -17,12 +19,16 @@ module.exports = {
 
   'root': true,
 
-  // 'parserOptions': {
-  //   project: [
-  //     './client/tsconfig.json',
-  //     './server/tsconfig.json',
-  //   ],
-  // },
+  'parserOptions': {
+    project: [
+      path.join(__dirname, 'packages/client/tsconfig.json'),
+      path.join(__dirname, 'packages/server/tsconfig.json'),
+      path.join(__dirname, 'packages/types/tsconfig.json'),
+      path.join(__dirname, 'tsconfig-base.json'),
+      // './packages/*/tsconfig.json',
+      // './tsconfig-base.json',
+    ],
+  },
 
   'settings': {
     // 'import/resolver': {

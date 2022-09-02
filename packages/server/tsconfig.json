@@ -1,0 +1,33 @@
+{
+  "extends": "../../tsconfig-base.json",
+  "compilerOptions": {
+    "composite": true,
+    "baseUrl": ".",
+    "rootDir": ".",
+    "module": "CommonJS",
+    "lib": ["ESNext"],
+    "declaration": true,
+    "declarationMap": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "outDir": "dist",
+    "paths": {
+      "~/*": ["./*"]
+    },
+  },
+  "ts-node": {
+    "files": true,
+  },
+  "include": [
+    "controllers",
+    "orm",
+    "service",
+    "types",
+    "utils",
+    "config.ts",
+    "index.ts",
+  ],
+  "references": [
+    { "path": "../types/tsconfig.json" }
+  ]
+}
