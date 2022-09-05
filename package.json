@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "build": "nx run-many --target=build --projects=\"nft-bbs-types,nft-bbs-server,nft-bbs-client\"",
+    "build:server": "nx run-many --target=build --projects=\"nft-bbs-types,nft-bbs-server\"",
     "lint": "nx run-many --target=lint --projects=\"nft-bbs-types,nft-bbs-server,nft-bbs-client\""
   },
   "workspaces": {
