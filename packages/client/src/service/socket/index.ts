@@ -1,24 +1,34 @@
 import io from 'socket.io-client';
 import type { SocketIOEventMap } from 'nft-bbs-server';
-import { keyService } from '~/service/key';
 
 export type SocketEventListeners = {
   [K in keyof SocketIOEventMap]: (v: SocketIOEventMap[K]) => unknown
 };
 
-export const initSocket = (listeners: SocketEventListeners) => {
-  const socket = io(`ws${location.protocol.slice(4)}//${location.hostname}:${location.port}/`, {
-    transports: ['websocket'],
-  });
+const socket = io(`ws${location.protocol.slice(4)}//${location.hostname}:${location.port}/`, {
+  transports: ['websocket'],
+});
 
-  socket.emit('authenticate', keyService.state.keys.address);
+socket.on('authenticateResult', (result: string) => {
+  // eslint-disable-next-line no-console
+  console.log(result);
+});
 
-  socket.on('authenticateResult', (result: string) => {
-    // eslint-disable-next-line no-console
-    console.log(result);
-  });
-
+export const addListeners = (listeners: SocketEventListeners) => {
   Object.entries(listeners).forEach(([k, v]) => {
     socket.on(k, v);
   });
+  return () => {
+    Object.entries(listeners).forEach(([k, v]) => {
+      socket.off(k, v);
+    });
+  };
+};
+
+export const authenticate = (address: string) => {
+  socket.emit('authenticate', address);
+};
+
+export const logout = () => {
+  socket.emit('logout');
 };

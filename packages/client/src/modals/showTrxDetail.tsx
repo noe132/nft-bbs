@@ -77,7 +77,7 @@ export const TrxDetailView = observer((props: Props) => {
     runLoading(
       (l) => { state.loading = l; },
       async () => {
-        const groupId = nodeService.state.group?.groupId;
+        const groupId = nodeService.state.groupId;
         if (!groupId) { return; }
         const trx = await QuorumLightNodeSdk.chain.Trx.get(groupId, props.trxId);
         runInAction(() => {

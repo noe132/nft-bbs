@@ -12,8 +12,8 @@ import { svgrPlugin } from './build/vite-svgr-plugin';
 export default async () => {
   const a = !!process.env.analyze;
 
-  const cert = await readFile('../cert/cert.pem').catch(() => null);
-  const key = await readFile('../cert/key.pem').catch(() => null);
+  const cert = await readFile('../../cert/cert.pem').catch(() => null);
+  const key = await readFile('../../cert/key.pem').catch(() => null);
 
   return defineConfig({
     server: {

@@ -30,7 +30,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
       return nodeService.post.getPostStat(props.post);
     },
     get isPostAuthor() {
-      return keyService.state.keys.address === props.post.userAddress;
+      return keyService.state.address === props.post.userAddress;
     },
   }));
 
@@ -57,7 +57,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const handleEditPost = () => {
-    viewService.pushPage('newpost', props.post);
+    viewService.pushPage({ name: 'newpost', value: props.post });
   };
 
   const handleDeletePost = async () => {
@@ -78,6 +78,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const parseContent = () => {
+    const groupId = props.post.groupId;
     const matches = Array.from(state.postStat.content.matchAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g));
     state.images = new Map<string, string>(
       matches.map((_sub, _g1, g2) => [g2 as any as string, '']),
@@ -88,7 +89,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         state.images.set(trxId, nodeService.state.post.imageCache.get(trxId)!);
         return;
       }
-      const url = ImageApi.getImageUrl(nodeService.state.group!.groupId, trxId);
+      const url = ImageApi.getImageUrl(groupId, trxId);
       state.images.set(trxId, url);
     });
     const content = state.postStat.content.replaceAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g, (_sub, g1, trxId) => {
@@ -138,7 +139,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         <UserAvatar profile={state.profile} />
         <div
           className="text-14 text-rum-orange cursor-pointer"
-          onClick={() => state.profile && viewService.pushPage('userprofile', state.profile)}
+          onClick={() => state.profile && viewService.pushPage({ name: 'userprofile', value: state.profile })}
         >
           {state.profile?.name || state.profile?.userAddress.slice(0, 10)}
         </div>

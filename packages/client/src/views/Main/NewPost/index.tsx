@@ -46,8 +46,8 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       return !!this.title.trim() && this.titleLength <= 100 && !!this.postContent.trim();
     },
     get postToEdit() {
-      return viewService.state.page.page[0] === 'newpost' && viewService.state.page.page.length === 2
-        ? viewService.state.page.page[1]
+      return viewService.state.page.page.name === 'newpost'
+        ? viewService.state.page.page.value
         : null;
     },
   }));

@@ -46,8 +46,8 @@ export const PostDetail = observer((props: { className?: string }) => {
     commentPosting: false,
     highlightedComments: new Set<string>(),
     get post() {
-      return viewService.state.page.page[0] === 'postdetail'
-        ? viewService.state.page.page[1]
+      return viewService.state.page.page.name === 'postdetail'
+        ? viewService.state.page.page.value.post
         : null;
     },
     commentChildrenWeakMap: new WeakMap<Comment, Array<string>>(),
@@ -216,15 +216,35 @@ export const PostDetail = observer((props: { className?: string }) => {
     );
   };
 
-  useEffect(action(() => {
+  useEffect(() => {
     loadComments();
-    const highlightedId = viewService.state.page.page[0] === 'postdetail' && viewService.state.page.page.length === 3
-      ? viewService.state.page.page[2]
+    const highlightedId = viewService.state.page.page.name === 'postdetail'
+      ? viewService.state.page.page.value.commentTrx
       : '';
     if (highlightedId) {
-      state.highlightedComments.add(highlightedId);
+      runInAction(() => {
+        state.highlightedComments.add(highlightedId);
+      });
     }
-  }), []);
+  }, []);
+
+  if (!state.post) {
+    return (
+      <div className="flex justify-center">
+        <div className="flex-col items-start w-[800px] bg-black/70 text-white p-8">
+          404 帖子不存在
+
+          <Button
+            className="mt-4 text-white"
+            variant="outlined"
+            onClick={() => viewService.back()}
+          >
+            返回首页
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -256,16 +276,20 @@ export const PostDetail = observer((props: { className?: string }) => {
                 }
               }}
             />
-            <LoadingButton
-              className="rounded-l-none"
-              color="rum"
-              variant="contained"
-              onClick={() => handlePostComment('direct')}
-              disabled={!nodeService.state.logined}
-              loading={state.commentPosting}
-            >
-              发布评论
-            </LoadingButton>
+            <Tooltip title={nodeService.state.logined ? '' : '请先登录'}>
+              <div className="flex self-stretch">
+                <LoadingButton
+                  className="rounded-l-none"
+                  color="rum"
+                  variant="contained"
+                  onClick={() => handlePostComment('direct')}
+                  disabled={!nodeService.state.logined}
+                  loading={state.commentPosting}
+                >
+                  发布评论
+                </LoadingButton>
+              </div>
+            </Tooltip>
           </div>
           <UserAvatar size={40} profile={nodeService.state.myProfile} />
         </div>
@@ -436,8 +460,8 @@ const CommentItem = observer((props: CommentItemProps) => {
       return props.highlightedComments.has(props.comment.trxId);
     },
     get needToHighlight() {
-      const highlightedId = viewService.state.page.page[0] === 'postdetail' && viewService.state.page.page.length === 3
-        ? viewService.state.page.page[2]
+      const highlightedId = viewService.state.page.page.name === 'postdetail'
+        ? viewService.state.page.page.value.commentTrx
         : '';
       return highlightedId === props.comment.trxId;
     },

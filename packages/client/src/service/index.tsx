@@ -19,6 +19,7 @@ export const initService = () => {
 
   const disposes = [
     langService.init(),
+    viewService.init(),
   ];
 
   return () => {

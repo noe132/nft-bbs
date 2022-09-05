@@ -9,6 +9,7 @@ package-lock.json
 
 # production
 /packages/*/dist
+/packages/*/esm
 /packages/server/logs
 
 /packages/server/config.ts

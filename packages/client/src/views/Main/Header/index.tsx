@@ -37,7 +37,7 @@ export const Header = observer((props: { className?: string }) => {
     filter: 'all' as HotestFilter,
 
     get viewPage() {
-      return viewService.state.page.page[0]!;
+      return viewService.state.page.page.name;
     },
     get profile() {
       return nodeService.state.myProfile;
@@ -106,22 +106,28 @@ export const Header = observer((props: { className?: string }) => {
   const handleOpenUserProfile = action(() => {
     state.userDropdown = false;
     if (
-      viewService.state.page.page[0] === 'userprofile'
-      && viewService.state.page.page[1]?.userAddress === state.profile?.userAddress
+      viewService.state.page.page.name === 'userprofile'
+      && viewService.state.page.page.value.userAddress === state.profile?.userAddress
     ) {
       return;
     }
     if (!state.profile) {
-      viewService.pushPage('userprofile', {
-        trxId: '',
-        avatar: '',
-        userAddress: keyService.state.keys.address,
-        groupId: nodeService.state.group!.groupId,
-        name: '',
-        intro: '',
+      viewService.pushPage({
+        name: 'userprofile',
+        value: {
+          trxId: '',
+          avatar: '',
+          userAddress: keyService.state.address,
+          groupId: nodeService.state.groupId,
+          name: '',
+          intro: '',
+        },
       });
     } else {
-      viewService.pushPage('userprofile', state.profile);
+      viewService.pushPage({
+        name: 'userprofile',
+        value: state.profile,
+      });
     }
   });
 
@@ -167,7 +173,7 @@ export const Header = observer((props: { className?: string }) => {
               multiline
               rows={10}
               onFocus={(e) => e.target.select()}
-              value={keyService.state.keys.keystore}
+              value={keyService.state.keystore}
             />
           </FormControl>
           <FormControl size="small">
@@ -178,7 +184,7 @@ export const Header = observer((props: { className?: string }) => {
               type="text"
               multiline
               onFocus={(e) => e.target.select()}
-              value={keyService.state.keys.password}
+              value={keyService.state.password}
             />
           </FormControl>
         </div>
@@ -189,8 +195,13 @@ export const Header = observer((props: { className?: string }) => {
   };
 
   const handleLogin = action(() => {
+    if (window.location.pathname !== '/') {
+      history.replaceState(null, '', '/');
+    }
+
     state.userDropdown = false;
-    handleClearData();
+    store('seedUrlAutoJoin', false);
+    window.location.reload();
   });
 
   const handleLogout = action(() => {
@@ -200,6 +211,11 @@ export const Header = observer((props: { className?: string }) => {
     QuorumLightNodeSDK.cache.Group.clear();
     handleClearData();
   });
+
+  const handleExitGroup = () => {
+    store('seedUrlAutoJoin', false);
+    window.location.reload();
+  };
 
   const handleClickLogo = () => {
     viewService.backToTop();
@@ -338,7 +354,7 @@ export const Header = observer((props: { className?: string }) => {
                   if (state.viewPage === 'notification') {
                     viewService.back();
                   } else {
-                    viewService.pushPage('notification');
+                    viewService.pushPage({ name: 'notification' });
                   }
                 },
                 active: state.viewPage === 'notification',
@@ -471,6 +487,7 @@ export const Header = observer((props: { className?: string }) => {
           process.env.NODE_ENV === 'development' && { text: '使用账号1', onClick: () => handleChangeAccount('1') },
           process.env.NODE_ENV === 'development' && { text: '使用账号2', onClick: () => handleChangeAccount('2') },
           // process.env.NODE_ENV === 'development' && { text: '使用新号', onClick: () => handleChangeAccount('new') },
+          !!nodeService.state.group && { text: '退出种子网络', onClick: handleExitGroup },
         ] as const).filter(<T extends unknown>(v: T | false): v is T => !!v).map((v, i) => (
           <MenuItem onClick={v.onClick} key={i}>
             <div className="flex gap-x-3 mr-2">

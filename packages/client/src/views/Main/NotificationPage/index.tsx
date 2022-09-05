@@ -26,7 +26,15 @@ export const NotificationPage = observer((props: { className?: string }) => {
   const handleViewItem = async (v: Notification) => {
     const post = await nodeService.post.get(v.objectId);
     if (!post) { return; }
-    viewService.pushPage('postdetail', post, v.actionObjectId);
+    viewService.pushPage({
+      name: 'postdetail',
+      value: {
+        post,
+        groupId: post.groupId,
+        trxId: post.trxId,
+        commentTrx: v.actionObjectId,
+      },
+    });
   };
 
   useEffect(() => {
@@ -84,11 +92,11 @@ export const NotificationPage = observer((props: { className?: string }) => {
                       <UserAvatar
                         className="cursor-pointer"
                         profile={fromProfile}
-                        onClick={() => viewService.pushPage('userprofile', fromProfile)}
+                        onClick={() => viewService.pushPage({ name: 'userprofile', value: fromProfile })}
                       />
                       <button
                         className=""
-                        onClick={() => viewService.pushPage('userprofile', fromProfile)}
+                        onClick={() => viewService.pushPage({ name: 'userprofile', value: fromProfile })}
                       >
                         <span className="text-rum-orange text-16 mr-3">
                           {fromProfileName}

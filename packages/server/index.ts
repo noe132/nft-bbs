@@ -33,9 +33,6 @@ const main = async () => {
     process.exit(0);
   }
 
-  // const cert = await fs.readFile('../cert/cert.pem').catch(() => null);
-  // const key = await fs.readFile('../cert/key.pem').catch(() => null);
-
   await fs.mkdir(path.join(__dirname, 'logs')).catch(() => 1);
 
   const appLogFile = createWriteStream(path.join(__dirname, 'logs/app.log'), { flags: 'a' });

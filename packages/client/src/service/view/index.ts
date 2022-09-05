@@ -1,14 +1,29 @@
-import { action, observable, runInAction } from 'mobx';
+import { action, observable, reaction, runInAction } from 'mobx';
 import type { Post, Profile } from 'nft-bbs-server';
 
-type Pages = ['postlist']
-| [pageName: 'postdetail', post: Post, commentTrx?: string]
-| [pageName: 'newpost', post?: Post]
-| ['notification']
-| ['userprofile', Profile];
+interface PageMap {
+  postlist: undefined
+  postdetail: {
+    groupId: string
+    trxId: string
+    post: Post | null
+    commentTrx?: string
+  }
+  newpost: Post | undefined
+  notification: undefined
+  userprofile: Profile
+}
+
+type PageType<T, U> = U extends undefined
+  ? { name: T, value?: U }
+  : { name: T, value: U };
+
+type Pages = {
+  [K in keyof PageMap]: PageType<K, PageMap[K]>
+}[keyof PageMap];
 
 const state = observable({
-  stack: [{ page: ['postlist'], id: 1 }] as Array<{ page: Pages, id: number }>,
+  stack: [{ page: { name: 'postlist' }, id: 1 }] as Array<{ page: Pages, id: number }>,
   id: 1,
   backPreventor: [] as Array<() => boolean | Promise<boolean>>,
   get page() {
@@ -21,16 +36,16 @@ const genId = () => {
   return state.id;
 };
 
-const pushPage = action((...args: Pages) => {
-  if (['notification', 'newpost'].includes(args[0])) {
-    const index = state.stack.findIndex((v) => v.page[0] === args[0]);
+const pushPage = action((page: Pages) => {
+  if (['notification', 'newpost'].includes(page.name)) {
+    const index = state.stack.findIndex((v) => v.page.name === page.name);
     if (index !== -1) {
       const page = state.stack.splice(index, 1);
       state.stack.push(page[0]);
       return;
     }
   }
-  state.stack.push({ page: args, id: genId() });
+  state.stack.push({ page, id: genId() });
 });
 
 const canBack = async () => {
@@ -68,7 +83,28 @@ const backToTop = async () => {
   });
 };
 
+const init = () => {
+  const dispose = reaction(
+    () => state.page.page,
+    () => {
+      if (state.page.page.name === 'postdetail') {
+        const groupId = state.page.page.value.groupId;
+        const trxId = state.page.page.value.trxId;
+        const pathname = `/post/${groupId}/${trxId}`;
+        if (location.pathname !== pathname) {
+          window.history.replaceState(null, '', pathname);
+        }
+      } else if (location.pathname !== '/') {
+        window.history.replaceState(null, '', '/');
+      }
+    },
+  );
+
+  return dispose;
+};
+
 export const viewService = {
+  init,
   state,
 
   pushPage,

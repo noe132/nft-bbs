@@ -12,6 +12,7 @@ yarn dev
 ```
 
 ### client
+To enable https in dev server, place `cert.pem` and `key.pem` under `/cert` folder
 ```sh
 cd packages/client
 yarn dev

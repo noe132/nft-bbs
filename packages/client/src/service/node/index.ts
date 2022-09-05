@@ -1,5 +1,6 @@
 import QuorumLightNodeSDK, { IGroup } from 'quorum-light-node-sdk';
 import { action, observable, runInAction } from 'mobx';
+import * as E from 'fp-ts/Either';
 import type {
   Post, Comment, Profile, Notification, UniqueCounter,
 } from 'nft-bbs-server';
@@ -7,10 +8,13 @@ import {
   CounterName, ICommentTrxContent, IProfileTrxContent, ICounterTrxContent,
   IPostTrxContent, IImageTrxContent, IGroupInfoTrxContent, TrxType, TrxStorage,
 } from 'nft-bbs-types';
-import { runLoading, sleep } from '~/utils';
+import store from 'store2';
+import { runLoading } from '~/utils';
 import { CommentApi, GroupApi, GroupInfoApi, NotificationApi, PostApi, ProfileApi } from '~/apis';
-import { initSocket, SocketEventListeners } from '~/service/socket';
-import { Keys, keyService } from '~/service/key';
+import { addListeners, SocketEventListeners } from '~/service/socket';
+import { keyService } from '~/service/key';
+import { snackbarService } from '~/service/snackbar';
+import { viewService } from '~/service/view';
 
 export type HotestFilter = 'all' | 'year' | 'month' | 'week';
 type PostListLoadMode = {
@@ -24,9 +28,9 @@ type PostListLoadMode = {
 };
 
 const state = observable({
-  inited: false,
-  loadedData: true,
-
+  showJoin: false,
+  showMain: false,
+  groupId: '',
   group: null as null | IGroup,
   get groupOwnerAddress() {
     return nodeService.state.group?.ownerPubKey
@@ -86,26 +90,24 @@ const state = observable({
     desc: '',
   },
   get myProfile() {
-    return profile.getComputedProfile(keyService.state.keys.address);
+    return profile.getComputedProfile(keyService.state.address);
   },
   get profileName() {
-    return this.myProfile.name || keyService.state.keys.address.slice(0, 10);
+    return this.myProfile.name || keyService.state.address.slice(0, 10);
   },
   get groupName() {
     return this.group?.groupName || '';
   },
   get logined() {
-    return !!keyService.state.keys.address;
+    return !!keyService.state.address;
   },
 });
 
 const profile = {
   get: async (params: { userAddress: string } | { trxId: string }) => {
-    const groupId = state.group?.groupId;
-    if (!groupId) { throw new Error(); }
     let profile = 'userAddress' in params
-      ? await ProfileApi.get(groupId, params.userAddress)
-      : await ProfileApi.get(groupId, params.trxId);
+      ? await ProfileApi.get(state.groupId, params.userAddress)
+      : await ProfileApi.get(state.groupId, params.trxId);
 
     if ('userAddress' in params && !profile) {
       profile = {
@@ -127,12 +129,10 @@ const profile = {
     return profile;
   },
 
-  getUserInfo: async (userAddress: string) => {
-    const groupId = state.group?.groupId;
-    if (!groupId) { throw new Error(); }
+  loadUserInfo: async (userAddress: string) => {
     const [userProfile, postCount, firstComment, firstPost] = await Promise.all([
       profile.get({ userAddress }),
-      PostApi.getCount(groupId, userAddress),
+      PostApi.getCount(state.groupId, userAddress),
       comment.getFirstComment(userAddress),
       post.getFirstPost(userAddress),
     ]);
@@ -164,17 +164,17 @@ const profile = {
           type: 'Note',
         },
         aesKey: group.cipherKey,
-        privateKey: keyService.state.keys.privateKey,
+        privateKey: keyService.state.privateKey,
       });
       const profile: Profile = {
         ...params,
         trxId: res.trx_id,
         groupId: group.groupId,
-        userAddress: keyService.state.keys.address,
+        userAddress: keyService.state.address,
       };
       runInAction(() => {
-        state.profile.map.set(keyService.state.keys.address, profile);
-        state.profile.cache.set(keyService.state.keys.address, profile);
+        state.profile.map.set(keyService.state.address, profile);
+        state.profile.cache.set(keyService.state.address, profile);
       });
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -235,9 +235,8 @@ const post = {
       state.post.done = false;
       state.post.loading = true;
     });
-    await sleep(1000);
     const data = await post.getList({
-      viewer: keyService.state.keys.address,
+      viewer: keyService.state.address,
       limit: state.post.limit,
       offset: state.post.offset,
     });
@@ -261,9 +260,8 @@ const post = {
     runInAction(() => {
       state.post.loading = true;
     });
-    await sleep(1000);
     const data = await post.getList({
-      viewer: keyService.state.keys.address,
+      viewer: keyService.state.address,
       limit: state.post.limit,
       offset: state.post.offset,
     });
@@ -282,12 +280,10 @@ const post = {
   },
 
   getList: async (params: { viewer?: string, userAddress?: string, limit: number, offset: number }) => {
-    const groupId = state.group?.groupId;
-    if (!groupId) { return []; }
-    const posts = await PostApi.list(groupId, {
+    const posts = await PostApi.list(state.groupId, {
       limit: params.limit,
       offset: params.offset,
-      viewer: params.viewer ?? keyService.state.keys.address,
+      viewer: params.viewer ?? keyService.state.address,
       userAddress: params.userAddress,
     });
     runInAction(() => {
@@ -313,13 +309,13 @@ const post = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.keys.privateKey,
+      privateKey: keyService.state.privateKey,
     });
     const post: Post = {
       trxId: res.trx_id,
       title,
       content,
-      userAddress: keyService.state.keys.address,
+      userAddress: keyService.state.address,
       groupId,
       storage: TrxStorage.cache,
       timestamp: Date.now(),
@@ -356,7 +352,7 @@ const post = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.keys.privateKey,
+      privateKey: keyService.state.privateKey,
     });
     const editedPost = {
       trxId: res.trx_id,
@@ -385,17 +381,15 @@ const post = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.keys.privateKey,
+      privateKey: keyService.state.privateKey,
     });
   },
 
   get: async (trxId: string, viewer?: string) => {
-    const groupId = state.group?.groupId;
-    if (!groupId) { return null; }
     const post = await PostApi.get({
-      groupId,
+      groupId: state.groupId,
       trxId,
-      viewer: viewer ?? keyService.state.keys.address,
+      viewer: viewer ?? keyService.state.address,
     });
     if (post) {
       if (post.extra?.userProfile.trxId) {
@@ -410,12 +404,10 @@ const post = {
   },
 
   getFirstPost: async (userAddress: string) => {
-    const groupId = state.group?.groupId;
-    if (!groupId) { return null; }
     const post = await PostApi.getFirst({
-      groupId,
+      groupId: state.groupId,
       userAddress,
-      viewer: keyService.state.keys.address,
+      viewer: keyService.state.address,
     });
     if (post) {
       runInAction(() => {
@@ -451,7 +443,7 @@ const post = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.keys.privateKey,
+      privateKey: keyService.state.privateKey,
     });
 
     runInAction(() => {
@@ -490,11 +482,9 @@ const post = {
 
 const comment = {
   list: async (postTrxId: string) => {
-    const groupId = state.group?.groupId;
-    if (!groupId) { return []; }
-    const comments = await CommentApi.list(groupId, {
+    const comments = await CommentApi.list(state.groupId, {
       objectId: postTrxId,
-      viewer: keyService.state.keys.address,
+      viewer: keyService.state.address,
       offset: 0,
       limit: 500,
     });
@@ -528,14 +518,14 @@ const comment = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.keys.privateKey,
+      privateKey: keyService.state.privateKey,
     });
     const comment: Comment = {
       content: params.content,
       objectId: params.objectId,
       threadId: params.threadId,
       replyId: params.replyId,
-      userAddress: keyService.state.keys.address,
+      userAddress: keyService.state.address,
       groupId: group.groupId,
       trxId: res.trx_id,
       storage: TrxStorage.cache,
@@ -570,9 +560,7 @@ const comment = {
     return comment;
   },
   get: async (trxId: string) => {
-    const groupId = state.group?.groupId;
-    if (!groupId) { return null; }
-    const comment = await CommentApi.get(groupId, trxId);
+    const comment = await CommentApi.get(state.groupId, trxId);
     if (comment) {
       if (comment.extra?.userProfile.trxId) {
         profile.set(comment.extra.userProfile);
@@ -587,9 +575,7 @@ const comment = {
     return comment;
   },
   getFirstComment: async (userAddress: string) => {
-    const groupId = state.group?.groupId;
-    if (!groupId) { return null; }
-    const comment = await CommentApi.getFirst(groupId, userAddress, keyService.state.keys.address);
+    const comment = await CommentApi.getFirst(state.groupId, userAddress, keyService.state.address);
     return comment;
   },
 };
@@ -597,8 +583,6 @@ const comment = {
 const notification = {
   load: async (nextPage = false) => {
     if (state.notification.loading) { return; }
-    const groupId = state.group?.groupId;
-    if (!groupId) { return; }
     if (!nextPage) {
       runInAction(() => {
         state.notification.list = [];
@@ -610,8 +594,8 @@ const notification = {
       (l) => { state.notification.loading = l; },
       async () => {
         const notifications = await NotificationApi.list({
-          groupId,
-          userAddress: keyService.state.keys.address,
+          groupId: state.groupId,
+          userAddress: keyService.state.address,
           limit: state.notification.limit,
           offset: state.notification.offset,
         });
@@ -627,9 +611,7 @@ const notification = {
     );
   },
   getUnreadCount: async () => {
-    const groupId = state.group?.groupId;
-    if (!groupId) { return; }
-    const count = await NotificationApi.getUnreadCount(groupId, keyService.state.keys.address);
+    const count = await NotificationApi.getUnreadCount(state.groupId, keyService.state.address);
     runInAction(() => {
       state.notification.unreadCount = count;
     });
@@ -662,7 +644,7 @@ const counter = {
           type: 'Note',
         },
         aesKey: group.cipherKey,
-        privateKey: keyService.state.keys.privateKey,
+        privateKey: keyService.state.privateKey,
       });
 
       const uniqueCounter: UniqueCounter & { value: 1 | -1 } = {
@@ -670,7 +652,7 @@ const counter = {
         groupId: group.groupId,
         name: counterName,
         objectId: item.trxId,
-        userAddress: keyService.state.keys.address,
+        userAddress: keyService.state.address,
         timestamp: Date.now(),
         value,
       };
@@ -699,7 +681,7 @@ const group = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.keys.privateKey,
+      privateKey: keyService.state.privateKey,
     });
     runInAction(() => {
       state.groupInfo.avatar = info.avatar;
@@ -707,13 +689,54 @@ const group = {
     });
   },
   updateInfo: async () => {
-    const groupId = state.group?.groupId;
-    if (!groupId) { return; }
-    const item = await GroupInfoApi.get(groupId);
+    const item = await GroupInfoApi.get(state.groupId);
     runInAction(() => {
       state.groupInfo.avatar = item.avatar;
       state.groupInfo.desc = item.desc;
     });
+  },
+  join: (seedUrl: string) => {
+    QuorumLightNodeSDK.cache.Group.clear();
+    QuorumLightNodeSDK.cache.Group.add(seedUrl);
+
+    runInAction(() => {
+      state.group = QuorumLightNodeSDK.cache.Group.list()[0];
+      state.groupId = state.group.groupId;
+    });
+
+    GroupApi.join(seedUrl);
+    if (keyService.state.address) {
+      profile.get({ userAddress: keyService.state.address });
+      notification.getUnreadCount();
+    }
+    group.updateInfo();
+  },
+  savedLoginCheck: async (groupId?: string) => {
+    const seedUrl = store('seedUrl');
+    const keystore = store('keystore');
+    const password = store('password');
+    const autoJoin = store('seedUrlAutoJoin');
+
+    if (keystore && password) {
+      if (E.isLeft(await keyService.login(keystore, password))) {
+        snackbarService.error('自动登录失败，keystore或密码错误');
+        store.remove('keystore');
+        store.remove('password');
+        return;
+      }
+    }
+
+    if (seedUrl && autoJoin) {
+      try {
+        const seedUrlGroup = QuorumLightNodeSDK.utils.restoreSeedFromUrl(seedUrl);
+        if (!groupId || seedUrlGroup.group_id === groupId) {
+          group.join(seedUrl);
+        }
+      } catch (e) {
+        console.error(e);
+        snackbarService.error('自动登录失败，seedUrl错误');
+      }
+    }
   },
 };
 
@@ -777,40 +800,57 @@ const socketEventHandler: SocketEventListeners = {
   }),
 };
 
-const joinGroup = async (seedUrl: string, keys?: Keys) => {
-  QuorumLightNodeSDK.cache.Group.add(seedUrl);
-  await GroupApi.join(seedUrl);
-
-  if (keys) {
-    keyService.use(keys);
-  } else {
-    keyService.clear();
-  }
-
-  runInAction(() => {
-    state.group = QuorumLightNodeSDK.cache.Group.list()[0];
-  });
-
-  profile.get({ userAddress: keyService.state.keys.address });
-  group.updateInfo();
-  notification.getUnreadCount();
-
-  initSocket(socketEventHandler);
-};
-
 const init = () => {
-  runInAction(() => {
-    state.inited = true;
-  });
-};
+  const removeListeners = addListeners(socketEventHandler);
+  const initCheck = async () => {
+    const pathMatch = /^\/post\/(.+?)\/(.+?)$/.exec(location.pathname);
+    const groupId = pathMatch?.[1] ?? '';
+    const trxId = pathMatch?.[2] ?? '';
 
-const destroy = () => {
+    await group.savedLoginCheck(groupId);
+    const postCheck = async () => {
+      if (!groupId || !trxId) { return; }
+      if (!state.groupId) {
+        runInAction(() => {
+          state.groupId = groupId;
+        });
+      }
+      const postItem = await post.get(trxId);
+      if (postItem) {
+        profile.get({ userAddress: postItem.userAddress });
+      }
+      viewService.pushPage({
+        name: 'postdetail',
+        value: {
+          post: postItem,
+          groupId,
+          trxId,
+        },
+      });
+      return true;
+    };
+    if (await postCheck() || state.group) {
+      runInAction(() => {
+        state.showJoin = false;
+        state.showMain = true;
+      });
+    } else {
+      runInAction(() => {
+        state.showJoin = true;
+        state.showMain = false;
+      });
+    }
+  };
+  initCheck();
+
+  return () => {
+    removeListeners();
+  };
 };
 
 export const nodeService = {
   state,
   init,
-  destroy,
 
   post,
   comment,
@@ -818,7 +858,6 @@ export const nodeService = {
   notification,
   counter,
   group,
-  joinGroup,
 };
 
 (window as any).nodeService = nodeService;

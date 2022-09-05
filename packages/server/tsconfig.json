@@ -10,6 +10,7 @@
     "declarationMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
     "paths": {
       "~/*": ["./*"]

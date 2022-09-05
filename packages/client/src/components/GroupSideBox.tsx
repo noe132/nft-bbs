@@ -16,7 +16,7 @@ interface Props {
 export const GroupSideBox = observer((props: Props) => {
   const state = useLocalObservable(() => ({
     get isGroupOwner() {
-      return keyService.state.keys.address === nodeService.state.groupOwnerAddress;
+      return keyService.state.address === nodeService.state.groupOwnerAddress;
     },
   }));
 
@@ -25,7 +25,7 @@ export const GroupSideBox = observer((props: Props) => {
       snackbarService.show('请先登录');
       return;
     }
-    viewService.pushPage('newpost');
+    viewService.pushPage({ name: 'newpost' });
   };
 
   return (
@@ -48,7 +48,7 @@ export const GroupSideBox = observer((props: Props) => {
         </IconButton>
       </div>
       <div className="text-white text-center text-18 mt-16">
-        {nodeService.state.groupName}
+        {nodeService.state.groupName || `${nodeService.state.groupId}`}
       </div>
       {!!nodeService.state.groupInfo.desc && (
         <div className="border-t border-white/60 text-14 text-white mt-5 mx-5 pt-5">

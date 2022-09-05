@@ -37,8 +37,8 @@ export const UserProfile = observer((props: { className?: string }) => {
       return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
     },
     get viewProfile() {
-      if (viewService.state.page.page[0] === 'userprofile') {
-        return viewService.state.page.page[1];
+      if (viewService.state.page.page.name === 'userprofile') {
+        return viewService.state.page.page.value;
       }
       return null;
     },
@@ -49,7 +49,7 @@ export const UserProfile = observer((props: { className?: string }) => {
       return null;
     },
     get selfProfile() {
-      return this.profile?.userAddress === keyService.state.keys.address;
+      return this.profile?.userAddress === keyService.state.address;
     },
     get fistPostTime() {
       const userAddress = state.profile?.userAddress;
@@ -64,7 +64,14 @@ export const UserProfile = observer((props: { className?: string }) => {
   }));
 
   const handleOpenPost = (post: Post) => {
-    viewService.pushPage('postdetail', post);
+    viewService.pushPage({
+      name: 'postdetail',
+      value: {
+        post,
+        groupId: post.groupId,
+        trxId: post.trxId,
+      },
+    });
   };
 
   const handleUpdatePostCounter = (post: Post, type: CounterName) => {
@@ -92,7 +99,7 @@ export const UserProfile = observer((props: { className?: string }) => {
       async () => {
         const posts = await nodeService.post.getList({
           userAddress,
-          viewer: keyService.state.keys.address,
+          viewer: keyService.state.address,
           limit: state.limit,
           offset: state.offset,
         });
@@ -115,7 +122,7 @@ export const UserProfile = observer((props: { className?: string }) => {
       async () => {
         const userAddress = state.profile?.userAddress;
         if (!userAddress) { return; }
-        await nodeService.profile.getUserInfo(userAddress);
+        await nodeService.profile.loadUserInfo(userAddress);
       },
     );
   };

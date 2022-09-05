@@ -5,7 +5,7 @@ import { CircularProgress } from '@mui/material';
 import bgImg1x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash.jpg';
 import bgImg2x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@2x.jpg';
 import bgImg3x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@3x.jpg';
-import { nodeService, viewService } from '~/service';
+import { viewService } from '~/service';
 import { Scrollable } from '~/components';
 
 import { Header } from './Header';
@@ -24,7 +24,7 @@ export const Main = observer(() => (
         backgroundImage: `url('${chooseImgByPixelRatio({ x1: bgImg1x, x2: bgImg2x, x3: bgImg3x })}')`,
       }}
     />
-    {!nodeService.state.loadedData && (
+    {false && (
       <div className="flex-col flex-1 flex-center">
         <CircularProgress />
         <div className="text-white mt-6">
@@ -32,31 +32,29 @@ export const Main = observer(() => (
         </div>
       </div>
     )}
-    {nodeService.state.loadedData && (<>
-      <Header />
-      {viewService.state.stack.map((v, i) => {
-        const PageComponent = {
-          postlist: PostList,
-          postdetail: PostDetail,
-          newpost: NewPost,
-          userprofile: UserProfile,
-          notification: NotificationPage,
-        }[v.page[0]];
-        return (
-          <Scrollable
-            className={classNames(
-              'flex-col flex-1 h-0',
-              i !== viewService.state.stack.length - 1 && '!hidden',
-            )}
-            light
-            wide
-            key={v.id}
-            wrapperClassName="flex-col"
-          >
-            <PageComponent />
-          </Scrollable>
-        );
-      })}
-    </>)}
+    <Header />
+    {viewService.state.stack.map((v, i) => {
+      const PageComponent = {
+        postlist: PostList,
+        postdetail: PostDetail,
+        newpost: NewPost,
+        userprofile: UserProfile,
+        notification: NotificationPage,
+      }[v.page.name];
+      return (
+        <Scrollable
+          className={classNames(
+            'flex-col flex-1 h-0',
+            i !== viewService.state.stack.length - 1 && '!hidden',
+          )}
+          light
+          wide
+          key={v.id}
+          wrapperClassName="flex-col"
+        >
+          <PageComponent />
+        </Scrollable>
+      );
+    })}
   </div>
 ));

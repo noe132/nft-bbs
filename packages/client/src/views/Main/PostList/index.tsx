@@ -26,7 +26,14 @@ export const PostList = observer((props: { className?: string }) => {
   }));
 
   const handleOpenPost = (post: Post) => {
-    viewService.pushPage('postdetail', post);
+    viewService.pushPage({
+      name: 'postdetail',
+      value: {
+        post,
+        groupId: post.groupId,
+        trxId: post.trxId,
+      },
+    });
   };
 
   const handleUpdatePostCounter = (post: Post, type: CounterName) => {
@@ -77,7 +84,7 @@ export const PostList = observer((props: { className?: string }) => {
                   </div>
                   <button
                     className="flex flex-center text-white/50 text-14"
-                    onClick={() => profile && viewService.pushPage('userprofile', profile)}
+                    onClick={() => profile && viewService.pushPage({ name: 'userprofile', value: profile })}
                   >
                     <UserAvatar className="mr-2" profile={profile} size={24} />
                     {profile.name || profile.userAddress.slice(0, 10)}

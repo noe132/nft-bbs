@@ -1,9 +1,12 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
 import QuorumLightNodeSDK, { IGroup } from 'quorum-light-node-sdk';
+import * as TE from 'fp-ts/lib/TaskEither';
+import * as E from 'fp-ts/lib/Either';
+import { pipe } from 'fp-ts/lib/function';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl,
   FormControlLabel, IconButton, InputLabel, Menu, MenuItem, OutlinedInput,
@@ -22,11 +25,13 @@ import RumLogo3x from '~/assets/icons/logo@3x.png';
 import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
 import { chooseImgByPixelRatio, runLoading, ThemeLight } from '~/utils';
-import { AllLanguages, keyService, langName, langService, nodeService, snackbarService } from '~/service';
+import {
+  AllLanguages, keyService, langName,
+  langService, nodeService, snackbarService,
+} from '~/service';
 import { GroupAvatar } from '~/components';
 
 enum Step {
-  SavedLoginCheck = 0,
   InputSeedUrl = 1,
   SeedUrlParsingError = 2,
   PrepareJoinGroup = 3,
@@ -41,7 +46,7 @@ export const Join = observer(() => {
     passwordVisibility: false,
     rememberPassword: false,
     group: null as null | IGroup,
-    step: Step.SavedLoginCheck,
+    step: Step.InputSeedUrl,
     languageMenu: false,
     createWalletLoading: false,
     get canLogin() {
@@ -57,7 +62,7 @@ export const Join = observer(() => {
     state.languageMenu = false;
   });
 
-  const handleNextStep = async () => {
+  const handleNextStep = () => {
     if (state.step === Step.InputSeedUrl) {
       try {
         QuorumLightNodeSDK.cache.Group.add(state.seedUrl);
@@ -81,7 +86,7 @@ export const Join = observer(() => {
     if (state.step === Step.PrepareJoinGroup) {
       try {
         QuorumLightNodeSDK.cache.Group.clear();
-        await nodeService.joinGroup(state.seedUrl);
+        nodeService.group.join(state.seedUrl);
       } catch (e) {
         snackbarService.error(`加入失败 (${(e as Error).message})`);
       }
@@ -100,27 +105,31 @@ export const Join = observer(() => {
   };
 
   const handleAutoLogin = async () => {
-    const keystore = store('keystore') ?? '';
-    let password = store('password') ?? '123';
-    let keyData;
-    try {
-      if (keystore) {
-        keyData = await keyService.validate(keystore, password);
-      }
-    } catch (e) {}
-    if (!keyData) {
-      password = '123';
-      keyData = await keyService.createRandom(password);
-    }
+    const keystore: string = store('keystore') ?? '';
+    const password: string = store('password') ?? '123';
+
+    const login = pipe(
+      () => keyService.login(keystore, password),
+      TE.getOrElse(() => () => keyService.loginRandom('123')),
+    );
 
     try {
-      await nodeService.joinGroup(state.seedUrl, keyData);
+      nodeService.group.join(state.seedUrl);
     } catch (e: any) {
       snackbarService.error(e.message);
     }
-    store('keystore', keyData.keystore);
+
+    const loginedKeystore = await login();
+
+    runInAction(() => {
+      nodeService.state.showJoin = false;
+      nodeService.state.showMain = true;
+    });
+
+    store('seedUrlAutoJoin', true);
     store('seedUrl', state.seedUrl);
-    store('password', password);
+    store('keystore', loginedKeystore.keystore);
+    store('password', loginedKeystore.password);
   };
 
   const handleShowKeystoreDialog = action(() => {
@@ -131,13 +140,17 @@ export const Join = observer(() => {
   });
 
   const handleLoginConfirm = async () => {
-    let data;
-    try {
-      data = await keyService.validate(state.keystore, state.password);
-    } catch (e) {
-      snackbarService.error('keystore或密码错误');
+    const result = pipe(
+      await keyService.login(state.keystore, state.password),
+      E.mapLeft((v) => {
+        snackbarService.error('keystore或密码错误');
+        return v;
+      }),
+    );
+    if (!E.isLeft(result)) {
       return;
     }
+    store('seedUrlAutoJoin', true);
     store('keystore', state.keystore);
     store('seedUrl', state.seedUrl);
     if (state.rememberPassword) {
@@ -145,11 +158,21 @@ export const Join = observer(() => {
     } else {
       store('password', '');
     }
-    await nodeService.joinGroup(state.seedUrl, data);
+    nodeService.group.join(state.seedUrl);
+    runInAction(() => {
+      nodeService.state.showJoin = false;
+      nodeService.state.showMain = true;
+    });
   };
 
   const handleLoginAnonymous = () => {
-    nodeService.joinGroup(state.seedUrl);
+    nodeService.group.join(state.seedUrl);
+    store('seedUrlAutoJoin', true);
+    store('seedUrl', state.seedUrl);
+    runInAction(() => {
+      nodeService.state.showJoin = false;
+      nodeService.state.showMain = true;
+    });
   };
 
   const handleCreateNewWallet = () => {
@@ -181,39 +204,6 @@ export const Join = observer(() => {
       state.seedUrl = content;
     });
   };
-
-  const savedLoginCheck = async () => {
-    const seedUrl = store('seedUrl');
-    const keystore = store('keystore');
-    const password = store('password');
-    if (seedUrl && keystore && password) {
-      let data;
-      try {
-        data = await keyService.validate(keystore, password);
-      } catch (e) {
-        snackbarService.error('keystore或密码错误');
-        return;
-      }
-      try {
-        await nodeService.joinGroup(state.seedUrl, data);
-        return;
-      } catch (e) {
-        console.error(e);
-        snackbarService.error('自动登录失败');
-        runInAction(() => {
-          state.step = Step.InputSeedUrl;
-        });
-      }
-      return;
-    }
-    runInAction(() => {
-      state.step = Step.InputSeedUrl;
-    });
-  };
-
-  useEffect(() => {
-    savedLoginCheck();
-  }, []);
 
   return (<>
     <div className="min-h-[100vh] flex-col">
@@ -291,11 +281,6 @@ export const Join = observer(() => {
       >
         <div className="flex flex-center flex-1">
           <div className="relative flex-col flex-center bg-black/70 w-[720px] h-[330px] rounded-[10px]">
-            {state.step === Step.SavedLoginCheck && (
-              <div className="flex-col flex-center">
-                <CircularProgress className="text-white/70" />
-              </div>
-            )}
             {state.step === Step.InputSeedUrl && (
               <div className="flex-col flex-center">
                 <div className="text-white text-18">

@@ -35,7 +35,7 @@ export const UserCard = observer((props: Props) => {
   const loadUserData = () => {
     const userAddress = props.profile?.userAddress;
     if (!userAddress) { return; }
-    nodeService.profile.getUserInfo(userAddress);
+    nodeService.profile.loadUserInfo(userAddress);
   };
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export const UserCard = observer((props: Props) => {
     <div className={classNames('flex-col relative bg-black/70 py-5 px-5', props.className)}>
       <div
         className="flex items-center self-stretch cursor-pointer"
-        onClick={() => state.profile && viewService.pushPage('userprofile', state.profile)}
+        onClick={() => state.profile && viewService.pushPage({ name: 'userprofile', value: state.profile })}
       >
         <UserAvatar className="mr-3" profile={state.profile} size={48} />
         <div className="text-rum-orange text-16 flex-1">
