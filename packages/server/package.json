@@ -9,7 +9,7 @@
       "dev:debug": "nodemon --config ./nodemon-debug.json",
       "build": "rimraf dist && yarn tsc -b",
       "start": "ts-node-transpile-only index.ts",
-      "start:prod": "node --experimental-specifier-resolution=node dist/index.js",
+      "start:prod": "node dist/index.js",
       "lint": "eslint --ext \"js,jsx,ts,tsx\" .",
       "typeorm": "node -r tsconfig-paths/register node_modules/typeorm/cli-ts-node-commonjs.js -d ./orm/data-source.ts",
       "reset": "node -r tsconfig-paths/register node_modules/typeorm/cli-ts-node-commonjs.js -d ./orm/data-source.ts schema:drop && ts-node-transpile-only utils/reset.ts",
