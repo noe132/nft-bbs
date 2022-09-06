@@ -212,24 +212,26 @@ const post = {
     return state.post.taskId;
   }),
 
-  list: async (params?: { filter: HotestFilter } | { search: string }) => {
+  list: async (params?: { filter: HotestFilter } | { search: string } | { mode: 'latest' }) => {
     const taskId = post.getTaskId();
     runInAction(() => {
       state.post.trxIds = [];
-      if (params && 'filter' in params) {
-        state.post.mode = {
-          type: 'hotest',
-          filter: params.filter,
-        };
-      } else if (params && 'search' in params) {
-        state.post.mode = {
-          type: 'search',
-          search: params.search,
-        };
-      } else {
-        state.post.mode = {
-          type: 'latest',
-        };
+      if (params) {
+        if ('filter' in params) {
+          state.post.mode = {
+            type: 'hotest',
+            filter: params.filter,
+          };
+        } else if ('search' in params) {
+          state.post.mode = {
+            type: 'search',
+            search: params.search,
+          };
+        } else if ('mode' in params && params.mode === 'latest') {
+          state.post.mode = {
+            type: 'latest',
+          };
+        }
       }
       state.post.offset = 0;
       state.post.done = false;

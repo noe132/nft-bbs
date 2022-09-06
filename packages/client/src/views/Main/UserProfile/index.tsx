@@ -141,7 +141,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     >
       <div className="relative flex-col w-[800px]">
         <div className="flex justify-end w-full">
-          <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full" />
+          <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
         </div>
         <BackButton className="fixed top-[60px] mt-6 -ml-5 -translate-x-full" />
         <div

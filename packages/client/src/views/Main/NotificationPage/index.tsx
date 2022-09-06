@@ -50,7 +50,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
     >
       <div className="flex-col relative w-[800px]">
         <div className="flex justify-end w-full">
-          <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full" />
+          <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
         </div>
         <BackButton className="fixed top-[60px] mt-6 -ml-5 -translate-x-full" />
         <div className="flex-col flex-1 w-full bg-black/70">

@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
 import type { Post } from 'nft-bbs-server';
 import { CounterName } from 'nft-bbs-types';
-import { ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
+import { ExpandMore, Refresh, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 import { Button, CircularProgress, Tooltip } from '@mui/material';
 
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
@@ -14,6 +14,7 @@ import { ScrollToTopButton, GroupSideBox, NFTSideBox, UserAvatar } from '~/compo
 import { viewService, nodeService, snackbarService } from '~/service';
 import { ago, runLoading } from '~/utils';
 import { showTrxDetail } from '~/modals';
+import { LoadingButton } from '@mui/lab';
 
 export const PostList = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -24,6 +25,8 @@ export const PostList = observer((props: { className?: string }) => {
       return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
     },
   }));
+
+  const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
   const handleOpenPost = (post: Post) => {
     viewService.pushPage({
@@ -54,8 +57,23 @@ export const PostList = observer((props: { className?: string }) => {
 
   useEffect(() => {
     if (!nodeService.state.post.trxIds.length && !nodeService.state.post.loading) {
-      nodeService.post.list();
+      nodeService.post.list({ mode: 'latest' });
     }
+
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.intersectionRatio > 0.5 && !nodeService.state.post.loading) {
+        nodeService.post.listNextPage();
+      }
+    }, {
+      threshold: [0.5],
+    });
+    if (loadingTriggerBox.current) {
+      io.observe(loadingTriggerBox.current);
+    }
+
+    return () => {
+      io.disconnect();
+    };
   }, []);
 
   return (
@@ -67,9 +85,19 @@ export const PostList = observer((props: { className?: string }) => {
     >
       <div className="w-[800px] bg-black/70 flex-col">
         <div className="flex justify-end">
-          <ScrollToTopButton className="fixed bottom-8 translate-x-full -mr-8" />
+          <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
         </div>
         <div className="flex-col gap-y-12 py-10 px-16">
+          <div className="flex flex-center -my-4 -mb-8">
+            <LoadingButton
+              className="w-full text-white/70"
+              variant="text"
+              onClick={() => nodeService.post.list()}
+              loading={nodeService.state.post.loading}
+            >
+              刷新 <Refresh className="text-20 -mt-px" />
+            </LoadingButton>
+          </div>
           {nodeService.state.post.posts.map((v) => {
             const stat = nodeService.post.getPostStat(v);
             const profile = nodeService.profile.getComputedProfile(v.extra?.userProfile || v.userAddress);
@@ -165,7 +193,11 @@ export const PostList = observer((props: { className?: string }) => {
             );
           })}
 
-          <div className="flex flex-center h-12">
+          <div className="relative flex flex-center h-12">
+            <div
+              className="absolute top-[-500px] pointer-events-none"
+              ref={loadingTriggerBox}
+            />
             {nodeService.state.post.loading && (
               <CircularProgress className="text-white/70" />
             )}
@@ -188,7 +220,7 @@ export const PostList = observer((props: { className?: string }) => {
         </div>
       </div>
 
-      <div className="relative w-[280px]">
+      <div className="w-[280px]">
         <div className="fixed w-[280px]">
           <GroupSideBox className="mt-16" showNewPost />
 

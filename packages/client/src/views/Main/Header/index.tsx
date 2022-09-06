@@ -61,7 +61,7 @@ export const Header = observer((props: { className?: string }) => {
   const handleChangeTab = action((tab: number) => {
     state.tab = tab;
     if (state.tab === 0) {
-      nodeService.post.list();
+      nodeService.post.list({ mode: 'latest' });
     } else {
       nodeService.post.list({ filter: state.filter });
     }
@@ -87,7 +87,7 @@ export const Header = observer((props: { className?: string }) => {
     state.searchMode = false;
     if (nodeService.state.post.mode.type === 'search') {
       if (state.tab === 0) {
-        nodeService.post.list();
+        nodeService.post.list({ mode: 'latest' });
       } else {
         nodeService.post.list({ filter: state.filter });
       }
