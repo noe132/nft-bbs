@@ -1,4 +1,4 @@
-import { isLeft } from 'fp-ts/lib/Either';
+import { either } from 'fp-ts';
 import { Validation } from 'io-ts';
 import { PathReporter } from 'io-ts/lib/PathReporter';
 import { BadRequest } from 'http-errors';
@@ -20,7 +20,7 @@ export type EntityConstructorParams<T, E = ''> = {
 };
 
 export const assertValidation: <T>(v: Validation<T>) => T = <T>(v: Validation<T>) => {
-  if (isLeft(v)) {
+  if (either.isLeft(v)) {
     throw new BadRequest(PathReporter.report(v).join(', '));
   }
   return v.right;

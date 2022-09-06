@@ -1,8 +1,6 @@
 import { action, observable } from 'mobx';
 import { ethers } from 'ethers';
-import * as TE from 'fp-ts/lib/TaskEither';
-import * as E from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/function';
+import { taskEither, either, function as fp } from 'fp-ts';
 
 export interface Keys {
   privateKey: string
@@ -19,19 +17,19 @@ const state = observable({
 } as Keys);
 
 const validate = async (keystore: string, password: string) => {
-  const validate = pipe(
-    TE.tryCatch(
+  const doValidate = fp.pipe(
+    taskEither.tryCatch(
       () => ethers.Wallet.fromEncryptedJson(keystore, password),
       (v) => v as Error,
     ),
-    TE.map((v) => ({
+    taskEither.map((v) => ({
       keystore,
       password,
       address: v.address,
       privateKey: v.privateKey,
     })),
   );
-  return validate();
+  return doValidate();
 };
 
 const use = action((data: Keys) => {
@@ -41,9 +39,9 @@ const use = action((data: Keys) => {
   state.address = data.address;
 });
 
-const login = async (keystore: string, password: string) => pipe(
+const login = async (keystore: string, password: string) => fp.pipe(
   await validate(keystore, password),
-  E.map((v) => {
+  either.map((v) => {
     use(v);
     return v;
   }),

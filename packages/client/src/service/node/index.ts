@@ -1,6 +1,6 @@
 import QuorumLightNodeSDK, { IGroup } from 'quorum-light-node-sdk';
 import { action, observable, runInAction } from 'mobx';
-import * as E from 'fp-ts/Either';
+import { either } from 'fp-ts';
 import type {
   Post, Comment, Profile, Notification, UniqueCounter,
 } from 'nft-bbs-server';
@@ -718,7 +718,7 @@ const group = {
     const autoJoin = store('seedUrlAutoJoin');
 
     if (keystore && password) {
-      if (E.isLeft(await keyService.login(keystore, password))) {
+      if (either.isLeft(await keyService.login(keystore, password))) {
         snackbarService.error('自动登录失败，keystore或密码错误');
         store.remove('keystore');
         store.remove('password');

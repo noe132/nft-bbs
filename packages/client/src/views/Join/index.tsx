@@ -4,9 +4,7 @@ import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
 import QuorumLightNodeSDK, { IGroup } from 'quorum-light-node-sdk';
-import * as TE from 'fp-ts/lib/TaskEither';
-import * as E from 'fp-ts/lib/Either';
-import { pipe } from 'fp-ts/lib/function';
+import { either, taskEither, function as fp } from 'fp-ts';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl,
   FormControlLabel, IconButton, InputLabel, Menu, MenuItem, OutlinedInput,
@@ -108,9 +106,9 @@ export const Join = observer(() => {
     const keystore: string = store('keystore') ?? '';
     const password: string = store('password') ?? '123';
 
-    const login = pipe(
+    const login = fp.pipe(
       () => keyService.login(keystore, password),
-      TE.getOrElse(() => () => keyService.loginRandom('123')),
+      taskEither.getOrElse(() => () => keyService.loginRandom('123')),
     );
 
     try {
@@ -140,14 +138,14 @@ export const Join = observer(() => {
   });
 
   const handleLoginConfirm = async () => {
-    const result = pipe(
+    const result = fp.pipe(
       await keyService.login(state.keystore, state.password),
-      E.mapLeft((v) => {
+      either.mapLeft((v) => {
         snackbarService.error('keystore或密码错误');
         return v;
       }),
     );
-    if (!E.isLeft(result)) {
+    if (!either.isLeft(result)) {
       return;
     }
     store('seedUrlAutoJoin', true);

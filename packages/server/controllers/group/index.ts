@@ -2,9 +2,9 @@ import { FastifyRegister } from 'fastify';
 import { type, string } from 'io-ts';
 import { BadRequest } from 'http-errors';
 import QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import { either } from 'fp-ts';
 import { assertValidation } from '~/utils';
 import { GroupStatus } from '~/orm/entity/groupStatus';
-import { isLeft, tryCatch } from 'fp-ts/lib/Either';
 
 export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.post('/join', async (req) => {
@@ -13,12 +13,12 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
     }).decode(req.body));
     const seedUrl = params.seedUrl;
 
-    const seed = tryCatch(
+    const seed = either.tryCatch(
       () => QuorumLightNodeSDK.utils.restoreSeedFromUrl(seedUrl),
       (v) => v as Error,
     );
 
-    if (isLeft(seed)) { throw new BadRequest('invalid seed url'); }
+    if (either.isLeft(seed)) { throw new BadRequest('invalid seed url'); }
     if (!seed.right.urls.length) { throw new BadRequest('invalid seed url'); }
 
     const groupId = seed.right.group_id;
