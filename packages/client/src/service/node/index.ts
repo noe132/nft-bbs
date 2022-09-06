@@ -584,9 +584,9 @@ const comment = {
 };
 
 const notification = {
-  load: async (nextPage = false) => {
+  load: async (params?: { nextPage?: true }) => {
     if (state.notification.loading) { return; }
-    if (!nextPage) {
+    if (!params?.nextPage) {
       runInAction(() => {
         state.notification.list = [];
         state.notification.offset = 0;
@@ -596,28 +596,36 @@ const notification = {
     await runLoading(
       (l) => { state.notification.loading = l; },
       async () => {
-        const notifications = await NotificationApi.list({
-          groupId: state.groupId,
-          userAddress: keyService.state.address,
-          limit: state.notification.limit,
-          offset: state.notification.offset,
-        });
+        const notifications = await notification.getList(
+          state.notification.offset,
+          state.notification.limit,
+        );
         runInAction(() => {
           state.notification.offset += state.notification.limit;
           notifications.forEach((v) => {
             state.notification.list.push(v);
           });
-          state.notification.unreadCount = 0;
           state.notification.done = notifications.length < state.notification.limit;
         });
       },
     );
+    notification.getUnreadCount();
+  },
+  getList: async (offset: number, limit: number) => {
+    const notifications = await NotificationApi.list({
+      groupId: state.groupId,
+      userAddress: keyService.state.address,
+      offset,
+      limit,
+    });
+    return notifications;
   },
   getUnreadCount: async () => {
     const count = await NotificationApi.getUnreadCount(state.groupId, keyService.state.address);
     runInAction(() => {
       state.notification.unreadCount = count;
     });
+    return count;
   },
 };
 

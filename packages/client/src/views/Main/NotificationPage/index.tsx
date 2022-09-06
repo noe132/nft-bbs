@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
@@ -15,13 +15,17 @@ import { UserAvatar, BackButton, ScrollToTopButton, GroupSideBox, NFTSideBox } f
 import { nodeService, viewService } from '~/service';
 // import { NotificationObjectType, NotificationType } from '~/database';
 import { ago } from '~/utils';
+import { runInAction } from 'mobx';
 
 export const NotificationPage = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
     get notificationsWithoutDislike() {
       return nodeService.state.notification.list.filter((v) => v.type !== 'dislike');
     },
+    intersectionRatio: 0,
   }));
+
+  const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
   const handleViewItem = async (v: Notification) => {
     const post = await nodeService.post.get(v.objectId);
@@ -38,8 +42,35 @@ export const NotificationPage = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
+    const loadNextPage = async () => {
+      if (nodeService.state.notification.loading || nodeService.state.notification.done) {
+        return;
+      }
+      if (state.intersectionRatio > 0.1) {
+        await nodeService.notification.load({ nextPage: true });
+        loadNextPage();
+      }
+    };
+
     nodeService.notification.load();
+
+    const io = new IntersectionObserver(([entry]) => {
+      runInAction(() => {
+        state.intersectionRatio = entry.intersectionRatio;
+      });
+      loadNextPage();
+    }, {
+      threshold: [0.1],
+    });
+    if (loadingTriggerBox.current) {
+      io.observe(loadingTriggerBox.current);
+    }
+
+    return () => {
+      io.disconnect();
+    };
   }, []);
+
 
   return (
     <div
@@ -168,7 +199,11 @@ export const NotificationPage = observer((props: { className?: string }) => {
               );
             })}
 
-            <div className="flex flex-center h-12">
+            <div className="flex flex-center h-16 pb-4">
+              <div
+                className="absolute h-[400px] w-0 bottom-0 pointer-events-none"
+                ref={loadingTriggerBox}
+              />
               {nodeService.state.notification.loading && (
                 <CircularProgress className="text-white/70" />
               )}
@@ -176,9 +211,9 @@ export const NotificationPage = observer((props: { className?: string }) => {
                 <Button
                   className="flex-1 text-link-soft py-2"
                   variant="text"
-                  onClick={() => nodeService.notification.load(true)}
+                  onClick={() => nodeService.notification.load({ nextPage: true })}
                 >
-                  load more
+                  加载更多
                   <ExpandMore />
                 </Button>
               )}

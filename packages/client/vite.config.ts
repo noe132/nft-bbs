@@ -7,7 +7,6 @@ import checker from 'vite-plugin-checker';
 import { svgInline } from './build/svg-inline';
 import { svgrPlugin } from './build/vite-svgr-plugin';
 
-
 // https://vitejs.dev/config/
 export default async () => {
   const a = !!process.env.analyze;

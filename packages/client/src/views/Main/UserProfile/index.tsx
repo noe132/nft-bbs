@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
@@ -32,6 +32,8 @@ export const UserProfile = observer((props: { className?: string }) => {
     postLoading: false,
     postDone: false,
 
+    intersectionRatio: 0,
+
     get nfts() {
       const list = Array(4).fill(0).map((_, i) => i);
       return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
@@ -62,6 +64,7 @@ export const UserProfile = observer((props: { className?: string }) => {
       return nodeService.state.profile.userPostCountMap.get(userAddress) ?? 0;
     },
   }));
+  const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
   const handleOpenPost = (post: Post) => {
     viewService.pushPage({
@@ -90,11 +93,11 @@ export const UserProfile = observer((props: { className?: string }) => {
     );
   };
 
-  const loadPost = () => {
+  const loadPost = async () => {
     if (state.postLoading) { return; }
     const userAddress = state.profile?.userAddress;
     if (!userAddress) { return; }
-    runLoading(
+    await runLoading(
       (l) => { state.postLoading = l; },
       async () => {
         const posts = await nodeService.post.getList({
@@ -115,9 +118,9 @@ export const UserProfile = observer((props: { className?: string }) => {
     );
   };
 
-  const loadData = () => {
+  const loadData = async () => {
     loadPost();
-    runLoading(
+    await runLoading(
       (l) => { state.profileLoading = l; },
       async () => {
         const userAddress = state.profile?.userAddress;
@@ -128,7 +131,33 @@ export const UserProfile = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
+    const loadNextPage = async () => {
+      if (state.postLoading || state.postDone) {
+        return;
+      }
+      if (state.intersectionRatio > 0.1) {
+        await loadPost();
+        loadNextPage();
+      }
+    };
+
     loadData();
+
+    const io = new IntersectionObserver(([entry]) => {
+      runInAction(() => {
+        state.intersectionRatio = entry.intersectionRatio;
+      });
+      loadNextPage();
+    }, {
+      threshold: [0.1],
+    });
+    if (loadingTriggerBox.current) {
+      io.observe(loadingTriggerBox.current);
+    }
+
+    return () => {
+      io.disconnect();
+    };
   }, []);
 
   if (!state.profile) { return null; }
@@ -310,7 +339,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                   variant="text"
                   onClick={() => loadPost()}
                 >
-                  load more
+                  加载更多
                   <ExpandMore />
                 </Button>
               )}
@@ -322,6 +351,11 @@ export const UserProfile = observer((props: { className?: string }) => {
             </div>
           </>)}
         </div>
+
+        <div
+          className="absolute h-[400px] w-4 bg-red-100 bottom-20 pointer-events-none"
+          ref={loadingTriggerBox}
+        />
       </div>
 
       <div className="w-[280px]">

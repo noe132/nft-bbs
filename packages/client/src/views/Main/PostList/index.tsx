@@ -15,6 +15,7 @@ import { viewService, nodeService, snackbarService } from '~/service';
 import { ago, runLoading } from '~/utils';
 import { showTrxDetail } from '~/modals';
 import { LoadingButton } from '@mui/lab';
+import { runInAction } from 'mobx';
 
 export const PostList = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -27,6 +28,7 @@ export const PostList = observer((props: { className?: string }) => {
     get isEmptySearchResult() {
       return nodeService.state.post.mode.type === 'search' && !nodeService.state.post.trxIds.length;
     },
+    intersectionRatio: 0,
   }));
 
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
@@ -59,16 +61,27 @@ export const PostList = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
+    const loadNextPage = async () => {
+      if (nodeService.state.post.loading || nodeService.state.post.done) {
+        return;
+      }
+      if (state.intersectionRatio > 0.1) {
+        await nodeService.post.listNextPage();
+        loadNextPage();
+      }
+    };
+
     if (!nodeService.state.post.trxIds.length && !nodeService.state.post.loading) {
       nodeService.post.list({ mode: 'latest' });
     }
 
     const io = new IntersectionObserver(([entry]) => {
-      if (entry.intersectionRatio > 0.5 && !nodeService.state.post.loading) {
-        nodeService.post.listNextPage();
-      }
+      runInAction(() => {
+        state.intersectionRatio = entry.intersectionRatio;
+      });
+      loadNextPage();
     }, {
-      threshold: [0.5],
+      threshold: [0.1],
     });
     if (loadingTriggerBox.current) {
       io.observe(loadingTriggerBox.current);
@@ -101,6 +114,7 @@ export const PostList = observer((props: { className?: string }) => {
               刷新 <Refresh className="text-20 -mt-px" />
             </LoadingButton>
           </div>
+
           {nodeService.state.post.posts.map((v) => {
             const stat = nodeService.post.getPostStat(v);
             const profile = nodeService.profile.getComputedProfile(v.extra?.userProfile || v.userAddress);
@@ -198,7 +212,7 @@ export const PostList = observer((props: { className?: string }) => {
 
           <div className="relative flex flex-center h-12">
             <div
-              className="absolute top-[-500px] pointer-events-none"
+              className="absolute h-[400px] w-0 bottom-0 pointer-events-none"
               ref={loadingTriggerBox}
             />
             {nodeService.state.post.loading && (
@@ -210,7 +224,7 @@ export const PostList = observer((props: { className?: string }) => {
                 variant="text"
                 onClick={() => nodeService.post.listNextPage()}
               >
-                load more
+                加载更多
                 <ExpandMore />
               </Button>
             )}
