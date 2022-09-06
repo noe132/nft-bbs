@@ -65,7 +65,7 @@ export const ImageZoomView = observer(() => {
   }), []);
 
   const handleRotate = useCallback(action(() => {
-    state.rotate = (state.rotate + 90) % 360;
+    state.rotate += 90;
   }), []);
 
   const handleMouseUp = useCallback(action(() => {
@@ -100,6 +100,7 @@ export const ImageZoomView = observer(() => {
             const img = state.img;
             imageBox.current!.innerHTML = '';
             imageBox.current!.append(img);
+            img.style.transitionDuration = '.15s';
             state.zoom = 0;
             state.left = 0;
             state.top = 0;
@@ -145,7 +146,7 @@ export const ImageZoomView = observer(() => {
 
   return (
     <Modal
-      BackdropProps={{ className: 'bg-black/70' }}
+      BackdropProps={{ className: 'bg-black/80' }}
       open={imageZoomService.state.open}
       onClose={handleClose}
       disableScrollLock
