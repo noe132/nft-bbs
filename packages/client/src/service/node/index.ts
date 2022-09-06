@@ -729,7 +729,8 @@ const group = {
     const autoJoin = store('seedUrlAutoJoin');
 
     if (keystore && password) {
-      if (either.isLeft(await keyService.login(keystore, password))) {
+      const loginResult = await keyService.login(keystore, password);
+      if (either.isLeft(loginResult)) {
         snackbarService.error('自动登录失败，keystore或密码错误');
         store.remove('keystore');
         store.remove('password');

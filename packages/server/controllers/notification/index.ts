@@ -5,14 +5,14 @@ import { assertValidation, parseIntFromString } from '~/utils';
 
 export const notificationController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.get('/:groupId/:to', async (req) => {
-    const params = assertValidation(type({
+    const params = assertValidation(req.params, type({
       groupId: string,
       to: string,
-    }).decode(req.params));
-    const query = assertValidation(partial({
+    }));
+    const query = assertValidation(req.query, partial({
       limit: string,
       offset: string,
-    }).decode(req.query));
+    }));
 
     let notifications = await Notification.list({
       groupId: params.groupId,
@@ -31,10 +31,10 @@ export const notificationController: Parameters<FastifyRegister>[0] = (fastify, 
   });
 
   fastify.get('/:groupId/:to/unread_count', async (req) => {
-    const params = assertValidation(type({
+    const params = assertValidation(req.params, type({
       groupId: string,
       to: string,
-    }).decode(req.params));
+    }));
     const count = await Notification.count({
       groupId: params.groupId,
       to: params.to,

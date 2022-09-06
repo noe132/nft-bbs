@@ -6,7 +6,10 @@ import { assertValidation, parseIntFromString, truncate } from '~/utils';
 
 export const commentController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.get('/:groupId/:trxId', async (req) => {
-    const params = assertValidation(type({ groupId: string, trxId: string }).decode(req.params));
+    const params = assertValidation(req.params, type({
+      groupId: string,
+      trxId: string,
+    }));
     const comment = await Comment.get({ groupId: params.groupId, trxId: params.trxId });
     if (!comment) {
       throw new NotFound();
@@ -16,8 +19,8 @@ export const commentController: Parameters<FastifyRegister>[0] = (fastify, _opts
   });
 
   fastify.get('/:groupId', async (req) => {
-    const params = assertValidation(type({ groupId: string }).decode(req.params));
-    const query = assertValidation(intersection([
+    const params = assertValidation(req.params, type({ groupId: string }));
+    const query = assertValidation(req.query, intersection([
       type({
         objectId: string,
       }),
@@ -27,7 +30,7 @@ export const commentController: Parameters<FastifyRegister>[0] = (fastify, _opts
         viewer: string,
         truncatedLength: string,
       }),
-    ]).decode(req.query));
+    ]));
 
     let comments = await Comment.list({
       groupId: params.groupId,
@@ -50,8 +53,8 @@ export const commentController: Parameters<FastifyRegister>[0] = (fastify, _opts
   });
 
   fastify.get('/:groupId/first', async (req) => {
-    const params = assertValidation(type({ groupId: string }).decode(req.params));
-    const query = assertValidation(type({ userAddress: string, viewer: string }).decode(req.query));
+    const params = assertValidation(req.params, type({ groupId: string }));
+    const query = assertValidation(req.query, type({ userAddress: string, viewer: string }));
 
     let comment = await Comment.getFirst({
       groupId: params.groupId,

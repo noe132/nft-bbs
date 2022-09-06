@@ -138,14 +138,9 @@ export const Join = observer(() => {
   });
 
   const handleLoginConfirm = async () => {
-    const result = fp.pipe(
-      await keyService.login(state.keystore, state.password),
-      either.mapLeft((v) => {
-        snackbarService.error('keystore或密码错误');
-        return v;
-      }),
-    );
-    if (!either.isLeft(result)) {
+    const result = await keyService.login(state.keystore, state.password);
+    if (either.isLeft(result)) {
+      snackbarService.error('keystore或密码错误');
       return;
     }
     store('seedUrlAutoJoin', true);

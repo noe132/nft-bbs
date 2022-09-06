@@ -1,4 +1,4 @@
-import { either } from 'fp-ts';
+import { either, json, function as fp } from 'fp-ts';
 import { groupInfoTrxContent } from 'nft-bbs-types';
 import { IContent } from 'quorum-light-node-sdk-nodejs';
 import { Column, Entity, EntityManager, Index, PrimaryGeneratedColumn } from 'typeorm';
@@ -36,11 +36,12 @@ export class GroupInfo {
   public timestamp!: number;
 
   public static parseTrxContent(item: IContent) {
-    const data = either.tryCatch(() => JSON.parse(item.Data.content), (v) => v);
-    if (either.isLeft(data)) { return null; }
-    const trxContent = groupInfoTrxContent.decode(data.right);
-    if (either.isLeft(trxContent)) { return null; }
-    return trxContent.right;
+    return fp.pipe(
+      json.parse(item.Data.content),
+      either.map((v) => groupInfoTrxContent.decode(v)),
+      either.flattenW,
+      either.getOrElseW(() => null),
+    );
   }
 
   public static create(params: EntityConstructorParams<GroupInfo, 'id'>) {

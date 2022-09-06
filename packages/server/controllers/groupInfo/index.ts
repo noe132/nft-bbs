@@ -5,7 +5,7 @@ import { assertValidation } from '~/utils';
 
 export const groupInfoController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.get('/:groupId', async (req) => {
-    const params = assertValidation(type({ groupId: string }).decode(req.params));
+    const params = assertValidation(req.params, type({ groupId: string }));
     const data: GroupInfo = await GroupInfo.get(params.groupId) ?? {
       trxId: '',
       groupId: '',

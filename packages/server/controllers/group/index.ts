@@ -8,18 +8,20 @@ import { GroupStatus } from '~/orm/entity/groupStatus';
 
 export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.post('/join', async (req) => {
-    const params = assertValidation(type({
-      seedUrl: string,
-    }).decode(req.body));
-    const seedUrl = params.seedUrl;
+    const body = assertValidation(
+      req.body,
+      type({ seedUrl: string }),
+    );
+    const seedUrl = body.seedUrl;
 
     const seed = either.tryCatch(
       () => QuorumLightNodeSDK.utils.restoreSeedFromUrl(seedUrl),
       (v) => v as Error,
     );
 
-    if (either.isLeft(seed)) { throw new BadRequest('invalid seed url'); }
-    if (!seed.right.urls.length) { throw new BadRequest('invalid seed url'); }
+    if (either.isLeft(seed) || !seed.right.urls.length) {
+      throw new BadRequest('invalid seed url');
+    }
 
     const groupId = seed.right.group_id;
 

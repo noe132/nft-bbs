@@ -1,4 +1,4 @@
-import { either } from 'fp-ts';
+import { either, json, function as fp } from 'fp-ts';
 import { keyBy } from 'lodash';
 import { CounterName, postTrxContent, TrxStorage } from 'nft-bbs-types';
 import { IContent } from 'quorum-light-node-sdk-nodejs';
@@ -67,11 +67,12 @@ export class Post {
   };
 
   public static parseTrxContent(item: IContent) {
-    const data = either.tryCatch(() => JSON.parse(item.Data.content), (v) => v);
-    if (either.isLeft(data)) { return null; }
-    const trxContent = postTrxContent.decode(data.right);
-    if (either.isLeft(trxContent)) { return null; }
-    return trxContent.right;
+    return fp.pipe(
+      json.parse(item.Data.content),
+      either.map((v) => postTrxContent.decode(v)),
+      either.flattenW,
+      either.getOrElseW(() => null),
+    );
   }
 
   public static create(params: EntityConstructorParams<Post, 'id' | 'extra'>) {

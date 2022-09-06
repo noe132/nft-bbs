@@ -1,4 +1,4 @@
-import { either } from 'fp-ts';
+import { either, json, function as fp } from 'fp-ts';
 import { profileTrxContent } from 'nft-bbs-types';
 import { IContent } from 'quorum-light-node-sdk-nodejs';
 import { Column, Entity, Index, FindOptionsWhere, PrimaryGeneratedColumn, EntityManager } from 'typeorm';
@@ -42,11 +42,12 @@ export class Profile {
   })
 
   public static parseTrxContent(item: IContent) {
-    const data = either.tryCatch(() => JSON.parse(item.Data.content), (v) => v);
-    if (either.isLeft(data)) { return null; }
-    const trxContent = profileTrxContent.decode(data.right);
-    if (either.isLeft(trxContent)) { return null; }
-    return trxContent.right;
+    return fp.pipe(
+      json.parse(item.Data.content),
+      either.map((v) => profileTrxContent.decode(v)),
+      either.flattenW,
+      either.getOrElseW(() => null),
+    );
   }
 
   public static create(params: EntityConstructorParams<Profile, 'id'>) {

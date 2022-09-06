@@ -12,10 +12,10 @@ const cache = new LRUCache<string, ImageCacheItem>({
 
 export const imageController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.get('/:groupId/:trxId', async (req, res) => {
-    const params = assertValidation(type({
+    const params = assertValidation(req.params, type({
       groupId: string,
       trxId: string,
-    }).decode(req.params));
+    }));
     const key = `${params.groupId}-${params.trxId}`;
     let item: ImageCacheItem | null = null;
 

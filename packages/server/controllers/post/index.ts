@@ -6,8 +6,8 @@ import { assertValidation, parseIntFromString, truncate } from '~/utils';
 
 export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.get('/:groupId/:trxId', async (req) => {
-    const params = assertValidation(type({ groupId: string, trxId: string }).decode(req.params));
-    const query = assertValidation(partial({ viewer: string }).decode(req.query));
+    const params = assertValidation(req.params, type({ groupId: string, trxId: string }));
+    const query = assertValidation(req.query, partial({ viewer: string }));
     const post = await Post.get({ groupId: params.groupId, trxId: params.trxId });
     if (!post) {
       throw new NotFound();
@@ -17,8 +17,8 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
   });
 
   fastify.get('/:groupId', async (req) => {
-    const params = assertValidation(type({ groupId: string }).decode(req.params));
-    const query = assertValidation(partial({
+    const params = assertValidation(req.params, type({ groupId: string }));
+    const query = assertValidation(req.query, partial({
       order: union([literal('asc'), literal('desc')]),
       limit: string,
       offset: string,
@@ -26,7 +26,7 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
       userAddress: string,
       truncatedLength: string,
       search: string,
-    }).decode(req.query));
+    }));
 
     let posts = await Post.list({
       groupId: params.groupId,
@@ -50,15 +50,11 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
   });
 
   fastify.get('/:groupId/first', async (req) => {
-    const params = assertValidation(type({ groupId: string }).decode(req.params));
-    const query = assertValidation(intersection([
-      type({
-        userAddress: string,
-      }),
-      partial({
-        viewer: string,
-      }),
-    ]).decode(req.query));
+    const params = assertValidation(req.params, type({ groupId: string }));
+    const query = assertValidation(req.query, intersection([
+      type({ userAddress: string }),
+      partial({ viewer: string }),
+    ]));
 
     let post = await Post.getFirst({
       groupId: params.groupId,
@@ -71,7 +67,7 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
   });
 
   fastify.get('/count/:groupId/:userAddress', (req) => {
-    const params = assertValidation(type({ groupId: string, userAddress: string }).decode(req.params));
+    const params = assertValidation(req.params, type({ groupId: string, userAddress: string }));
     return Post.count(params.groupId, params.userAddress);
   });
 

@@ -1,5 +1,5 @@
 import { either } from 'fp-ts';
-import { Validation } from 'io-ts';
+import { Type } from 'io-ts';
 import { PathReporter } from 'io-ts/lib/PathReporter';
 import { BadRequest } from 'http-errors';
 
@@ -19,11 +19,13 @@ export type EntityConstructorParams<T, E = ''> = {
   [K in keyof T as K extends E ? never : T[K] extends Function ? never : K ]: T[K]
 };
 
-export const assertValidation: <T>(v: Validation<T>) => T = <T>(v: Validation<T>) => {
-  if (either.isLeft(v)) {
-    throw new BadRequest(PathReporter.report(v).join(', '));
+/** 验证参数，参数错误则 throw 400 BadRequest */
+export const assertValidation: <A>(data: unknown, t: Type<A>) => A = <A>(data: unknown, t: Type<A>) => {
+  const result = t.decode(data);
+  if (either.isLeft(result)) {
+    throw new BadRequest(PathReporter.report(result).join(', '));
   }
-  return v.right;
+  return result.right;
 };
 
 export const parseIntFromString = (s: string | undefined, defaultValue: number) => {
