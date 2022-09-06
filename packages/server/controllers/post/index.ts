@@ -25,14 +25,16 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
       viewer: string,
       userAddress: string,
       truncatedLength: string,
+      search: string,
     }).decode(req.query));
 
     let posts = await Post.list({
       groupId: params.groupId,
-      order: query.order === 'asc' ? 'asc' : 'desc',
+      order: query.order === 'asc' ? 'ASC' : 'DESC',
       userAddress: query.userAddress,
       limit: Math.min(parseIntFromString(query.limit, 10), 100),
       offset: parseIntFromString(query.offset, 10),
+      search: query.search,
     });
     posts = await Post.appendExtra(posts, {
       viewer: query.viewer,

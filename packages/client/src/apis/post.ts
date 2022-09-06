@@ -37,6 +37,7 @@ export const list = async (groupId: string, options: {
   userAddress?: string
   offset?: number
   limit?: number
+  search?: string
 } = {}) => {
   const items: Array<Post> = await request(`${API_BASE_URL}/post/${groupId}?${qs.stringify(options)}`);
   return items;

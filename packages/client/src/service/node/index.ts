@@ -285,6 +285,7 @@ const post = {
       offset: params.offset,
       viewer: params.viewer ?? keyService.state.address,
       userAddress: params.userAddress,
+      search: state.post.mode.type === 'search' ? state.post.mode.search : undefined,
     });
     runInAction(() => {
       posts.forEach((v) => {
