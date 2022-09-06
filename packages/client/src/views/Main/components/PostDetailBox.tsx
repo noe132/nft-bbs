@@ -4,13 +4,13 @@ import { autorun, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import { Button, IconButton, Tooltip } from '@mui/material';
-import { ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
+import { Share, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 import type { Post } from 'nft-bbs-server';
 import { CounterName } from 'nft-bbs-types';
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 import TrashIcon from 'boxicons/svg/regular/bx-trash.svg?fill-icon';
 
-import { ago, renderPostMarkdown, runLoading } from '~/utils';
+import { ago, renderPostMarkdown, runLoading, setClipboard } from '~/utils';
 import { imageZoomService, viewService, nodeService, snackbarService, keyService, dialogService } from '~/service';
 import { UserAvatar, PostImageZoomButton } from '~/components';
 import { ImageApi } from '~/apis';
@@ -75,6 +75,11 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         noCancelButton: true,
       });
     }
+  };
+
+  const handleShare = () => {
+    setClipboard(window.location.href);
+    snackbarService.show('帖子地址已复制到剪切板');
   };
 
   const parseContent = () => {
@@ -203,13 +208,13 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
           </Button>
         </div>
 
-        {/* <Button
+        <Button
           className="text-link-soft"
           variant="text"
-          onClick={() => snackbarService.show('TODO')}
+          onClick={handleShare}
         >
           <Share className="mr-2 text-22" />分享
-        </Button> */}
+        </Button>
       </div>
     </div>
   );
