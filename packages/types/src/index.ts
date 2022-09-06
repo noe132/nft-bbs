@@ -23,6 +23,7 @@ export enum TrxType {
   image = 'image',
   groupInfo = 'group_info',
 }
+
 export enum CounterName {
   postLike = 'postLike',
   postDislike = 'postDislike',
@@ -89,6 +90,7 @@ export const profileTrxContent = type({
 export type IProfileTrxContent = TypeOf<typeof profileTrxContent>;
 
 export const uniqueCounter = type({
+  type: enumType<TrxType.counter>(TrxType, 'TrxType'),
   name: enumType<CounterName>(CounterName, 'CounterName'),
   objectId: string,
   userAddress: string,
