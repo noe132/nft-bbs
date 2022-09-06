@@ -308,9 +308,11 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       </div>
 
       <div className="w-[280px]">
-        <GroupSideBox className="mt-16" />
+        <div className="fixed w-[280px]">
+          <GroupSideBox className="mt-16" />
 
-        <NFTSideBox className="mt-8" />
+          <NFTSideBox className="mt-8" />
+        </div>
       </div>
     </div>
   );

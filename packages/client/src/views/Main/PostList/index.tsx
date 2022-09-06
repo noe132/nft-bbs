@@ -188,10 +188,12 @@ export const PostList = observer((props: { className?: string }) => {
         </div>
       </div>
 
-      <div className="w-[280px]">
-        <GroupSideBox className="mt-16" showNewPost />
+      <div className="relative w-[280px]">
+        <div className="fixed w-[280px]">
+          <GroupSideBox className="mt-16" showNewPost />
 
-        <NFTSideBox className="mt-8" />
+          <NFTSideBox className="mt-8" />
+        </div>
       </div>
     </div>
   );
