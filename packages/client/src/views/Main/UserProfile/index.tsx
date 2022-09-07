@@ -66,13 +66,14 @@ export const UserProfile = observer((props: { className?: string }) => {
   }));
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
-  const handleOpenPost = (post: Post) => {
+  const handleOpenPost = (post: Post, locateComment = false) => {
     viewService.pushPage({
       name: 'postdetail',
       value: {
         post,
         groupId: post.groupId,
         trxId: post.trxId,
+        locateComment,
       },
     });
   };
@@ -211,7 +212,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                 </div>
               </div>
               {!!state.profile.intro && (
-                <div className="text-14 text-gray-9c truncate-2">
+                <div className="text-14 text-gray-9c truncate-4">
                   {state.profile.intro}
                 </div>
               )}
@@ -314,7 +315,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                         className="text-link-soft text-14 px-2 min-w-0"
                         variant="text"
                         size="small"
-                        onClick={() => handleOpenPost(v)}
+                        onClick={() => handleOpenPost(v, true)}
                       >
                         <CommentDetailIcon className="mr-2 -mb-px text-18" />
                         {v.commentCount || '我来写第一个评论'}
