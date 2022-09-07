@@ -7,8 +7,8 @@ import DOMPurify from 'dompurify';
 
 export const createBaseRenderer = (options?: mdit.Options) => {
   const renderer = mdit({
-    html: false,
-    breaks: false,
+    html: true,
+    breaks: true,
     // highlight: (str, lang) => {
     //   if (lang && hljs.getLanguage(lang)) {
     //     try {
@@ -40,7 +40,6 @@ export const renderPostMarkdown = (md: string) => {
     replaceMap.set(placeholder, sub);
     return placeholder;
   });
-  processedMD = processedMD.replaceAll(/\n+/g, '\n\n');
   processedMD = processedMD.replaceAll(/(\$\$\$\$####!!!!\d+!!!!####\$\$\$\$)/g, (sub) => replaceMap.get(sub) ?? '');
   return DOMPurify.sanitize(defaultRenderer.render(processedMD), {
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|blob|rum):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,

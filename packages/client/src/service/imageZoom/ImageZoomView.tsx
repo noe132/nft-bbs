@@ -110,6 +110,7 @@ export const ImageZoomView = observer(() => {
             imageBox.current!.innerHTML = '';
             imageBox.current!.append(img);
             img.style.transitionDuration = '.15s';
+            img.style.backgroundColor = 'white';
             state.zoom = 0;
             state.left = 0;
             state.top = 0;
