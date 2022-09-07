@@ -106,8 +106,8 @@ const state = observable({
 const profile = {
   get: async (params: { userAddress: string } | { trxId: string }) => {
     let profile = 'userAddress' in params
-      ? await ProfileApi.get(state.groupId, params.userAddress)
-      : await ProfileApi.get(state.groupId, params.trxId);
+      ? await ProfileApi.getByUserAddress(state.groupId, params.userAddress)
+      : await ProfileApi.getByTrxId(state.groupId, params.trxId);
 
     if ('userAddress' in params && !profile) {
       profile = {

@@ -62,7 +62,10 @@ export class Profile {
   }
 
   public static async get(params: FindOptionsWhere<Profile>) {
-    return AppDataSource.manager.findOneBy(Profile, params);
+    return AppDataSource.manager.findOne(Profile, {
+      where: params,
+      order: { id: 'DESC' },
+    });
   }
 
   public static async bulkGet(params: Array<FindOptionsWhere<Profile>>, manager?: EntityManager) {

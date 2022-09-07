@@ -105,14 +105,16 @@ export const PostList = observer((props: { className?: string }) => {
         </div>
         <div className="flex-col gap-y-12 py-10 px-16">
           <div className="flex flex-center -my-4 -mb-8">
-            <LoadingButton
-              className="w-full text-white/70"
-              variant="text"
-              onClick={() => nodeService.post.list()}
-              loading={nodeService.state.post.loading}
-            >
-              刷新 <Refresh className="text-20 -mt-px" />
-            </LoadingButton>
+            {!!nodeService.state.post.trxIds.length && (
+              <LoadingButton
+                className="w-full text-white/70"
+                variant="text"
+                onClick={() => nodeService.post.list()}
+                loading={nodeService.state.post.loading}
+              >
+                刷新 <Refresh className="text-20 -mt-px" />
+              </LoadingButton>
+            )}
           </div>
 
           {nodeService.state.post.posts.map((v) => {

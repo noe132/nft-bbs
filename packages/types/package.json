@@ -6,7 +6,7 @@
   "module": "esm/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "rimraf dist && yarn tsc && yarn tsc -p tsconfig-esm.json",
+    "build": "rimraf dist esm && yarn tsc && yarn tsc -p tsconfig-esm.json",
     "lint": "eslint --ext \"js,jsx,ts,tsx\" ."
   },
   "keywords": [],
