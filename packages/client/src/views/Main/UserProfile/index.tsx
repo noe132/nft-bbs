@@ -262,12 +262,13 @@ export const UserProfile = observer((props: { className?: string }) => {
               const stat = nodeService.post.getPostStat(v);
               return (
                 <div key={v.trxId}>
-                  <div
+                  <a
                     className="text-white text-16 font-medium cursor-pointer leading-relaxed truncate-2 hover:underline"
-                    onClick={() => handleOpenPost(v)}
+                    href={`/post/${v.groupId}/${v.trxId}`}
+                    onClick={(e) => { e.preventDefault(); handleOpenPost(v); }}
                   >
                     {stat.title || '无标题'}
-                  </div>
+                  </a>
                   <div className="text-blue-gray text-14 truncate-2 mt-2">
                     {RemoveMarkdown(stat.content)}
                   </div>

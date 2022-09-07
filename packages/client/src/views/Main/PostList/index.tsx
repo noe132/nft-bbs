@@ -121,12 +121,13 @@ export const PostList = observer((props: { className?: string }) => {
             return (
               <div key={v.trxId}>
                 <div className="flex justify-between items-center gap-x-2">
-                  <div
+                  <a
                     className="text-white text-18 font-medium cursor-pointer leading-relaxed truncate-2 hover:underline"
-                    onClick={() => handleOpenPost(v)}
+                    href={`/post/${v.groupId}/${v.trxId}`}
+                    onClick={(e) => { e.preventDefault(); handleOpenPost(v); }}
                   >
                     {stat.title || '无标题'}
-                  </div>
+                  </a>
                   <button
                     className="flex flex-center flex-none text-white/50 text-14 max-w-[200px]"
                     onClick={() => profile && viewService.pushPage({ name: 'userprofile', value: profile })}
