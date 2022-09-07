@@ -271,7 +271,7 @@ export const PostDetail = observer((props: { className?: string }) => {
               value={state.commentInput}
               onChange={action((e) => { state.commentInput = e.target.value; })}
               onKeyDown={(e) => {
-                if (e.ctrlKey && e.key === 'Enter') {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                   handlePostComment('direct');
                 }
               }}
@@ -404,7 +404,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                   if (e.key === 'Escape') {
                     state.replyTo.open = false;
                   }
-                  if (e.ctrlKey && e.key === 'Enter') {
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                     handlePostComment('reply');
                   }
                 })}
