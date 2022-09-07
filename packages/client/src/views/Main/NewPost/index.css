@@ -4,6 +4,10 @@
 .code-mirror-wrapper .CodeMirror {
   color: white;
 }
+.code-mirror-wrapper .CodeMirror .CodeMirror-placeholder {
+  color: white;
+  opacity: 0.58;
+}
 .code-mirror-wrapper .CodeMirror .CodeMirror-cursor {
   border-color: white;
 }
