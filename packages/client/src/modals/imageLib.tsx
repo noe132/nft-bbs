@@ -188,7 +188,7 @@ const A = observer((props: { rs: (file: Blob) => unknown }) => {
             <img src="https://i.xue.cn/172e1214.png" alt="pixabay" />
           </a>
         </Tooltip>
-        <Scrollable className="mt-2 p-1 h-[400px]" wide>
+        <Scrollable className="mt-2 p-1 h-[400px]">
           <div
             className="grid-container grid gap-4 p-4 justify-center"
             style={{

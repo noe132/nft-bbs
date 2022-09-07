@@ -48,9 +48,9 @@ export const Main = observer(() => (
             i !== viewService.state.stack.length - 1 && '!hidden',
           )}
           light
-          wide
           key={v.id}
           wrapperClassName="flex-col"
+          size="large"
         >
           <PageComponent />
         </Scrollable>

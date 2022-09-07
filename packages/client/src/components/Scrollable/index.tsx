@@ -9,16 +9,41 @@ interface Props {
   children?: React.ReactNode
   className?: string
   wrapperClassName?: string
+  trackClassName?: string
+  thumbClassName?: string
   scrollBoxRef?: React.MutableRefObject<HTMLDivElement | null>
   onScroll?: () => unknown
   light?: boolean
   autoHideMode?: boolean
-  wide?: boolean
+  size?: 'small' | 'normal' | 'large' | {
+    thumb: number
+    thumbHover: number
+    track: number
+  }
 }
+
+const widthMap = {
+  small: {
+    thumb: 6,
+    thumbHover: 8,
+    track: 12,
+  },
+  normal: {
+    thumb: 8,
+    thumbHover: 10,
+    track: 16,
+  },
+  large: {
+    thumb: 10,
+    thumbHover: 13,
+    track: 20,
+  },
+};
 
 export const Scrollable = observer((props: Props) => {
   const state = useLocalObservable(() => ({
     hide: !!props.autoHideMode,
+    hover: false,
     drag: {
       start: false,
       startY: 0,
@@ -102,6 +127,25 @@ export const Scrollable = observer((props: Props) => {
     state.drag.start = false;
   });
 
+  const handleTrackClick = (e: React.MouseEvent) => {
+    if (!containerRef.current) { return; }
+    if (e.target !== e.currentTarget) { return; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickPosition = ((e.clientY - rect.top) / rect.height) * 100;
+    const isTop = clickPosition < Number(state.scrollbar.thumb.position);
+    const isBottom = clickPosition > (Number(state.scrollbar.thumb.position) + Number(state.scrollbar.thumb.height));
+    if (isTop) {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollTop - containerRef.current.clientHeight,
+      });
+    }
+    if (isBottom) {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollTop + containerRef.current.clientHeight,
+      });
+    }
+  };
+
   const calcScrollbar = action(() => {
     if (!containerRef.current) {
       return;
@@ -168,6 +212,10 @@ export const Scrollable = observer((props: Props) => {
     calcScrollbar();
   });
 
+  const sizes = typeof props.size === 'object'
+    ? props.size
+    : widthMap[props.size ?? 'normal'];
+
   return (
     <div
       className={classNames(
@@ -179,37 +227,36 @@ export const Scrollable = observer((props: Props) => {
     >
       <div
         className={classNames(
-          'scroll-bar-track group absolute top-[3px] right-0 bottom-[3px] z-[200]',
-          !props.wide && 'w-[12px]',
-          props.wide && 'w-[16px]',
+          'scroll-bar-track absolute top-[3px] right-0 bottom-[3px] z-[200]',
           state.noScrollBar && 'no-scroll-bar',
           !!props.autoHideMode && 'duration-150',
           !!props.autoHideMode && state.hide && 'opacity-0',
+          props.trackClassName,
         )}
+        style={{ width: `${sizes.track}px` }}
+        onClick={handleTrackClick}
+        onMouseEnter={action(() => { state.hover = true; })}
+        onMouseLeave={action(() => { state.hover = false; })}
       >
         {!state.noScrollBar && (
           <div
             className={classNames(
               'scroll-bar-thumb-box absolute flex justify-center h-0 left-0 right-0 cursor-pointer',
-              !props.wide && 'w-[12px]',
-              props.wide && 'w-[16px]',
+              props.thumbClassName,
             )}
             onMouseDown={handleScrollbarThumbClick}
-            style={state.thumbStyle}
+            style={{ width: `${sizes.track}px`, ...state.thumbStyle }}
           >
             <div
               className={classNames(
                 'scroll-bar-thumb ease-in-out duration-100 rounded-full',
-                !props.wide && 'w-[6px] group-hover:w-[8px]',
-                props.wide && 'w-[8px] group-hover:w-[10px]',
                 !props.light && 'bg-black/15 group-hover:bg-black/25',
                 props.light && 'bg-white/25 group-hover:bg-white/40',
-                !props.wide && state.drag.start && 'w-[8px]',
-                props.wide && state.drag.start && 'w-[10px]',
                 !props.light && state.drag.start && 'bg-black/25',
                 props.light && state.drag.start && 'bg-white/40',
               )}
               ref={thumb}
+              style={{ width: `${state.hover || state.drag.start ? sizes.thumbHover : sizes.thumb}px` }}
             />
           </div>
         )}
