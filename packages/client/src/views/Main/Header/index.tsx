@@ -5,7 +5,10 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
 import { ethers } from 'ethers';
 import QuorumLightNodeSDK from 'quorum-light-node-sdk';
-import { Check, Close, MoreVert, NotificationsNone, Search } from '@mui/icons-material';
+import {
+  Check, Close, Logout, MoreVert, NotificationsNone,
+  PersonOutline, Search, SwapHoriz,
+} from '@mui/icons-material';
 import {
   Badge, Button, FormControl, IconButton, Input,
   InputLabel, Menu, MenuItem, OutlinedInput, Popover, Tab, Tabs,
@@ -483,45 +486,42 @@ export const Header = observer((props: { className?: string }) => {
           </div>
         </MenuItem> */}
         {([
-          { text: '我的账号信息', onClick: handleShowAccountInfo },
-          process.env.NODE_ENV === 'development' && { text: '使用账号1', onClick: () => handleChangeAccount('1') },
-          process.env.NODE_ENV === 'development' && { text: '使用账号2', onClick: () => handleChangeAccount('2') },
+          {
+            text: '我的账号信息',
+            onClick: handleShowAccountInfo,
+            icon: <PersonOutline className="text-22 text-blue-500/90" />,
+          },
+          process.env.NODE_ENV === 'development' && {
+            text: '使用账号1',
+            onClick: () => handleChangeAccount('1'),
+            icon: '',
+          },
+          process.env.NODE_ENV === 'development' && {
+            text: '使用账号2',
+            onClick: () => handleChangeAccount('2'),
+            icon: '',
+          },
           // process.env.NODE_ENV === 'development' && { text: '使用新号', onClick: () => handleChangeAccount('new') },
-          !!nodeService.state.group && { text: '退出种子网络', onClick: handleExitGroup },
+          nodeService.state.logined && {
+            text: '退出登录',
+            onClick: handleLogout,
+            icon: <Logout className="text-22 text-amber-500/90" />,
+          },
+          !!nodeService.state.group && {
+            text: '切换种子网络',
+            onClick: handleExitGroup,
+            icon: <SwapHoriz className="text-22 text-black/60" />,
+          },
         ] as const).filter(<T extends unknown>(v: T | false): v is T => !!v).map((v, i) => (
           <MenuItem onClick={v.onClick} key={i}>
-            <div className="flex gap-x-3 mr-2">
+            <div className="flex gap-x-2 mr-2">
+              <div className="flex flex-center w-5">
+                {v.icon}
+              </div>
               {v.text}
             </div>
           </MenuItem>
         ))}
-        {/* <MenuItem onClick={() => handleChangeAccount('1')}>
-          <div className="flex gap-x-3 mr-2">
-            asd
-          </div>
-        </MenuItem>
-        {process.env.NODE_ENV === 'development' && [
-          <MenuItem onClick={() => handleChangeAccount('1')}>
-            <div className="flex gap-x-3 mr-2">
-              使用账号1
-            </div>
-          </MenuItem>,
-          <MenuItem onClick={() => handleChangeAccount('2')}>
-            <div className="flex gap-x-3 mr-2">
-              使用账号2
-            </div>
-          </MenuItem>,
-          <MenuItem onClick={() => handleChangeAccount('new')}>
-            <div className="flex gap-x-3 mr-2">
-              使用新号
-            </div>
-          </MenuItem>,
-          <MenuItem onClick={() => handleClearData()}>
-            <div className="flex gap-x-3 mr-2">
-              清除数据
-            </div>
-          </MenuItem>,
-        ]} */}
       </Menu>
 
       <Menu

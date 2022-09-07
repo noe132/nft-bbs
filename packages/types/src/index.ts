@@ -3,6 +3,8 @@ import { enumType } from './enum';
 
 export * from './enum';
 
+export const nftbbsAppKeyName = 'group_nftbbs';
+
 export enum TrxStorage {
   cache = 'cache',
   chain = 'chain',

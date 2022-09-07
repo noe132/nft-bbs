@@ -3,8 +3,9 @@ import React, { useRef } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
-import QuorumLightNodeSDK, { IGroup } from 'quorum-light-node-sdk';
+import QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import { either, taskEither, function as fp } from 'fp-ts';
+import { nftbbsAppKeyName } from 'nft-bbs-types';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl,
   FormControlLabel, IconButton, InputLabel, Menu, MenuItem, OutlinedInput,
@@ -24,10 +25,12 @@ import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
 import { chooseImgByPixelRatio, runLoading, ThemeLight } from '~/utils';
 import {
-  AllLanguages, keyService, langName,
+  AllLanguages, dialogService, keyService, langName,
   langService, nodeService, snackbarService,
 } from '~/service';
 import { GroupAvatar } from '~/components';
+import { GroupInfo } from 'nft-bbs-server';
+import { GroupInfoApi } from '~/apis';
 
 enum Step {
   InputSeedUrl = 1,
@@ -37,16 +40,17 @@ enum Step {
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
-    seedUrl: store('seedUrl') || 'rum://seed?v=1&e=0&n=0&b=QaPjfi7LQ4yp2S60ngyJdw&c=fja8EJAAK_ZxLPcyLq-6L7HSKuli68wnhl4ImdwHh_A&g=uZvFqN6-SYGGu9SESABN0w&k=AjlWMMvVpXi9DLpoxmgJgD9ug2fDAaUNQCOhOq5PNfIc&s=bOh-m-h2vCbsS3Z3KBUNoYfB3D3ZyJx3Vf0W2dKibNgNp1Uj_f6U-YSo4MPLZM2QE3ipN7KklOCdoYHS9WT2zgE&t=FxBnshqivLo&a=nft-bbs-test-noe132.com&y=group_timeline&u=https%3A%2F%2Fnoe132.com%3A64459%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyJiOTliYzVhOC1kZWJlLTQ5ODEtODZiYi1kNDg0NDgwMDRkZDMiXSwiZXhwIjoxNjkzNDc4ODU1LCJuYW1lIjoibm9kZWp3dCIsInJvbGUiOiJub2RlIn0.BRl1QD0B-Dpngccs8dtsMzm5j-m_BCvet4XgRJx07cA',
+    seedUrl: store('seedUrl') || 'rum://seed?v=1&e=0&n=0&b=QaPjfi7LQ4yp2S60ngyJdw&c=fja8EJAAK_ZxLPcyLq-6L7HSKuli68wnhl4ImdwHh_A&g=uZvFqN6-SYGGu9SESABN0w&k=AjlWMMvVpXi9DLpoxmgJgD9ug2fDAaUNQCOhOq5PNfIc&s=bOh-m-h2vCbsS3Z3KBUNoYfB3D3ZyJx3Vf0W2dKibNgNp1Uj_f6U-YSo4MPLZM2QE3ipN7KklOCdoYHS9WT2zgE&t=FxBnshqivLo&a=nft%E8%AE%BA%E5%9D%9B%E6%B5%8B%E8%AF%95%E7%A7%8D%E5%AD%90%E7%BD%91%E7%BB%9C&y=group_nftbbs&u=https%3A%2F%2Fnoe132.com%3A64459%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyJiOTliYzVhOC1kZWJlLTQ5ODEtODZiYi1kNDg0NDgwMDRkZDMiXSwiZXhwIjoxNjkzNDc4ODU1LCJuYW1lIjoibm9kZWp3dCIsInJvbGUiOiJub2RlIn0.BRl1QD0B-Dpngccs8dtsMzm5j-m_BCvet4XgRJx07cA',
     keystorePopup: false,
     keystore: '',
     password: '',
     passwordVisibility: false,
     rememberPassword: false,
-    group: null as null | IGroup,
     step: Step.InputSeedUrl,
     languageMenu: false,
     createWalletLoading: false,
+    seed: null as null | ReturnType<typeof QuorumLightNodeSDK.utils.restoreSeedFromUrl>,
+    groupInfo: null as null | GroupInfo,
     get canLogin() {
       return !!this.password && !!this.keystore;
     },
@@ -60,17 +64,23 @@ export const Join = observer(() => {
     state.languageMenu = false;
   });
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (state.step === Step.InputSeedUrl) {
       try {
-        QuorumLightNodeSDK.cache.Group.add(state.seedUrl);
-        const groups = QuorumLightNodeSDK.cache.Group.list();
-        const group = groups[0];
-        groups.forEach((v) => {
-          QuorumLightNodeSDK.cache.Group.remove(v.groupId);
-        });
+        const seed = QuorumLightNodeSDK.utils.restoreSeedFromUrl(state.seedUrl);
+        if (seed.app_key !== nftbbsAppKeyName) {
+          const result = await dialogService.open({
+            title: '种子网络类型不支持',
+            content: '加入的种子网络类型不是当前支持的类型，确实要继续加入吗？',
+            confirm: '加入',
+          });
+          if (result === 'cancel') { return; }
+        }
+        GroupInfoApi.get(seed.group_id).then(action((v) => {
+          state.groupInfo = v;
+        }));
         runInAction(() => {
-          state.group = group;
+          state.seed = seed;
           state.step = Step.PrepareJoinGroup;
         });
       } catch (e) {
@@ -387,14 +397,16 @@ export const Join = observer(() => {
                 </Button>
                 <GroupAvatar
                   className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3"
-                  groupName={state.group?.groupName ?? ''}
+                  // groupName={state.seed?.group_name ?? ''}
+                  avatar={state.groupInfo?.avatar}
                   size={100}
                 />
-                {/* <div className="w-25 h-25 rounded-full overflow-hidden bg-white absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 p-px">
-                  <div className="bg-blue-400/70 rounded-full h-full w-full" />
-                </div> */}
                 <div className="mt-0 text-gray-f2 text-18 truncate max-w-[400px]">
-                  {state.group?.groupName}
+                  {state.seed?.group_name}
+                </div>
+
+                <div className="mt-2 text-gray-f2 text-14 truncate-3 max-w-[400px]">
+                  {state.groupInfo?.desc}
                 </div>
 
                 <Button
