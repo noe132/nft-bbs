@@ -217,7 +217,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
                   <ExpandMore />
                 </Button>
               )}
-              {nodeService.state.notification.done && !!nodeService.state.notification.list.length && (
+              {nodeService.state.notification.done && nodeService.state.notification.list.length > 10 && (
                 <span className="text-white/60 text-14">
                   没有啦
                 </span>

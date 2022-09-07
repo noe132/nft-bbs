@@ -343,7 +343,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                   <ExpandMore />
                 </Button>
               )}
-              {state.postDone && !!state.posts.length && (
+              {state.postDone && state.posts.length > 10 && (
                 <span className="text-white/60 text-14">
                   没有啦
                 </span>

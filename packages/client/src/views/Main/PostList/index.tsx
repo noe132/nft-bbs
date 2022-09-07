@@ -25,9 +25,6 @@ export const PostList = observer((props: { className?: string }) => {
       const list = Array(4).fill(0).map((_, i) => i);
       return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
     },
-    get isEmptySearchResult() {
-      return nodeService.state.post.mode.type === 'search' && !nodeService.state.post.trxIds.length;
-    },
     intersectionRatio: 0,
   }));
 
@@ -234,8 +231,8 @@ export const PostList = observer((props: { className?: string }) => {
             )}
             {nodeService.state.post.done && (
               <span className="text-white/60 text-14">
-                {state.isEmptySearchResult && '没有找到搜索结果'}
-                {!state.isEmptySearchResult && '没有啦'}
+                {nodeService.state.post.trxIds.length > 10 && nodeService.state.post.mode.type !== 'search' && '没有啦'}
+                {!nodeService.state.post.trxIds.length && nodeService.state.post.mode.type === 'search' && '没有找到搜索结果'}
               </span>
             )}
           </div>
