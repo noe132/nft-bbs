@@ -19,7 +19,7 @@ export const ImageZoomView = observer(() => {
     top: 0,
     rotate: 0,
     requestAnimationFrame: false,
-    dragStart: null as null | { left: number, top: number, clientX: number, clientY: number },
+    dragStart: null as null | { isBackDrop: boolean, left: number, top: number, clientX: number, clientY: number },
     get img() {
       return imageZoomService.state.image!;
     },
@@ -31,6 +31,7 @@ export const ImageZoomView = observer(() => {
 
   const handleMouseDown = useCallback(action((e: React.MouseEvent) => {
     state.dragStart = {
+      isBackDrop: e.target === e.currentTarget,
       left: state.left,
       top: state.top,
       clientX: e.clientX,
@@ -68,7 +69,15 @@ export const ImageZoomView = observer(() => {
     state.rotate += 90;
   }), []);
 
-  const handleMouseUp = useCallback(action(() => {
+  const handleMouseUp = useCallback(action((e: MouseEvent) => {
+    if (state.dragStart?.isBackDrop) {
+      const deltaX = state.dragStart.clientX - e.clientX;
+      const deltaY = state.dragStart.clientY - e.clientY;
+      const distanceSquare = deltaX ** 2 + deltaY ** 2;
+      if (distanceSquare < 5 ** 2) {
+        handleClose();
+      }
+    }
     state.dragStart = null;
   }), []);
 
