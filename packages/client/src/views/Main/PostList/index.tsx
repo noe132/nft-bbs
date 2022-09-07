@@ -122,7 +122,7 @@ export const PostList = observer((props: { className?: string }) => {
             const profile = nodeService.profile.getComputedProfile(v.extra?.userProfile || v.userAddress);
             return (
               <div key={v.trxId}>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center gap-x-2">
                   <div
                     className="text-white text-18 font-medium cursor-pointer leading-relaxed truncate-2 hover:underline"
                     onClick={() => handleOpenPost(v)}
@@ -130,11 +130,13 @@ export const PostList = observer((props: { className?: string }) => {
                     {stat.title || '无标题'}
                   </div>
                   <button
-                    className="flex flex-center text-white/50 text-14"
+                    className="flex flex-center flex-none text-white/50 text-14 max-w-[200px]"
                     onClick={() => profile && viewService.pushPage({ name: 'userprofile', value: profile })}
                   >
-                    <UserAvatar className="mr-2" profile={profile} size={24} />
-                    {profile.name || profile.userAddress.slice(0, 10)}
+                    <UserAvatar className="mr-2 flex-none" profile={profile} size={24} />
+                    <div className="truncate">
+                      {profile.name || profile.userAddress.slice(0, 10)}
+                    </div>
                   </button>
                 </div>
                 <div className="text-blue-gray text-14 truncate-2 mt-2">

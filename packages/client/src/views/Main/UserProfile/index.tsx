@@ -353,7 +353,7 @@ export const UserProfile = observer((props: { className?: string }) => {
         </div>
 
         <div
-          className="absolute h-[400px] w-4 bg-red-100 bottom-20 pointer-events-none"
+          className="absolute h-[400px] w-0 bottom-20 pointer-events-none"
           ref={loadingTriggerBox}
         />
       </div>
