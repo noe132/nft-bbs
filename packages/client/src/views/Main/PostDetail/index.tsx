@@ -201,11 +201,11 @@ export const PostDetail = observer((props: { className?: string }) => {
     });
   };
 
-  const loadComments = () => {
+  const loadComments = async () => {
     const post = state.post;
     if (!post) { return; }
     // TODO: comment paging?
-    runLoading(
+    await runLoading(
       (l) => { state.commentLoading = l; },
       async () => {
         const commentTrxIds = await nodeService.comment.list(post.trxId);
@@ -217,15 +217,27 @@ export const PostDetail = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
-    loadComments();
     const highlightedId = viewService.state.page.page.name === 'postdetail'
       ? viewService.state.page.page.value.commentTrx
       : '';
+    const locateComment = viewService.state.page.page.name === 'postdetail'
+      && viewService.state.page.page.value.locateComment;
+
     if (highlightedId) {
       runInAction(() => {
         state.highlightedComments.add(highlightedId);
       });
     }
+
+    loadComments().then(() => {
+      if (!highlightedId && locateComment) {
+        setTimeout(() => {
+          if (commentBox.current) {
+            scrollIntoView(commentBox.current, { behavior: 'smooth' });
+          }
+        }, 0);
+      }
+    });
   }, []);
 
   if (!state.post) {

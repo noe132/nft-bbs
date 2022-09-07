@@ -30,13 +30,14 @@ export const PostList = observer((props: { className?: string }) => {
 
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
-  const handleOpenPost = (post: Post) => {
+  const handleOpenPost = (post: Post, locateComment = false) => {
     viewService.pushPage({
       name: 'postdetail',
       value: {
         post,
         groupId: post.groupId,
         trxId: post.trxId,
+        locateComment,
       },
     });
   };
@@ -186,7 +187,7 @@ export const PostList = observer((props: { className?: string }) => {
                         className="text-link-soft text-14 px-2 min-w-0"
                         variant="text"
                         size="small"
-                        onClick={() => handleOpenPost(v)}
+                        onClick={() => handleOpenPost(v, true)}
                       >
                         <CommentDetailIcon className="mr-2 -mb-px text-18" />
                         {stat.commentCount || '我来写第一个评论'}

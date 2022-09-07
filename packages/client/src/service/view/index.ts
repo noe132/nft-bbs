@@ -8,6 +8,7 @@ interface PageMap {
     trxId: string
     post: Post | null
     commentTrx?: string
+    locateComment?: boolean
   }
   newpost: Post | undefined
   notification: undefined
