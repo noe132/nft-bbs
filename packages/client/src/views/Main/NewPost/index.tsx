@@ -118,6 +118,9 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
 
   useEffect(() => {
     const content = state.postToEdit?.content ?? '';
+    runInAction(() => {
+      state.postContent = content;
+    });
     codeMirrorBox.current!.innerHTML = '';
     const editor = CodeMirror(codeMirrorBox.current!, {
       value: content,
