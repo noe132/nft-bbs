@@ -1,6 +1,7 @@
 import { action, observable } from 'mobx';
 import { ethers } from 'ethers';
 import { taskEither, either, function as fp } from 'fp-ts';
+import { socketService } from '../socket';
 
 export interface Keys {
   privateKey: string
@@ -33,10 +34,19 @@ const validate = async (keystore: string, password: string) => {
 };
 
 const use = action((data: Keys) => {
+  socketService.authenticate(data.address);
   state.privateKey = data.privateKey;
   state.keystore = data.keystore;
   state.password = data.password;
   state.address = data.address;
+});
+
+const logout = action(() => {
+  socketService.logout();
+  state.privateKey = '';
+  state.keystore = '';
+  state.password = '';
+  state.address = '';
 });
 
 const login = async (keystore: string, password: string) => fp.pipe(
@@ -64,13 +74,6 @@ const loginRandom = async (password: string) => {
   use(keys);
   return keys;
 };
-
-const logout = action(() => {
-  state.privateKey = '';
-  state.keystore = '';
-  state.password = '';
-  state.address = '';
-});
 
 export const keyService = {
   state,

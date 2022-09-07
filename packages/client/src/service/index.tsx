@@ -3,6 +3,7 @@ import { SnackbarContainer } from './snackbar/SnackbarContainer';
 import { langService } from './lang';
 import { nodeService } from './node';
 import { viewService } from './view';
+import { keyService } from './key';
 import { DialogContainer } from './dialog/DialogContainer';
 
 export * from './dialog';
@@ -16,6 +17,7 @@ export * from './view';
 export const initService = () => {
   (window as any).nodeService = nodeService;
   (window as any).viewService = viewService;
+  (window as any).keyService = keyService;
 
   const disposes = [
     langService.init(),

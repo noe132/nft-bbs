@@ -14,7 +14,7 @@ socket.on('authenticateResult', (result: string) => {
   console.log(result);
 });
 
-export const addListeners = (listeners: SocketEventListeners) => {
+const addListeners = (listeners: SocketEventListeners) => {
   Object.entries(listeners).forEach(([k, v]) => {
     socket.on(k, v);
   });
@@ -25,10 +25,17 @@ export const addListeners = (listeners: SocketEventListeners) => {
   };
 };
 
-export const authenticate = (address: string) => {
+const authenticate = (address: string) => {
   socket.emit('authenticate', address);
 };
 
-export const logout = () => {
+const logout = () => {
   socket.emit('logout');
+};
+
+
+export const socketService = {
+  addListeners,
+  authenticate,
+  logout,
 };

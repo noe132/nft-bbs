@@ -11,7 +11,7 @@ import {
 import store from 'store2';
 import { runLoading } from '~/utils';
 import { CommentApi, GroupApi, GroupInfoApi, NotificationApi, PostApi, ProfileApi } from '~/apis';
-import { addListeners, SocketEventListeners } from '~/service/socket';
+import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
 import { snackbarService } from '~/service/snackbar';
 import { viewService } from '~/service/view';
@@ -813,7 +813,7 @@ const socketEventHandler: SocketEventListeners = {
 };
 
 const init = () => {
-  const removeListeners = addListeners(socketEventHandler);
+  const removeListeners = socketService.addListeners(socketEventHandler);
   const initCheck = async () => {
     const pathMatch = /^\/post\/(.+?)\/(.+?)$/.exec(location.pathname);
     const groupId = pathMatch?.[1] ?? '';

@@ -159,6 +159,7 @@ export const Join = observer(() => {
   };
 
   const handleLoginAnonymous = () => {
+    keyService.logout();
     nodeService.group.join(state.seedUrl);
     store('seedUrlAutoJoin', true);
     store('seedUrl', state.seedUrl);
