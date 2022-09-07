@@ -43,7 +43,7 @@ export const UserCard = observer((props: Props) => {
   }, []);
 
   return (
-    <div className={classNames('flex-col relative bg-black/70 py-5 px-5', props.className)}>
+    <div className={classNames('flex-col relative bg-black/80 py-5 px-5', props.className)}>
       <div
         className="flex items-center self-stretch cursor-pointer"
         onClick={() => state.profile && viewService.pushPage({ name: 'userprofile', value: state.profile })}

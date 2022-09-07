@@ -177,7 +177,7 @@ export const UserProfile = observer((props: { className?: string }) => {
           className={classNames(
             'flex-col relative w-full mt-6 ',
             state.selfProfile && 'bg-white shadow-4 text-black',
-            !state.selfProfile && 'bg-black/70 text-white',
+            !state.selfProfile && 'bg-black/80 text-white',
           )}
         >
           {state.selfProfile && (
@@ -246,7 +246,7 @@ export const UserProfile = observer((props: { className?: string }) => {
           </div>
         </div>
 
-        <div className="w-[800px] bg-black/70 flex-col flex-1 gap-y-12 py-10 px-16 mt-6">
+        <div className="w-[800px] bg-black/80 flex-col flex-1 gap-y-12 py-10 px-16 mt-6">
           {state.profileLoading && (
             <div className="flex flex-center py-4">
               <CircularProgress className="text-white/70" />
@@ -363,7 +363,7 @@ export const UserProfile = observer((props: { className?: string }) => {
           className={classNames(
             'flex-col relative py-5 px-5 mt-6 rounded',
             state.selfProfile && 'bg-white shadow-4 text-black',
-            !state.selfProfile && 'bg-black/70 text-white',
+            !state.selfProfile && 'bg-black/80 text-white',
           )}
         >
           <div

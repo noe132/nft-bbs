@@ -274,7 +274,7 @@ export const Join = observer(() => {
         }}
       >
         <div className="flex flex-center flex-1">
-          <div className="relative flex-col flex-center bg-black/70 w-[720px] h-[330px] rounded-[10px]">
+          <div className="relative flex-col flex-center bg-black/80 w-[720px] h-[330px] rounded-[10px]">
             {state.step === Step.InputSeedUrl && (
               <div className="flex-col flex-center">
                 <div className="text-white text-18">

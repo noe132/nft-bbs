@@ -231,7 +231,7 @@ export const PostDetail = observer((props: { className?: string }) => {
   if (!state.post) {
     return (
       <div className="flex justify-center">
-        <div className="flex-col items-start w-[800px] bg-black/70 text-white p-8">
+        <div className="flex-col items-start w-[800px] bg-black/80 text-white p-8">
           404 帖子不存在
 
           <Button
@@ -263,7 +263,7 @@ export const PostDetail = observer((props: { className?: string }) => {
           <PostDetailBox post={state.post} />
         )}
 
-        <div className="flex w-full bg-black/70 p-8 mt-5 gap-x-6">
+        <div className="flex w-full bg-black/80 p-8 mt-5 gap-x-6">
           <div className="flex flex-1 h-[40px] items-stretch">
             <InputBase
               className="bg-white flex-1 rounded-l text-black px-4 text-14"
@@ -295,7 +295,7 @@ export const PostDetail = observer((props: { className?: string }) => {
         </div>
 
         <div
-          className="flex-col bg-black/70 mt-5 gap-x-6"
+          className="flex-col bg-black/80 mt-5 gap-x-6"
           ref={commentBox}
         >
           <div className="flex justify-between items-center border-white/20 border-b px-12 py-4">
@@ -376,7 +376,7 @@ export const PostDetail = observer((props: { className?: string }) => {
             <div
               className={classNames(
                 'fixed bottom-40 translate-x-full -mr-5 p-4',
-                'flex-col gap-y-3 w-[280px] bg-black/70 shadow-4 rounded-lg',
+                'flex-col gap-y-3 w-[280px] bg-black/80 shadow-4 rounded-lg',
               )}
             >
               <div className="text-white text-14">

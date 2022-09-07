@@ -84,7 +84,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
           <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
         </div>
         <BackButton className="fixed top-[60px] mt-6 -ml-5 -translate-x-full" />
-        <div className="flex-col flex-1 w-full bg-black/70">
+        <div className="flex-col flex-1 w-full bg-black/80">
           <div className="flex justify-between text-white py-6 px-10">
             <div className="text-18">消息通知</div>
             {/* <Button

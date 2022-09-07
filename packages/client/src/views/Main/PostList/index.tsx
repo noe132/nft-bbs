@@ -99,7 +99,7 @@ export const PostList = observer((props: { className?: string }) => {
         props.className,
       )}
     >
-      <div className="w-[800px] bg-black/70 flex-col">
+      <div className="w-[800px] bg-black/80 flex-col">
         <div className="flex justify-end">
           <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
         </div>

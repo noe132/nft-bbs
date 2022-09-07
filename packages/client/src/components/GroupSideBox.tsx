@@ -31,7 +31,7 @@ export const GroupSideBox = observer((props: Props) => {
   return (
     <div
       className={classNames(
-        'flex-col justify-center items-stretch relative bg-black/70 py-8',
+        'flex-col justify-center items-stretch relative bg-black/80 py-8',
         props.className,
       )}
     >

@@ -111,7 +111,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   return (
     <div
       className={classNames(
-        'flex-col w-full bg-black/70',
+        'flex-col w-full bg-black/80',
         props.className,
       )}
     >
