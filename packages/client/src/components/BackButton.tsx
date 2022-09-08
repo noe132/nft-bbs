@@ -3,9 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { Button, ButtonProps } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 
-export const BackButton = (props: ButtonProps) => {
-  const { className, ...restProps } = props;
+interface Props extends ButtonProps {
+  to?: string
+}
+
+export const BackButton = (props: Props) => {
+  const { className, to, ...restProps } = props;
   const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (to) {
+      navigate(to);
+    } else if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
   return (
     <Button
       className={classNames(
@@ -14,7 +29,7 @@ export const BackButton = (props: ButtonProps) => {
       )}
       color="inherit"
       variant="outlined"
-      onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
+      onClick={handleClick}
       {...restProps}
     >
       <ArrowBack className="text-26" />

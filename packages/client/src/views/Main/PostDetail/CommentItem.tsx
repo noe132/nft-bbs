@@ -125,7 +125,12 @@ export const CommentItem = observer((props: CommentItemProps) => {
       >
         <div className="flex justify-between">
           <div className="flex items-center gap-x-4">
-            <UserAvatar profile={state.profile} size={28} />
+            <UserAvatar
+              className="cursor-pointer"
+              profile={state.profile}
+              size={28}
+              onClick={(e) => props.onOpenUserCard(e, state.comment)}
+            />
             <div className="">
               <button
                 className="text-16 text-rum-orange mr-4"

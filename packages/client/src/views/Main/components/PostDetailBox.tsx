@@ -140,7 +140,11 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         )}
       </div>
       <div className="flex items-center gap-x-4 mt-6 mx-16">
-        <UserAvatar profile={state.profile} />
+        <UserAvatar
+          className="cursor-pointer"
+          profile={state.profile}
+          onClick={() => state.profile && navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`)}
+        />
         <div
           className="text-14 text-rum-orange cursor-pointer"
           onClick={() => state.profile && navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`)}

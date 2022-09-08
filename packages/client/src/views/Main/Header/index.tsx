@@ -194,9 +194,10 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleLogout = action(() => {
     state.userDropdown = false;
+    state.menu = false;
     store.remove('password');
     store.remove('keystore');
-    QuorumLightNodeSDK.cache.Group.clear();
+    keyService.logout();
     if (window.location.pathname !== '/') {
       history.replaceState(null, '', '/');
     }

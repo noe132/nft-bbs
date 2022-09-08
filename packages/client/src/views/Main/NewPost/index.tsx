@@ -166,7 +166,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       )}
     >
       <div className="relative w-[800px] bg-black/80 flex-col py-10 px-12">
-        <BackButton className="fixed top-[60px] mt-6 -ml-17 -translate-x-full" />
+        <BackButton className="fixed top-[60px] mt-6 -ml-17 -translate-x-full" to="/" />
         <div className="flex justify-between text-white">
           <div className="text-18">
             {state.postToEdit ? '编辑帖子' : '发布新帖'}
