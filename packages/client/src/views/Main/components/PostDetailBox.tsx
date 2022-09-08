@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { stringifyUrl } from 'query-string';
 import classNames from 'classnames';
-import { autorun, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import { Button, IconButton, Tooltip } from '@mui/material';
@@ -11,16 +12,37 @@ import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 import TrashIcon from 'boxicons/svg/regular/bx-trash.svg?fill-icon';
 
 import { ago, renderPostMarkdown, runLoading, setClipboard } from '~/utils';
-import { imageZoomService, viewService, nodeService, snackbarService, keyService, dialogService } from '~/service';
+import { imageZoomService, nodeService, snackbarService, keyService, dialogService } from '~/service';
 import { UserAvatar, PostImageZoomButton } from '~/components';
 import { ImageApi } from '~/apis';
 import { showTrxDetail } from '~/modals';
 
 export const PostDetailBox = observer((props: { className?: string, post: Post }) => {
+  const navigate = useNavigate();
   const state = useLocalObservable(() => ({
-    content: '',
     likeLoading: false,
     images: new Map<string, string>(),
+    get content() {
+      const groupId = props.post.groupId;
+      const matches = Array.from(this.postStat.content.matchAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g));
+      this.images = new Map<string, string>(
+        matches.map((_sub, _g1, g2) => [g2 as any as string, '']),
+      );
+      matches.forEach((match) => {
+        const [_sub, _g1, trxId] = match;
+        if (nodeService.state.post.imageCache.has(trxId)) {
+          this.images.set(trxId, nodeService.state.post.imageCache.get(trxId)!);
+          return;
+        }
+        const url = ImageApi.getImageUrl(groupId, trxId);
+        this.images.set(trxId, url);
+      });
+      const content = this.postStat.content.replaceAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g, (_sub, g1, trxId) => {
+        const imgUrl = this.images.get(trxId);
+        return `${g1}(${imgUrl})`;
+      });
+      return renderPostMarkdown(content);
+    },
     get profile() {
       return nodeService.profile.getComputedProfile(
         props.post.extra?.userProfile ?? props.post.extra?.userProfile.userAddress ?? '',
@@ -57,7 +79,10 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const handleEditPost = () => {
-    viewService.pushPage({ name: 'newpost', value: props.post });
+    navigate(stringifyUrl({
+      url: '/newpost',
+      query: { edit: props.post.trxId },
+    }));
   };
 
   const handleDeletePost = async () => {
@@ -68,7 +93,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
     });
     if (result === 'confirm') {
       nodeService.post.delete(props.post);
-      viewService.back();
+      navigate('/');
       dialogService.open({
         title: '删除成功',
         content: '帖子将会在数据同步后删除。',
@@ -81,32 +106,6 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
     setClipboard(window.location.href);
     snackbarService.show('帖子地址已复制到剪切板');
   };
-
-  const parseContent = () => {
-    const groupId = props.post.groupId;
-    const matches = Array.from(state.postStat.content.matchAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g));
-    state.images = new Map<string, string>(
-      matches.map((_sub, _g1, g2) => [g2 as any as string, '']),
-    );
-    matches.forEach((match) => {
-      const [_sub, _g1, trxId] = match;
-      if (nodeService.state.post.imageCache.has(trxId)) {
-        state.images.set(trxId, nodeService.state.post.imageCache.get(trxId)!);
-        return;
-      }
-      const url = ImageApi.getImageUrl(groupId, trxId);
-      state.images.set(trxId, url);
-    });
-    const content = state.postStat.content.replaceAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g, (_sub, g1, trxId) => {
-      const imgUrl = state.images.get(trxId);
-      return `${g1}(${imgUrl})`;
-    });
-    runInAction(() => {
-      state.content = renderPostMarkdown(content);
-    });
-  };
-
-  useEffect(() => autorun(parseContent), []);
 
   return (
     <div
@@ -144,7 +143,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         <UserAvatar profile={state.profile} />
         <div
           className="text-14 text-rum-orange cursor-pointer"
-          onClick={() => state.profile && viewService.pushPage({ name: 'userprofile', value: state.profile })}
+          onClick={() => state.profile && navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`)}
         >
           {state.profile?.name || state.profile?.userAddress.slice(0, 10)}
         </div>

@@ -93,7 +93,7 @@ export const TrxDetailView = observer((props: Props) => {
         区块详情
       </div>
       <div className="w-[400px] mt-2">
-        {!state.loading && !state.trx && (
+        {state.loading && !state.trx && (
           <div className="flex flex-center py-12">
             <CircularProgress className="text-black/40" />
           </div>

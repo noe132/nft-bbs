@@ -1,5 +1,8 @@
 import React, { useEffect, useRef } from 'react';
+import { stringifyUrl } from 'query-string';
 import classNames from 'classnames';
+import { useNavigate } from 'react-router-dom';
+import { runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
@@ -12,12 +15,12 @@ import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-i
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { UserAvatar, BackButton, ScrollToTopButton, GroupSideBox, NFTSideBox } from '~/components';
-import { nodeService, viewService } from '~/service';
+import { nodeService } from '~/service';
 // import { NotificationObjectType, NotificationType } from '~/database';
 import { ago } from '~/utils';
-import { runInAction } from 'mobx';
 
 export const NotificationPage = observer((props: { className?: string }) => {
+  const navigate = useNavigate();
   const state = useLocalObservable(() => ({
     get notificationsWithoutDislike() {
       return nodeService.state.notification.list.filter((v) => v.type !== 'dislike');
@@ -30,15 +33,10 @@ export const NotificationPage = observer((props: { className?: string }) => {
   const handleViewItem = async (v: Notification) => {
     const post = await nodeService.post.get(v.objectId);
     if (!post) { return; }
-    viewService.pushPage({
-      name: 'postdetail',
-      value: {
-        post,
-        groupId: post.groupId,
-        trxId: post.trxId,
-        commentTrx: v.actionObjectId,
-      },
-    });
+    navigate(stringifyUrl({
+      url: `/post/${post.groupId}/${post.trxId}`,
+      query: { commentTrx: v.actionObjectId },
+    }));
   };
 
   useEffect(() => {
@@ -113,7 +111,8 @@ export const NotificationPage = observer((props: { className?: string }) => {
                 }
                 if (v.objectType === 'comment') {
                   // TODO: 给评论点赞的notification。需要获取被点赞评论的content
-                  // content = nodeService.state.comment.map.get(v.objectId)!.content;
+                  const commentContent = v.extra?.object?.value.content ?? '';
+                  content = commentContent;
                 }
               }
               return (
@@ -123,11 +122,11 @@ export const NotificationPage = observer((props: { className?: string }) => {
                       <UserAvatar
                         className="cursor-pointer"
                         profile={fromProfile}
-                        onClick={() => viewService.pushPage({ name: 'userprofile', value: fromProfile })}
+                        onClick={() => navigate(`/userprofile/${fromProfile.groupId}/${fromProfile.userAddress}`)}
                       />
                       <button
                         className=""
-                        onClick={() => viewService.pushPage({ name: 'userprofile', value: fromProfile })}
+                        onClick={() => navigate(`/userprofile/${fromProfile.groupId}/${fromProfile.userAddress}`)}
                       >
                         <span className="text-rum-orange text-16 mr-3">
                           {fromProfileName}

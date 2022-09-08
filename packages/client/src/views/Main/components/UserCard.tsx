@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
@@ -7,7 +8,7 @@ import { Button } from '@mui/material';
 import { ChevronRight } from '@mui/icons-material';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
-import { nodeService, viewService } from '~/service';
+import { nodeService } from '~/service';
 import { UserAvatar } from '~/components';
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export const UserCard = observer((props: Props) => {
+  const navigate = useNavigate();
   const state = useLocalObservable(() => ({
     get profile() {
       return nodeService.profile.getComputedProfile(props.profile ?? '');
@@ -46,7 +48,7 @@ export const UserCard = observer((props: Props) => {
     <div className={classNames('flex-col relative bg-black/80 py-5 px-5', props.className)}>
       <div
         className="flex items-center self-stretch cursor-pointer"
-        onClick={() => state.profile && viewService.pushPage({ name: 'userprofile', value: state.profile })}
+        onClick={() => state.profile && navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`)}
       >
         <UserAvatar className="mr-3" profile={state.profile} size={48} />
         <div className="text-rum-orange text-16 flex-1">

@@ -1,4 +1,5 @@
 import { createRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
@@ -14,7 +15,7 @@ import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
 import { compressImage, renderPostMarkdown, runLoading, SCHEMA_PREFIX } from '~/utils';
 import { BackButton, UserAvatar, GroupSideBox, NFTSideBox } from '~/components';
-import { dialogService, nodeService, snackbarService, viewService } from '~/service';
+import { nodeService, snackbarService } from '~/service';
 import { selectImage } from '~/modals';
 
 import { makeHeading, makeLink, toggleBlock, toggleLine } from './helper';
@@ -22,6 +23,8 @@ import { makeHeading, makeLink, toggleBlock, toggleLine } from './helper';
 import './index.css';
 
 export const NewPost = observer((props: { className?: string, onChange?: (v: string) => unknown }) => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const state = useLocalObservable(() => ({
     editor: null as null | CodeMirror.Editor,
     title: '',
@@ -33,7 +36,6 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
     images: [] as Array<{ img: Blob, url: string, mimeType: string }>,
 
     posting: false,
-    disposeBackPreventor: () => {},
     get titleLength() {
       return Math.ceil(
         this.title.split('').reduce(
@@ -46,8 +48,9 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       return !!this.title.trim() && this.titleLength <= 100 && !!this.postContent.trim();
     },
     get postToEdit() {
-      return viewService.state.page.page.name === 'newpost'
-        ? viewService.state.page.page.value
+      const trxId = searchParams.get('edit');
+      return trxId
+        ? nodeService.state.post.map.get(trxId)
         : null;
     },
   }));
@@ -110,8 +113,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
           });
         });
         snackbarService.show(state.postToEdit ? '编辑成功' : '发布成功');
-        state.disposeBackPreventor();
-        viewService.back();
+        navigate('/');
       },
     );
   };
@@ -146,22 +148,12 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
     });
     editor.on('focus', action(() => { state.focused = true; }));
     editor.on('blur', action(() => { state.focused = false; }));
-    editor.on('change', action((e) => { state.postContent = e.getValue(); }));
-
-    state.disposeBackPreventor = viewService.addBackPreventor(async () => {
-      if (!state.postToEdit) { return true; }
-      const unchanged = state.postToEdit.content === state.editor?.getValue() && state.postToEdit.title === state.title;
-      if (unchanged) { return true; }
-      const result = await dialogService.open({
-        content: '未提交的修改将不会被保存，确实要返回吗？',
-        cancel: '继续编辑',
-        confirm: '返回',
-      });
-      return result === 'confirm';
-    });
+    editor.on('change', action((e) => {
+      // TODO: cached edit result
+      state.postContent = e.getValue();
+    }));
 
     return () => {
-      state.disposeBackPreventor();
       state.images.forEach((v) => URL.revokeObjectURL(v.url));
     };
   }, []);

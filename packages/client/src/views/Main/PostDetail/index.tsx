@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useMemo } from 'react';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
-import { observer, useLocalObservable } from 'mobx-react-lite';
+import { observer } from 'mobx-react-lite';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import type { Comment, Profile } from 'nft-bbs-server';
 import { Button, CircularProgress, ClickAwayListener, Fade, IconButton, InputBase, Tooltip } from '@mui/material';
@@ -11,8 +12,8 @@ import { LoadingButton } from '@mui/lab';
 import CommentMinusIcon from 'boxicons/svg/regular/bx-comment-minus.svg?fill-icon';
 
 import { BackButton, ScrollToTopButton, UserAvatar } from '~/components';
-import { nodeService, snackbarService, viewService } from '~/service';
-import { runLoading } from '~/utils';
+import { nodeService, snackbarService } from '~/service';
+import { runLoading, usePageState } from '~/utils';
 
 import { PostDetailBox } from '../components/PostDetailBox';
 import { UserCard } from '../components/UserCard';
@@ -27,7 +28,13 @@ interface UserCardItem {
 }
 
 export const PostDetail = observer((props: { className?: string }) => {
-  const state = useLocalObservable(() => ({
+  const routeParams = useParams<{ groupId: string, trxId: string }>();
+  const routeLocation = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const state = usePageState('postdetail', routeLocation.key, () => ({
+    inited: false,
+    postLoading: false,
     commentTrxIds: [] as Array<string>,
     replyTo: {
       open: false,
@@ -42,9 +49,7 @@ export const PostDetail = observer((props: { className?: string }) => {
     commentPosting: false,
     highlightedComments: new Set<string>(),
     get post() {
-      return viewService.state.page.page.name === 'postdetail'
-        ? viewService.state.page.page.value.post
-        : null;
+      return nodeService.state.post.map.get(routeParams.trxId ?? '');
     },
     commentChildrenWeakMap: new WeakMap<Comment, Array<string>>(),
     get replyToProfile() {
@@ -195,17 +200,15 @@ export const PostDetail = observer((props: { className?: string }) => {
     );
   };
 
-  useEffect(() => {
-    const highlightedId = viewService.state.page.page.name === 'postdetail'
-      ? viewService.state.page.page.value.commentTrx
-      : '';
-    const locateComment = viewService.state.page.page.name === 'postdetail'
-      && viewService.state.page.page.value.locateComment;
+  const loadData = async () => {
+    const highlightedId = searchParams.get('commentTrx');
+    const locateComment = !!searchParams.get('locateComment');
 
-    if (highlightedId) {
-      runInAction(() => {
-        state.highlightedComments.add(highlightedId);
-      });
+    if (!state.post) {
+      await runLoading(
+        (l) => { state.postLoading = l; },
+        () => nodeService.post.get(routeParams.trxId ?? ''),
+      );
     }
 
     loadComments().then(() => {
@@ -217,6 +220,20 @@ export const PostDetail = observer((props: { className?: string }) => {
         }, 0);
       }
     });
+  };
+
+  useEffect(() => {
+    if (!state.inited) {
+      const highlightedId = searchParams.get('commentTrx');
+      runInAction(() => {
+        if (highlightedId) {
+          state.highlightedComments.add(highlightedId);
+        }
+        state.inited = true;
+      });
+
+      loadData();
+    }
   }, []);
 
   const commentContextValue = useMemo(() => ({
@@ -233,7 +250,7 @@ export const PostDetail = observer((props: { className?: string }) => {
           <Button
             className="mt-4 text-white"
             variant="outlined"
-            onClick={() => viewService.back()}
+            onClick={() => navigate('/')}
           >
             返回首页
           </Button>

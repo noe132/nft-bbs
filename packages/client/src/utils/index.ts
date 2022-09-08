@@ -5,6 +5,7 @@ export * from './ago';
 export * from './compressImage';
 export * from './constants';
 export * from './markdown';
+export * from './pageState';
 export * from './setClipboard';
 export * from './theme';
 export * from './useScreenSize';

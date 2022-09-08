@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
+import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import classNames from 'classnames';
-import { action } from 'mobx';
+import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
 import { ethers } from 'ethers';
@@ -20,16 +21,24 @@ import RumLogo from '~/assets/icons/logo.png';
 import RumLogo2x from '~/assets/icons/logo@2x.png';
 import RumLogo3x from '~/assets/icons/logo@3x.png';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
-import { ThemeLight } from '~/utils';
+import { ThemeLight, usePageState } from '~/utils';
 import {
-  nodeService, langService, viewService, keyService,
-  AllLanguages, langName, HotestFilter, dialogService,
+  nodeService, langService, keyService,
+  AllLanguages, langName, dialogService,
 } from '~/service';
 import { editProfile } from '~/modals';
 import { ACCOUNT1, ACCOUNT2 } from '~/utils/testAccount';
 import { UserAvatar } from '~/components';
 
+import { createPostlistState } from '../PostList';
+
+type HotestFilter = string;
+
 export const Header = observer((props: { className?: string }) => {
+  const routeParams = useParams();
+  const routeLocation = useLocation();
+  const navigate = useNavigate();
+  const postlistState = usePageState('postlist', routeLocation.key, createPostlistState);
   const state = useLocalObservable(() => ({
     tab: 0,
     userDropdown: false,
@@ -39,9 +48,6 @@ export const Header = observer((props: { className?: string }) => {
     langMenu: false,
     filter: 'all' as HotestFilter,
 
-    get viewPage() {
-      return viewService.state.page.page.name;
-    },
     get profile() {
       return nodeService.state.myProfile;
     },
@@ -58,21 +64,18 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleChangeFilter = action((filter: HotestFilter) => {
     state.filter = filter;
-    nodeService.post.list({ filter });
   });
 
   const handleChangeTab = action((tab: number) => {
     state.tab = tab;
-    if (state.tab === 0) {
-      nodeService.post.list({ mode: 'latest' });
-    } else {
-      nodeService.post.list({ filter: state.filter });
-    }
   });
 
   const handleSearchInputKeydown = action((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && state.searchTerm) {
-      nodeService.post.list({ search: state.searchTerm });
+      runInAction(() => {
+        postlistState.mode = { type: 'search', search: state.searchTerm };
+      });
+      postlistState.loadPosts();
     }
     if (e.key === 'Escape') {
       handleExitSearchMode();
@@ -88,12 +91,11 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleExitSearchMode = action(() => {
     state.searchMode = false;
-    if (nodeService.state.post.mode.type === 'search') {
-      if (state.tab === 0) {
-        nodeService.post.list({ mode: 'latest' });
-      } else {
-        nodeService.post.list({ filter: state.filter });
-      }
+    if (postlistState.mode.type === 'search') {
+      runInAction(() => {
+        postlistState.mode = { type: 'normal' };
+      });
+      postlistState.loadPosts();
     }
   });
 
@@ -108,29 +110,13 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleOpenUserProfile = action(() => {
     state.userDropdown = false;
-    if (
-      viewService.state.page.page.name === 'userprofile'
-      && viewService.state.page.page.value.userAddress === state.profile?.userAddress
-    ) {
+    if (routeLocation.pathname === '/userprofile' && routeParams.userAddress === state.profile?.userAddress) {
       return;
     }
     if (!state.profile) {
-      viewService.pushPage({
-        name: 'userprofile',
-        value: {
-          trxId: '',
-          avatar: '',
-          userAddress: keyService.state.address,
-          groupId: nodeService.state.groupId,
-          name: '',
-          intro: '',
-        },
-      });
+      navigate(`/userprofile/${nodeService.state.groupId}/${keyService.state.address}`);
     } else {
-      viewService.pushPage({
-        name: 'userprofile',
-        value: state.profile,
-      });
+      navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`);
     }
   });
 
@@ -225,8 +211,7 @@ export const Header = observer((props: { className?: string }) => {
   };
 
   const handleClickLogo = () => {
-    viewService.backToTop();
-    nodeService.post.list();
+    navigate('/');
   };
 
   return (<>
@@ -261,7 +246,7 @@ export const Header = observer((props: { className?: string }) => {
               alt=""
             />
           </button>
-          {!state.searchMode && state.viewPage === 'postlist' && (
+          {!state.searchMode && routeLocation.pathname === '/' && (
             <div className="flex gap-x-4">
               {false && (
                 <Tabs
@@ -303,11 +288,7 @@ export const Header = observer((props: { className?: string }) => {
             </div>
           )}
 
-          {state.viewPage !== 'postlist' && (
-            <div className="" />
-          )}
-
-          {state.searchMode && state.viewPage === 'postlist' && (
+          {state.searchMode && routeLocation.pathname === '/' && (
             <div className="flex flex-1 items-center">
               <Input
                 className="flex-1 max-w-[550px] text-white text-14 pb-px"
@@ -333,22 +314,33 @@ export const Header = observer((props: { className?: string }) => {
 
         <div className="flex items-center gap-x-4">
           <div className="flex justify-end items-center gap-x-4 mr-8">
-            {[
-              // {
-              //   key: 'share',
-              //   icon: <Share className="text-24" />,
-              //   onClick: () => 1,
-              //   active: false,
-              // },
-              state.viewPage === 'postlist' && {
-                key: 'search',
-                icon: <Search className="text-28" />,
-                onClick: handleOpenSearchInput,
-                active: state.searchMode,
-              },
-              nodeService.state.logined && {
-                key: 'notification',
-                icon: (
+            {/* {{
+              key: 'share',
+              icon: <Share className="text-24" />,
+              onClick: () => 1,
+              active: false,
+            }} */}
+            {routeLocation.pathname === '/' && (
+              <Button
+                className={classNames(
+                  'text-white p-0 w-10 h-10 min-w-0',
+                  state.searchMode && 'bg-white/10 hover:bg-white/15',
+                )}
+                onClick={handleOpenSearchInput}
+                variant="text"
+              >
+                <Search className="text-28" />
+              </Button>
+            )}
+            {nodeService.state.logined && (
+              <Link to={routeLocation.pathname === '/notification' ? '/' : '/notification'}>
+                <Button
+                  className={classNames(
+                    'text-white p-0 w-10 h-10 min-w-0',
+                    routeLocation.pathname === '/notification' && 'bg-white/10 hover:bg-white/15',
+                  )}
+                  variant="text"
+                >
                   <Badge
                     className="transform"
                     classes={{ badge: 'bg-red-500 text-white' }}
@@ -356,31 +348,10 @@ export const Header = observer((props: { className?: string }) => {
                   >
                     <NotificationsNone className="text-26" />
                   </Badge>
-                ),
-                onClick: () => {
-                  if (state.viewPage === 'notification') {
-                    viewService.back();
-                  } else {
-                    viewService.pushPage({ name: 'notification' });
-                  }
-                },
-                active: state.viewPage === 'notification',
-              },
-            ].filter(<T extends unknown>(v: T | false): v is T => !!v).map((v) => (
-              <Button
-                className={classNames(
-                  'text-white p-0 w-10 h-10 min-w-0',
-                  v.active && 'bg-white/10 hover:bg-white/15',
-                )}
-                onClick={v.onClick}
-                variant="text"
-                key={v.key}
-              >
-                {v.icon}
-              </Button>
-            ))}
+                </Button>
+              </Link>
+            )}
           </div>
-
           {!nodeService.state.logined && (
             <Button
               className="rounded-full py-px px-5 text-16"

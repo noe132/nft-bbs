@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { stringifyUrl } from 'query-string';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
-import { observer, useLocalObservable } from 'mobx-react-lite';
+import { observer } from 'mobx-react-lite';
 import RemoveMarkdown from 'remove-markdown';
 import { format } from 'date-fns';
 import type { Post } from 'nft-bbs-server';
@@ -14,14 +16,16 @@ import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { ScrollToTopButton, BackButton, UserAvatar } from '~/components';
-import { imageZoomService, keyService, nodeService, snackbarService, viewService } from '~/service';
-import { ago, runLoading } from '~/utils';
+import { imageZoomService, keyService, nodeService, snackbarService } from '~/service';
+import { ago, runLoading, usePageState } from '~/utils';
 import { editProfile } from '~/modals';
 
 export const UserProfile = observer((props: { className?: string }) => {
-  const state = useLocalObservable(() => ({
-    content: '',
-    showTopButton: false,
+  const routeParams = useParams<{ groupId: string, userAddress: string }>();
+  const routeLocation = useLocation();
+  const navigate = useNavigate();
+  const state = usePageState('userprofile', routeLocation.key, () => ({
+    inited: false,
     nftTradeTooltip: false,
     likeLoading: false,
     profileLoading: true,
@@ -38,17 +42,10 @@ export const UserProfile = observer((props: { className?: string }) => {
       const list = Array(4).fill(0).map((_, i) => i);
       return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
     },
-    get viewProfile() {
-      if (viewService.state.page.page.name === 'userprofile') {
-        return viewService.state.page.page.value;
-      }
-      return null;
-    },
     get profile() {
-      if (this.viewProfile) {
-        return nodeService.profile.getComputedProfile(this.viewProfile);
-      }
-      return null;
+      return routeParams.userAddress
+        ? nodeService.profile.getComputedProfile(routeParams.userAddress)
+        : null;
     },
     get selfProfile() {
       return this.profile?.userAddress === keyService.state.address;
@@ -66,16 +63,11 @@ export const UserProfile = observer((props: { className?: string }) => {
   }));
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
-  const handleOpenPost = (post: Post, locateComment = false) => {
-    viewService.pushPage({
-      name: 'postdetail',
-      value: {
-        post,
-        groupId: post.groupId,
-        trxId: post.trxId,
-        locateComment,
-      },
-    });
+  const handleOpenPost = (post: Post, locateComment: true | undefined = undefined) => {
+    navigate(stringifyUrl({
+      url: `/post/${post.groupId}/${post.trxId}`,
+      query: { locateComment },
+    }));
   };
 
   const handleUpdatePostCounter = (post: Post, type: CounterName.postLike | CounterName.postDislike) => {
@@ -132,6 +124,13 @@ export const UserProfile = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
+    if (!state.inited) {
+      runInAction(() => {
+        state.inited = true;
+      });
+      loadData();
+    }
+
     const loadNextPage = async () => {
       if (state.postLoading || state.postDone) {
         return;
@@ -141,8 +140,6 @@ export const UserProfile = observer((props: { className?: string }) => {
         loadNextPage();
       }
     };
-
-    loadData();
 
     const io = new IntersectionObserver(([entry]) => {
       runInAction(() => {

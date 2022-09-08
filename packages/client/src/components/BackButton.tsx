@@ -1,10 +1,11 @@
 import classNames from 'classnames';
+import { useNavigate } from 'react-router-dom';
 import { Button, ButtonProps } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
-import { viewService } from '~/service';
 
 export const BackButton = (props: ButtonProps) => {
   const { className, ...restProps } = props;
+  const navigate = useNavigate();
   return (
     <Button
       className={classNames(
@@ -13,7 +14,7 @@ export const BackButton = (props: ButtonProps) => {
       )}
       color="inherit"
       variant="outlined"
-      onClick={viewService.back}
+      onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
       {...restProps}
     >
       <ArrowBack className="text-26" />

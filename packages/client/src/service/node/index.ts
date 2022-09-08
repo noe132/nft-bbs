@@ -14,18 +14,9 @@ import { CommentApi, GroupApi, GroupInfoApi, NotificationApi, PostApi, ProfileAp
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
 import { snackbarService } from '~/service/snackbar';
-import { viewService } from '~/service/view';
-
-export type HotestFilter = 'all' | 'year' | 'month' | 'week';
-type PostListLoadMode = {
-  type: 'search'
-  search: string
-} | {
-  type: 'hotest'
-  filter: HotestFilter
-} | {
-  type: 'latest'
-};
+import { pageStateMap } from '~/utils/pageState';
+import type { createPostlistState } from '~/views/Main/PostList';
+import { matchPath } from 'react-router-dom';
 
 const state = observable({
   showJoin: false,
@@ -39,15 +30,7 @@ const state = observable({
   },
 
   post: {
-    mode: { type: 'latest' } as PostListLoadMode,
-    trxIds: [] as Array<string>,
     map: new Map<string, Post>(),
-    loading: false,
-    done: false,
-    limit: 20 as const,
-    offset: 0,
-    taskId: 0,
-
     newPostCache: new Set<string>(),
     editCache: [] as Array<{
       trxId: string
@@ -56,19 +39,15 @@ const state = observable({
       updatedTrxId: string
     }>,
     imageCache: new Map<string, string>(),
-
-    get posts() {
-      return this.trxIds.map((trxId) => this.map.get(trxId)!);
-    },
   },
   comment: {
     map: new Map<string, Comment>(),
     taskId: 0,
-
     cache: new Map<string, Set<string>>(),
   },
   profile: {
-    map: new Map<string, Profile>(),
+    mapByTrxId: new Map<string, Profile>(),
+    mapByAddress: new Map<string, Profile>(),
     cache: new Map<string, Profile>(),
     userPostCountMap: new Map<string, number>(),
     firstPostMap: new Map<string, Date>(),
@@ -105,12 +84,12 @@ const state = observable({
 
 const profile = {
   get: async (params: { userAddress: string } | { trxId: string }) => {
-    let profile = 'userAddress' in params
+    let profileItem = 'userAddress' in params
       ? await ProfileApi.getByUserAddress(state.groupId, params.userAddress)
       : await ProfileApi.getByTrxId(state.groupId, params.trxId);
 
-    if ('userAddress' in params && !profile) {
-      profile = {
+    if ('userAddress' in params && !profileItem) {
+      profileItem = {
         userAddress: params.userAddress,
         trxId: '',
         groupId: '',
@@ -121,12 +100,12 @@ const profile = {
     }
 
     runInAction(() => {
-      if (profile) {
-        state.profile.map.set(profile.userAddress, profile);
+      if (profileItem) {
+        profile.set(profileItem);
       }
     });
 
-    return profile;
+    return profileItem;
   },
 
   loadUserInfo: async (userAddress: string) => {
@@ -140,7 +119,7 @@ const profile = {
       const now = Date.now();
       const timestamp = Math.min(firstPost?.timestamp ?? now, firstComment?.timestamp ?? now);
       runInAction(() => {
-        state.profile.map.set(userAddress, userProfile);
+        profile.set(userProfile);
         state.profile.userPostCountMap.set(userAddress, postCount);
         state.profile.firstPostMap.set(userAddress, new Date(timestamp));
       });
@@ -166,15 +145,15 @@ const profile = {
         aesKey: group.cipherKey,
         privateKey: keyService.state.privateKey,
       });
-      const profile: Profile = {
+      const profileItem: Profile = {
         ...params,
         trxId: res.trx_id,
         groupId: group.groupId,
         userAddress: keyService.state.address,
       };
       runInAction(() => {
-        state.profile.map.set(keyService.state.address, profile);
-        state.profile.cache.set(keyService.state.address, profile);
+        profile.set(profileItem);
+        state.profile.cache.set(keyService.state.address, profileItem);
       });
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -195,103 +174,39 @@ const profile = {
     const userAddress = typeof p === 'string' ? p : p.userAddress;
     const item = typeof p === 'string' ? null : p;
     const cached = state.profile.cache.get(userAddress);
-    const mapItem = state.profile.map.get(userAddress);
+    const mapItem = state.profile.mapByAddress.get(userAddress);
     return cached || mapItem || item || profile.getFallbackProfile({ userAddress });
   },
 
   set: (profile: Profile) => {
     if (profile.trxId) {
-      state.profile.map.set(profile.trxId, profile);
+      state.profile.mapByTrxId.set(profile.trxId, profile);
     }
+    state.profile.mapByAddress.set(profile.userAddress, profile);
   },
 };
 
 const post = {
-  getTaskId: action(() => {
-    state.post.taskId += 1;
-    return state.post.taskId;
-  }),
-
-  list: async (params?: { filter: HotestFilter } | { search: string } | { mode: 'latest' }) => {
-    const taskId = post.getTaskId();
-    runInAction(() => {
-      state.post.trxIds = [];
-      if (params) {
-        if ('filter' in params) {
-          state.post.mode = {
-            type: 'hotest',
-            filter: params.filter,
-          };
-        } else if ('search' in params) {
-          state.post.mode = {
-            type: 'search',
-            search: params.search,
-          };
-        } else if ('mode' in params && params.mode === 'latest') {
-          state.post.mode = {
-            type: 'latest',
-          };
-        }
-      }
-      state.post.offset = 0;
-      state.post.done = false;
-      state.post.loading = true;
-    });
-    const data = await post.getList({
-      viewer: keyService.state.address,
-      limit: state.post.limit,
-      offset: state.post.offset,
-    });
-    if (state.post.taskId !== taskId) { return; }
-    runInAction(() => {
-      state.post.trxIds = data.map((v) => v.trxId);
-      if (state.post.offset && state.post.newPostCache.size) {
-        for (const cachedPostTrxId of state.post.newPostCache.values()) {
-          state.post.trxIds.unshift(cachedPostTrxId);
-        }
-      }
-
-      state.post.done = data.length < state.post.limit;
-      state.post.offset += state.post.limit;
-      state.post.loading = false;
-    });
-  },
-
-  listNextPage: async () => {
-    const taskId = post.getTaskId();
-    runInAction(() => {
-      state.post.loading = true;
-    });
-    const data = await post.getList({
-      viewer: keyService.state.address,
-      limit: state.post.limit,
-      offset: state.post.offset,
-    });
-    if (state.post.taskId !== taskId) { return; }
-    runInAction(() => {
-      data.forEach((v) => {
-        state.post.trxIds.push(v.trxId);
-        if (v.extra?.userProfile.trxId) {
-          profile.set(v.extra.userProfile);
-        }
-      });
-      state.post.offset += state.post.limit;
-      state.post.done = data.length < state.post.limit;
-      state.post.loading = false;
-    });
-  },
-
-  getList: async (params: { viewer?: string, userAddress?: string, limit: number, offset: number }) => {
+  getList: async (params: {
+    viewer?: string
+    userAddress?: string
+    limit: number
+    offset: number
+    search?: string
+  }) => {
     const posts = await PostApi.list(state.groupId, {
       limit: params.limit,
       offset: params.offset,
       viewer: params.viewer ?? keyService.state.address,
       userAddress: params.userAddress,
-      search: state.post.mode.type === 'search' ? state.post.mode.search : undefined,
+      search: params.search,
     });
     runInAction(() => {
       posts.forEach((v) => {
         state.post.map.set(v.trxId, v);
+        if (v.extra?.userProfile) {
+          profile.set(v.extra.userProfile);
+        }
       });
     });
     return posts;
@@ -334,7 +249,6 @@ const post = {
     };
     runInAction(() => {
       state.post.newPostCache.add(post.trxId);
-      state.post.trxIds.unshift(post.trxId);
       state.post.map.set(post.trxId, post);
     });
   },
@@ -389,6 +303,7 @@ const post = {
   },
 
   get: async (trxId: string, viewer?: string) => {
+    if (!trxId) { return null; }
     const post = await PostApi.get({
       groupId: state.groupId,
       trxId,
@@ -797,9 +712,12 @@ const socketEventHandler: Partial<SocketEventListeners> = {
     if (v.type === 'post') {
       post.get(v.trxId).then(action((post) => {
         if (post) {
-          if (!state.post.trxIds.some((v) => v === post.trxId)) {
-            state.post.trxIds.unshift(post.trxId);
-          }
+          Array.from(pageStateMap.get('postlist')?.values() ?? []).forEach((_s) => {
+            const s = _s as ReturnType<typeof createPostlistState>;
+            if (s.mode.type !== 'search' && !s.trxIds.includes(post.trxId)) {
+              s.trxIds.unshift(post.trxId);
+            }
+          });
         }
       }));
     }
@@ -821,14 +739,7 @@ const socketEventHandler: Partial<SocketEventListeners> = {
     }
   }),
   postDelete: action((v) => {
-    const index = state.post.trxIds.indexOf(v.deletedTrxId);
-    if (index) {
-      state.post.trxIds.splice(index, 1);
-      if (state.post.offset > 0) {
-        state.post.offset -= 1;
-      }
-      state.post.map.delete(v.deletedTrxId);
-    }
+    state.post.map.delete(v.deletedTrxId);
   }),
   uniqueCounter: async ({ uniqueCounter }) => {
     if ([CounterName.postLike, CounterName.postDislike].includes(uniqueCounter.name)) {
@@ -851,33 +762,26 @@ const socketEventHandler: Partial<SocketEventListeners> = {
 const init = () => {
   const removeListeners = socketService.addListeners(socketEventHandler);
   const initCheck = async () => {
-    const pathMatch = /^\/post\/(.+?)\/(.+?)$/.exec(location.pathname);
-    const groupId = pathMatch?.[1] ?? '';
-    const trxId = pathMatch?.[2] ?? '';
+    const postdetailMatch = matchPath('/post/:groupId/:trxId', location.pathname);
+    const userprofileMatch = matchPath('/userprofile/:groupId/:userAddress', location.pathname);
+    const groupId = postdetailMatch?.params.groupId ?? userprofileMatch?.params.groupId ?? '';
 
     await group.savedLoginCheck(groupId);
-    const postCheck = async () => {
-      if (!groupId || !trxId) { return; }
+    const postCheck = () => {
+      if (!postdetailMatch || !userprofileMatch) { return; }
       if (!state.groupId) {
         runInAction(() => {
           state.groupId = groupId;
         });
       }
-      const postItem = await post.get(trxId);
-      if (postItem) {
-        profile.get({ userAddress: postItem.userAddress });
+      if (postdetailMatch && postdetailMatch.params.trxId) {
+        return true;
       }
-      viewService.pushPage({
-        name: 'postdetail',
-        value: {
-          post: postItem,
-          groupId,
-          trxId,
-        },
-      });
-      return true;
+      if (userprofileMatch && userprofileMatch.params.userAddress) {
+        return true;
+      }
     };
-    if (await postCheck() || state.group) {
+    if (postCheck() || state.group) {
       runInAction(() => {
         state.showJoin = false;
         state.showMain = true;

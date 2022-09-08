@@ -1,10 +1,11 @@
-import { Button, IconButton, Tooltip } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
+import { Button, IconButton, Tooltip } from '@mui/material';
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
 import { editGroupInfo } from '~/modals/editGroupInfo';
-import { keyService, nodeService, snackbarService, viewService } from '~/service';
+import { keyService, nodeService, snackbarService } from '~/service';
 
 import { GroupAvatar } from './GroupAvatar';
 
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export const GroupSideBox = observer((props: Props) => {
+  const navigate = useNavigate();
   const state = useLocalObservable(() => ({
     get isGroupOwner() {
       return keyService.state.address === nodeService.state.groupOwnerAddress;
@@ -25,7 +27,7 @@ export const GroupSideBox = observer((props: Props) => {
       snackbarService.show('请先登录');
       return;
     }
-    viewService.pushPage({ name: 'newpost' });
+    navigate('/newpost');
   };
 
   return (

@@ -1,45 +1,96 @@
 import { useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { stringifyUrl } from 'query-string';
 import classNames from 'classnames';
-import { observer, useLocalObservable } from 'mobx-react-lite';
+import { runInAction } from 'mobx';
+import { observer } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
 import type { Post } from 'nft-bbs-server';
 import { CounterName } from 'nft-bbs-types';
 import { ExpandMore, Refresh, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 import { Button, CircularProgress, Tooltip } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
 
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 
 import { ScrollToTopButton, GroupSideBox, NFTSideBox, UserAvatar } from '~/components';
-import { viewService, nodeService, snackbarService } from '~/service';
-import { ago, runLoading } from '~/utils';
+import { keyService, nodeService, snackbarService } from '~/service';
+import { ago, notNullFilter, runLoading, usePageState } from '~/utils';
 import { showTrxDetail } from '~/modals';
-import { LoadingButton } from '@mui/lab';
-import { runInAction } from 'mobx';
+
+export const createPostlistState = () => ({
+  inited: false,
+  trxIds: [] as Array<string>,
+  limit: 20 as const,
+  offset: 0,
+  done: false,
+  loading: false,
+  mode: { type: 'normal' } as { type: 'normal' } | { type: 'search', search: string },
+
+  ntfPopup: false,
+  likeLoadingMap: new Map<string, boolean>(),
+  intersectionRatio: 0,
+  get nfts() {
+    const list = Array(4).fill(0).map((_, i) => i);
+    return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
+  },
+  get posts() {
+    return this.trxIds
+      .map((v) => nodeService.state.post.map.get(v))
+      .filter(notNullFilter);
+  },
+  async loadPosts(nextPage = false) {
+    if (this.loading) { return; }
+    if (!nextPage) {
+      runInAction(() => {
+        this.trxIds = [];
+        this.offset = 0;
+        this.done = false;
+      });
+    }
+    await runLoading(
+      (l) => { this.loading = l; },
+      async () => {
+        const posts = await nodeService.post.getList({
+          limit: this.limit,
+          offset: this.offset,
+          viewer: keyService.state.address,
+          search: this.mode.type === 'search' ? this.mode.search : undefined,
+        });
+
+        runInAction(() => {
+          posts.forEach((v) => {
+            if (!this.trxIds.includes(v.trxId)) {
+              this.trxIds.push(v.trxId);
+            }
+          });
+          if (this.offset === 0 && this.mode.type === 'normal' && nodeService.state.post.newPostCache.size) {
+            nodeService.state.post.newPostCache.forEach((v) => {
+              this.trxIds.unshift(v);
+            });
+          }
+          this.offset += this.limit;
+          this.done = posts.length < this.limit;
+        });
+      },
+    );
+  },
+});
 
 export const PostList = observer((props: { className?: string }) => {
-  const state = useLocalObservable(() => ({
-    ntfPopup: false,
-    likeLoadingMap: new Map<string, boolean>(),
-    get nfts() {
-      const list = Array(4).fill(0).map((_, i) => i);
-      return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
-    },
-    intersectionRatio: 0,
-  }));
+  const navigate = useNavigate();
+  const routeLocation = useLocation();
+  const state = usePageState('postlist', routeLocation.key, createPostlistState);
 
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
-  const handleOpenPost = (post: Post, locateComment = false) => {
-    viewService.pushPage({
-      name: 'postdetail',
-      value: {
-        post,
-        groupId: post.groupId,
-        trxId: post.trxId,
-        locateComment,
-      },
+  const handleOpenPost = (post: Post, locateComment: true | undefined = undefined) => {
+    const url = stringifyUrl({
+      url: `/post/${post.groupId}/${post.trxId}`,
+      query: { locateComment },
     });
+    navigate(url);
   };
 
   const handleUpdatePostCounter = (post: Post, type: CounterName.postLike | CounterName.postDislike) => {
@@ -59,35 +110,31 @@ export const PostList = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
-    const loadNextPage = async () => {
-      if (nodeService.state.post.loading || nodeService.state.post.done) {
-        return;
-      }
-      if (state.intersectionRatio > 0.1) {
-        await nodeService.post.listNextPage();
-        loadNextPage();
-      }
-    };
-
-    if (!nodeService.state.post.trxIds.length && !nodeService.state.post.loading) {
-      nodeService.post.list({ mode: 'latest' });
+    if (!state.inited) {
+      state.loadPosts();
+      runInAction(() => {
+        state.inited = true;
+      });
     }
+
+    const loadNextPage = async () => {
+      if (state.loading || state.done) { return; }
+      if (state.intersectionRatio < 0.1) { return; }
+      await state.loadPosts(true);
+      loadNextPage();
+    };
 
     const io = new IntersectionObserver(([entry]) => {
       runInAction(() => {
         state.intersectionRatio = entry.intersectionRatio;
       });
       loadNextPage();
-    }, {
-      threshold: [0.1],
-    });
+    }, { threshold: [0.1] });
+
     if (loadingTriggerBox.current) {
       io.observe(loadingTriggerBox.current);
     }
-
-    return () => {
-      io.disconnect();
-    };
+    return () => io.disconnect();
   }, []);
 
   return (
@@ -103,34 +150,34 @@ export const PostList = observer((props: { className?: string }) => {
         </div>
         <div className="flex-col gap-y-12 py-10 px-16">
           <div className="flex flex-center -my-4 -mb-8">
-            {!!nodeService.state.post.trxIds.length && (
+            {!!state.trxIds.length && (
               <LoadingButton
                 className="w-full text-white/70"
                 variant="text"
-                onClick={() => nodeService.post.list()}
-                loading={nodeService.state.post.loading}
+                onClick={() => state.loadPosts()}
+                loading={state.loading}
               >
                 刷新 <Refresh className="text-20 -mt-px" />
               </LoadingButton>
             )}
           </div>
 
-          {nodeService.state.post.posts.map((v) => {
+          {state.posts.map((v) => {
             const stat = nodeService.post.getStat(v);
             const profile = nodeService.profile.getComputedProfile(v.extra?.userProfile || v.userAddress);
             return (
               <div key={v.trxId}>
                 <div className="flex justify-between items-center gap-x-2">
-                  <a
+                  <Link
                     className="text-white text-18 font-medium cursor-pointer leading-relaxed truncate-2 hover:underline"
-                    href={`/post/${v.groupId}/${v.trxId}`}
+                    to={`/post/${v.groupId}/${v.trxId}`}
                     onClick={(e) => { e.preventDefault(); handleOpenPost(v); }}
                   >
                     {stat.title || '无标题'}
-                  </a>
+                  </Link>
                   <button
                     className="flex flex-center flex-none text-white/50 text-14 max-w-[200px]"
-                    onClick={() => profile && viewService.pushPage({ name: 'userprofile', value: profile })}
+                    onClick={() => profile && navigate(`/userprofile/${profile.groupId}/${profile.userAddress}`)}
                   >
                     <UserAvatar className="mr-2 flex-none" profile={profile} size={24} />
                     <div className="truncate">
@@ -218,23 +265,23 @@ export const PostList = observer((props: { className?: string }) => {
               className="absolute h-[400px] w-0 bottom-0 pointer-events-none"
               ref={loadingTriggerBox}
             />
-            {nodeService.state.post.loading && (
+            {state.loading && (
               <CircularProgress className="text-white/70" />
             )}
-            {!nodeService.state.post.loading && !nodeService.state.post.done && (
+            {!state.loading && !state.done && (
               <Button
                 className="flex-1 text-link-soft py-2"
                 variant="text"
-                onClick={() => nodeService.post.listNextPage()}
+                onClick={() => state.loadPosts(true)}
               >
                 加载更多
                 <ExpandMore />
               </Button>
             )}
-            {nodeService.state.post.done && (
+            {state.done && (
               <span className="text-white/60 text-14">
-                {nodeService.state.post.trxIds.length > 10 && nodeService.state.post.mode.type !== 'search' && '没有啦'}
-                {!nodeService.state.post.trxIds.length && nodeService.state.post.mode.type === 'search' && '没有找到搜索结果'}
+                {state.trxIds.length > 10 && state.mode.type !== 'search' && '没有啦'}
+                {!state.trxIds.length && state.mode.type === 'search' && '没有找到搜索结果'}
               </span>
             )}
           </div>
@@ -244,7 +291,6 @@ export const PostList = observer((props: { className?: string }) => {
       <div className="w-[280px]">
         <div className="fixed w-[280px]">
           <GroupSideBox className="mt-16" showNewPost />
-
           <NFTSideBox className="mt-8" />
         </div>
       </div>
