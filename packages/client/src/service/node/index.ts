@@ -178,12 +178,12 @@ const profile = {
     return cached || mapItem || item || profile.getFallbackProfile({ userAddress });
   },
 
-  set: (profile: Profile) => {
+  set: action((profile: Profile) => {
     if (profile.trxId) {
       state.profile.mapByTrxId.set(profile.trxId, profile);
     }
     state.profile.mapByAddress.set(profile.userAddress, profile);
-  },
+  }),
 };
 
 const post = {

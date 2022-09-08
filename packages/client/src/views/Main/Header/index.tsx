@@ -38,7 +38,7 @@ export const Header = observer((props: { className?: string }) => {
   const routeParams = useParams();
   const routeLocation = useLocation();
   const navigate = useNavigate();
-  const postlistState = usePageState('postlist', routeLocation.key, createPostlistState);
+  const postlistState = usePageState('postlist', routeLocation.key, 'readonly', createPostlistState);
   const state = useLocalObservable(() => ({
     tab: 0,
     userDropdown: false,
@@ -72,6 +72,7 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleSearchInputKeydown = action((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && state.searchTerm) {
+      if (!postlistState) { return; }
       runInAction(() => {
         postlistState.mode = { type: 'search', search: state.searchTerm };
       });
@@ -91,6 +92,7 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleExitSearchMode = action(() => {
     state.searchMode = false;
+    if (!postlistState) { return; }
     if (postlistState.mode.type === 'search') {
       runInAction(() => {
         postlistState.mode = { type: 'normal' };
