@@ -10,11 +10,14 @@ export const commentController: Parameters<FastifyRegister>[0] = (fastify, _opts
       groupId: string,
       trxId: string,
     }));
+    const query = assertValidation(req.query, type({
+      viewer: string,
+    }));
     const comment = await Comment.get({ groupId: params.groupId, trxId: params.trxId });
     if (!comment) {
       throw new NotFound();
     }
-    const data = await Comment.appendExtra(comment);
+    const data = await Comment.appendExtra(comment, { viewer: query.viewer });
     return data;
   });
 

@@ -456,7 +456,7 @@ const post = {
     return res;
   },
 
-  getPostStat: (post: Post) => {
+  getStat: (post: Post) => {
     const postTrxId = post.trxId;
     const likedSum = state.uniqueCounter.cache
       .filter((v) => v.objectId === postTrxId && v.name === CounterName.postLike)
@@ -500,6 +500,7 @@ const comment = {
       });
     });
     const trxIds = comments.map((v) => v.trxId);
+    // TODO: when paging, append cached only if (offset === 0) (first page)
     const postSet = state.comment.cache.get(postTrxId);
     if (postSet) {
       for (const cachedTrxId of postSet) {
@@ -563,7 +564,11 @@ const comment = {
     return comment;
   },
   get: async (trxId: string) => {
-    const comment = await CommentApi.get(state.groupId, trxId);
+    const comment = await CommentApi.get({
+      groupId: state.groupId,
+      trxId,
+      viewer: keyService.state.address,
+    });
     if (comment) {
       if (comment.extra?.userProfile.trxId) {
         profile.set(comment.extra.userProfile);
@@ -580,6 +585,32 @@ const comment = {
   getFirstComment: async (userAddress: string) => {
     const comment = await CommentApi.getFirst(state.groupId, userAddress, keyService.state.address);
     return comment;
+  },
+  getStat: (comment: Comment) => {
+    const commentTrxId = comment.trxId;
+    const likedSum = state.uniqueCounter.cache
+      .filter((v) => v.objectId === commentTrxId && v.name === CounterName.commentLike)
+      .reduce((p, c) => p + c.value, 0);
+    const dislikedSum = state.uniqueCounter.cache
+      .filter((v) => v.objectId === commentTrxId && v.name === CounterName.commentDislike)
+      .reduce((p, c) => p + c.value, 0);
+
+    const likeCount = comment.likeCount + likedSum;
+    const dislikeCount = comment.dislikeCount + dislikedSum;
+    const liked = (likedSum + (comment.extra?.liked ? 1 : 0)) > 0;
+    const disliked = (dislikedSum + (comment.extra?.disliked ? 1 : 0)) > 0;
+    const cachedCommentCount = Array.from(state.comment.cache.get(comment.objectId)?.values() ?? []).filter((trxId) => {
+      const c = state.comment.map.get(trxId);
+      return c?.threadId === comment.trxId;
+    }).length;
+    const commentCount = comment.commentCount + cachedCommentCount;
+    return {
+      likeCount,
+      dislikeCount,
+      liked,
+      disliked,
+      commentCount,
+    };
   },
 };
 
@@ -630,18 +661,22 @@ const notification = {
 };
 
 const counter = {
-  update: async (params: {
-    item: Post
-    type: 'comment' | 'post'
-    counterName: CounterName
-  }) => {
+  update: async (params: (
+    { type: 'post', item: Post, counterName: CounterName.postLike | CounterName.postDislike }
+    | { type: 'comment', item: Comment, counterName: CounterName.commentLike | CounterName.commentDislike}
+  )) => {
     const group = QuorumLightNodeSDK.cache.Group.list()[0];
-    const { item, counterName } = params;
+    const { type, item, counterName } = params;
     const trxId = item.trxId;
     try {
-      const postStat = post.getPostStat(item);
-      const countedKey = [CounterName.commentLike, CounterName.postLike].includes(counterName) ? 'liked' : 'disliked';
-      const value = postStat[countedKey] ? -1 : 1;
+      const stat = type === 'post'
+        ? post.getStat(item)
+        : comment.getStat(item);
+      const countedKey = [
+        CounterName.commentLike,
+        CounterName.postLike,
+      ].includes(counterName) ? 'liked' : 'disliked';
+      const value = stat[countedKey] ? -1 : 1;
       const trxContent: ICounterTrxContent = {
         type: TrxType.counter,
         name: counterName,
@@ -752,7 +787,7 @@ const group = {
   },
 };
 
-const socketEventHandler: SocketEventListeners = {
+const socketEventHandler: Partial<SocketEventListeners> = {
   notification: action((v) => {
     state.notification.unreadCount += 1;
     state.notification.list.unshift(v);
@@ -777,21 +812,6 @@ const socketEventHandler: SocketEventListeners = {
     if (v.type === 'profile') {
       profile.get({ trxId: v.trxId });
     }
-    if (v.type === 'uniqueCounter') {
-      const items = state.uniqueCounter.cache.filter((u) => u.trxId === v.trxId);
-      items.forEach((item) => {
-        const index = state.uniqueCounter.cache.indexOf(item);
-        state.uniqueCounter.cache.splice(index);
-
-        if (item.name.startsWith('post')) {
-          post.get(item.objectId);
-        }
-
-        // if (item.name.startsWith('comment')) {
-        // TODO: comment counter?
-        // }
-      });
-    }
   },
   postEdit: action((v) => {
     const item = state.post.editCache.find((u) => u.trxId === v.post.trxId);
@@ -810,6 +830,22 @@ const socketEventHandler: SocketEventListeners = {
       state.post.map.delete(v.deletedTrxId);
     }
   }),
+  uniqueCounter: async ({ uniqueCounter }) => {
+    if ([CounterName.postLike, CounterName.postDislike].includes(uniqueCounter.name)) {
+      await post.get(uniqueCounter.objectId);
+    }
+    if ([CounterName.commentLike, CounterName.commentDislike].includes(uniqueCounter.name)) {
+      await comment.get(uniqueCounter.objectId);
+    }
+
+    const items = state.uniqueCounter.cache.filter((u) => u.trxId === uniqueCounter.trxId);
+    runInAction(() => {
+      items.forEach((item) => {
+        const index = state.uniqueCounter.cache.indexOf(item);
+        state.uniqueCounter.cache.splice(index);
+      });
+    });
+  },
 };
 
 const init = () => {
@@ -871,5 +907,3 @@ export const nodeService = {
   counter,
   group,
 };
-
-(window as any).nodeService = nodeService;

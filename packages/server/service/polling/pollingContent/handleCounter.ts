@@ -2,7 +2,7 @@ import { CounterName } from 'nft-bbs-types';
 import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { UniqueCounter, Post, Comment, Notification } from '~/orm';
-import { trySendSocket } from '~/service/socket';
+import { broadcast, trySendSocket } from '~/service/socket';
 import { store, LOADED_DATA_KEY } from '~/utils/';
 
 export const handleCounter = async (item: IContent, transactionManager: EntityManager) => {
@@ -23,16 +23,15 @@ export const handleCounter = async (item: IContent, transactionManager: EntityMa
   };
   const from = uniqueCounter.userAddress;
 
-  trySendSocket(uniqueCounter.userAddress, 'trx', { trxId: item.TrxId, type: 'uniqueCounter' });
+  broadcast('uniqueCounter', { uniqueCounter });
+
   if (value > 0) {
     // ignore duplicated counter
     const hasCounter = await UniqueCounter.has(
       { groupId: item.GroupId, name, objectId, userAddress: from },
       transactionManager,
     );
-    if (hasCounter) {
-      return;
-    }
+    if (hasCounter) { return; }
     await UniqueCounter.add(uniqueCounter, transactionManager);
   } else if (value < 0) {
     await UniqueCounter.destroy({ name, objectId }, transactionManager);

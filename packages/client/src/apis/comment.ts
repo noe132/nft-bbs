@@ -13,9 +13,10 @@ export const list = async (groupId: string, options: {
   return items;
 };
 
-export const get = async (groupId: string, trxId: string) => {
+export const get = async (params: { groupId: string, trxId: string, viewer?: string }) => {
+  const { groupId, trxId, viewer } = params;
   try {
-    const item: Comment = await request(`${API_BASE_URL}/comment/${groupId}/${trxId}`);
+    const item: Comment = await request(`${API_BASE_URL}/comment/${groupId}/${trxId}?${qs.stringify({ viewer })}`);
     return item;
   } catch (e: any) {
     if (e.status === 404) {

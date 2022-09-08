@@ -78,7 +78,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     });
   };
 
-  const handleUpdatePostCounter = (post: Post, type: CounterName) => {
+  const handleUpdatePostCounter = (post: Post, type: CounterName.postLike | CounterName.postDislike) => {
     if (!nodeService.state.logined) {
       snackbarService.show('请先登录');
       return;
@@ -260,7 +260,7 @@ export const UserProfile = observer((props: { className?: string }) => {
               </div>
             )}
             {state.posts.map((v) => {
-              const stat = nodeService.post.getPostStat(v);
+              const stat = nodeService.post.getStat(v);
               return (
                 <div key={v.trxId}>
                   <a

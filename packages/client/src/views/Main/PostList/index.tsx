@@ -42,7 +42,7 @@ export const PostList = observer((props: { className?: string }) => {
     });
   };
 
-  const handleUpdatePostCounter = (post: Post, type: CounterName) => {
+  const handleUpdatePostCounter = (post: Post, type: CounterName.postLike | CounterName.postDislike) => {
     if (!nodeService.state.logined) {
       snackbarService.show('请先登录');
       return;
@@ -116,7 +116,7 @@ export const PostList = observer((props: { className?: string }) => {
           </div>
 
           {nodeService.state.post.posts.map((v) => {
-            const stat = nodeService.post.getPostStat(v);
+            const stat = nodeService.post.getStat(v);
             const profile = nodeService.profile.getComputedProfile(v.extra?.userProfile || v.userAddress);
             return (
               <div key={v.trxId}>

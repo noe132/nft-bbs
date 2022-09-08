@@ -27,7 +27,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
       );
     },
     get postStat() {
-      return nodeService.post.getPostStat(props.post);
+      return nodeService.post.getStat(props.post);
     },
     get isPostAuthor() {
       return keyService.state.address === props.post.userAddress;
@@ -40,7 +40,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
     }
   };
 
-  const handleUpdatePostCounter = (type: CounterName) => {
+  const handleUpdatePostCounter = (type: CounterName.postLike | CounterName.postDislike) => {
     if (!nodeService.state.logined) {
       snackbarService.show('请先登录');
       return;

@@ -14,7 +14,7 @@ socket.on('authenticateResult', (result: string) => {
   console.log(result);
 });
 
-const addListeners = (listeners: SocketEventListeners) => {
+const addListeners = (listeners: Partial<SocketEventListeners>) => {
   Object.entries(listeners).forEach(([k, v]) => {
     socket.on(k, v);
   });
