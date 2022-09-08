@@ -154,10 +154,9 @@ export const Header = observer((props: { className?: string }) => {
     store('keystore', keystore);
     store('password', password);
     QuorumLightNodeSDK.cache.Group.clear();
-    window.location.reload();
-  };
-
-  const handleClearData = () => {
+    if (window.location.pathname !== '/') {
+      history.replaceState(null, '', '/');
+    }
     window.location.reload();
   };
 
@@ -212,10 +211,15 @@ export const Header = observer((props: { className?: string }) => {
     store.remove('password');
     store.remove('keystore');
     QuorumLightNodeSDK.cache.Group.clear();
-    handleClearData();
+    if (window.location.pathname !== '/') {
+      history.replaceState(null, '', '/');
+    }
   });
 
   const handleExitGroup = () => {
+    if (window.location.pathname !== '/') {
+      history.replaceState(null, '', '/');
+    }
     store('seedUrlAutoJoin', false);
     window.location.reload();
   };
