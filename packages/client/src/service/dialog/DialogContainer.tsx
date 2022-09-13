@@ -59,7 +59,7 @@ const ConfirmDialog = observer((props: { item: DialogItem }) => {
         {props.item.content}
       </DialogContent>
       <DialogActions className="flex justify-end items-center py-3 px-6">
-        {!props.item.noCancelButton && (
+        {props.item.cancel !== null && (
           <Button
             className="block bg-white cursor-pointer min-w-[70px] rounded-full"
             color="inherit"

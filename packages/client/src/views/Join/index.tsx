@@ -5,10 +5,11 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import store from 'store2';
 import QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import { either, taskEither, function as fp } from 'fp-ts';
+import { GroupInfo } from 'nft-bbs-server';
 import { nftbbsAppKeyName } from 'nft-bbs-types';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl,
-  FormControlLabel, IconButton, InputLabel, Menu, MenuItem, OutlinedInput,
+  FormControlLabel, IconButton, InputLabel, Menu, MenuItem, OutlinedInput, Tooltip,
 } from '@mui/material';
 import { Check, ChevronLeft, Close, Visibility, VisibilityOff } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
@@ -29,7 +30,6 @@ import {
   langService, nodeService, snackbarService,
 } from '~/service';
 import { GroupAvatar } from '~/components';
-import { GroupInfo } from 'nft-bbs-server';
 import { GroupInfoApi } from '~/apis';
 
 enum Step {
@@ -40,6 +40,7 @@ enum Step {
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
+    // TODO: remove testing seedurl in future
     seedUrl: store('seedUrl') || 'rum://seed?v=1&e=0&n=0&b=QaPjfi7LQ4yp2S60ngyJdw&c=fja8EJAAK_ZxLPcyLq-6L7HSKuli68wnhl4ImdwHh_A&g=uZvFqN6-SYGGu9SESABN0w&k=AjlWMMvVpXi9DLpoxmgJgD9ug2fDAaUNQCOhOq5PNfIc&s=bOh-m-h2vCbsS3Z3KBUNoYfB3D3ZyJx3Vf0W2dKibNgNp1Uj_f6U-YSo4MPLZM2QE3ipN7KklOCdoYHS9WT2zgE&t=FxBnshqivLo&a=nft%E8%AE%BA%E5%9D%9B%E6%B5%8B%E8%AF%95%E7%A7%8D%E5%AD%90%E7%BD%91%E7%BB%9C&y=group_nftbbs&u=https%3A%2F%2Fnoe132.com%3A64459%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyJiOTliYzVhOC1kZWJlLTQ5ODEtODZiYi1kNDg0NDgwMDRkZDMiXSwiZXhwIjoxNjkzNDc4ODU1LCJuYW1lIjoibm9kZWp3dCIsInJvbGUiOiJub2RlIn0.BRl1QD0B-Dpngccs8dtsMzm5j-m_BCvet4XgRJx07cA',
     keystorePopup: false,
     keystore: '',
@@ -64,17 +65,17 @@ export const Join = observer(() => {
     state.languageMenu = false;
   });
 
-  const handleNextStep = async () => {
+  const handleNextStep = () => {
     if (state.step === Step.InputSeedUrl) {
       try {
         const seed = QuorumLightNodeSDK.utils.restoreSeedFromUrl(state.seedUrl);
         if (seed.app_key !== nftbbsAppKeyName) {
-          const result = await dialogService.open({
+          dialogService.open({
             title: '种子网络类型不支持',
-            content: '加入的种子网络类型不是当前支持的类型，确实要继续加入吗？',
-            confirm: '加入',
+            content: '加入的种子网络类型不是当前支持的类型。',
+            cancel: null,
           });
-          if (result === 'cancel') { return; }
+          return;
         }
         GroupInfoApi.get(seed.group_id).then(action((v) => {
           state.groupInfo = v;
@@ -162,17 +163,6 @@ export const Join = observer(() => {
       store('password', '');
     }
     nodeService.group.join(state.seedUrl);
-    runInAction(() => {
-      nodeService.state.showJoin = false;
-      nodeService.state.showMain = true;
-    });
-  };
-
-  const handleLoginAnonymous = () => {
-    keyService.logout();
-    nodeService.group.join(state.seedUrl);
-    store('seedUrlAutoJoin', true);
-    store('seedUrl', state.seedUrl);
     runInAction(() => {
       nodeService.state.showJoin = false;
       nodeService.state.showMain = true;
@@ -397,7 +387,7 @@ export const Join = observer(() => {
                 </Button>
                 <GroupAvatar
                   className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3"
-                  // groupName={state.seed?.group_name ?? ''}
+                  groupName={state.seed?.group_name ?? ''}
                   avatar={state.groupInfo?.avatar}
                   size={100}
                 />
@@ -409,28 +399,28 @@ export const Join = observer(() => {
                   {state.groupInfo?.desc}
                 </div>
 
-                <Button
-                  className="text-rum-orange rounded-full text-16 px-12 py-2 mt-4"
-                  color="inherit"
-                  variant="outlined"
-                  onClick={handleAutoLogin}
-                >
-                  注册/登录
-                </Button>
-                <button
-                  className="text-gray-9c text-14 mt-4"
-                  onClick={handleLoginAnonymous}
-                >
-                  以游客身份进入
-                </button>
-                <Button
-                  className="absolute text-gray-9c text-12 mt-4 bottom-2 right-2 px-2 normal-case"
-                  variant="text"
-                  size="small"
-                  onClick={handleShowKeystoreDialog}
-                >
-                  输入keystore
-                </Button>
+                <div className="flex-col items-stertch mt-4 gap-y-4 min-w-[200px]">
+                  <Tooltip title="用保存的账号登录 或 创建一个随机账号" placement="right">
+                    <Button
+                      className="text-rum-orange rounded-full text-16 px-8 py-2"
+                      color="inherit"
+                      variant="outlined"
+                      onClick={handleAutoLogin}
+                    >
+                      快速登录/注册
+                    </Button>
+                  </Tooltip>
+                  <Tooltip title="输入 keystore 和 密码" placement="right">
+                    <Button
+                      className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
+                      color="inherit"
+                      variant="outlined"
+                      onClick={handleShowKeystoreDialog}
+                    >
+                      输入 keystore
+                    </Button>
+                  </Tooltip>
+                </div>
               </div>
             )}
           </div>
@@ -510,7 +500,7 @@ export const Join = observer(() => {
                 </FormControl>
                 <FormControlLabel
                   className="flex-center"
-                  label="记住密码"
+                  label="记住 keystore 和 密码"
                   control={(
                     <Checkbox
                       checked={state.rememberPassword}

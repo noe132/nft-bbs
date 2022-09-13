@@ -97,7 +97,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
       dialogService.open({
         title: '删除成功',
         content: '帖子将会在数据同步后删除。',
-        noCancelButton: true,
+        cancel: null,
       });
     }
   };

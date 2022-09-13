@@ -13,7 +13,6 @@ export interface DialogItem {
   danger?: boolean
   confirmTestId?: string
   cancelTestId?: string
-  noCancelButton?: boolean
   /** default 450px */
   maxWidth?: number
   rs: (type: DialogResult) => unknown

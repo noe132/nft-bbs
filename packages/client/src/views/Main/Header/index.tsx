@@ -179,7 +179,7 @@ export const Header = observer((props: { className?: string }) => {
           </FormControl>
         </div>
       ),
-      noCancelButton: true,
+      cancel: null,
       maxWidth: 0,
     });
   };
