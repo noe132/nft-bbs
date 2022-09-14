@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import './utils/alias';
+import './utils/env';
 import * as path from 'path';
 import { createWriteStream } from 'fs';
 import * as fs from 'fs/promises';
@@ -18,21 +19,9 @@ export type {
 
 export type { SocketIOEventMap } from '~/service/socket';
 
-const port = 8002;
+const port = Number(process.env.PORT) || 8002;
 
 const main = async () => {
-  const result = await Promise.allSettled([
-    fs.stat(path.join(__dirname, './config.js')),
-    fs.stat(path.join(__dirname, './config.ts')),
-  ]);
-  if (result.every((v) => v.status === 'rejected')) {
-    // eslint-disable-next-line no-console
-    console.log('server/config.js not exists');
-    // eslint-disable-next-line no-console
-    console.log('Please get it from https://bitbucket.org/pressone/deploy/src/master/medium/nft-bbs.config/config.js');
-    process.exit(0);
-  }
-
   await fs.mkdir(path.join(__dirname, 'logs')).catch(() => 1);
 
   const appLogFile = createWriteStream(path.join(__dirname, 'logs/app.log'), { flags: 'a' });
@@ -112,7 +101,7 @@ const main = async () => {
 
   initService(fastify);
 
-  await fastify.listen({ port }).then(() => {
+  await fastify.listen({ host: '::', port }).then(() => {
     fastify.log.info(`app listen on port ${port}.`);
   });
 };

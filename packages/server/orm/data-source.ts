@@ -1,15 +1,15 @@
+import '~/utils/env';
 import { DataSource } from 'typeorm';
-import { config } from '../config';
 
 const inTSNode = !!(process as any)[Symbol.for('ts-node.register.instance')];
 
 export const AppDataSource = new DataSource({
-  type: config.database.dialect,
-  host: config.database.host,
-  port: config.database.port,
-  username: config.database.user,
-  password: config.database.password,
-  database: config.database.database,
+  type: 'postgres',
+  host: process.env.db_host ?? '127.0.0.1',
+  port: Number(process.env.db_port) || 5432,
+  username: process.env.db_user ?? 'nft-bbs',
+  password: process.env.db_password ?? '2578644fdccf4e6c9648ac0d2661bb5b',
+  database: process.env.db_database ?? 'postgres',
   // migration only
   synchronize: false,
   logging: false,

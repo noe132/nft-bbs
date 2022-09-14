@@ -148,7 +148,8 @@ export const Header = observer((props: { className?: string }) => {
     window.location.reload();
   };
 
-  const handleShowAccountInfo = () => {
+  const handleShowAccountInfo = action(() => {
+    state.menu = false;
     dialogService.open({
       title: '账号信息',
       content: (
@@ -182,7 +183,7 @@ export const Header = observer((props: { className?: string }) => {
       cancel: null,
       maxWidth: 0,
     });
-  };
+  });
 
   const handleLogin = action(() => {
     if (window.location.pathname !== '/') {

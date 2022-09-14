@@ -11,10 +11,11 @@ import { svgrPlugin } from './build/vite-svgr-plugin';
 export default async () => {
   const a = !!process.env.analyze;
 
-  const cert = await readFile('../../cert/cert.pem').catch(() => null);
+  const cert = await readFile('../../cert/fullchain.pem').catch(() => null);
   const key = await readFile('../../cert/key.pem').catch(() => null);
 
   return defineConfig({
+    base: process.env.BASE_PATH ?? '/',
     server: {
       host: '0.0.0.0',
       port: 8904,
