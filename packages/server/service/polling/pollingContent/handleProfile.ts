@@ -1,9 +1,13 @@
 import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { Profile } from '~/orm';
-import { broadcast } from '~/service/socket';
+import { send } from '~/service/socket';
 
-export const handleProfile = async (item: IContent, transactionManager: EntityManager) => {
+export const handleProfile = async (
+  item: IContent,
+  transactionManager: EntityManager,
+  queueSocket: typeof send,
+) => {
   const trxContent = Profile.parseTrxContent(item);
   if (!trxContent) {
     pollingLog.info(`profile ${item.TrxId} failed to validate trxContent`, item.Data.content);
@@ -16,5 +20,9 @@ export const handleProfile = async (item: IContent, transactionManager: EntityMa
     groupId: item.GroupId,
   };
   await Profile.add(profile, transactionManager);
-  broadcast('trx', { trxId: profile.trxId, type: 'profile' });
+  queueSocket({
+    broadcast: true,
+    event: 'trx',
+    data: { trxId: profile.trxId, type: 'profile' },
+  });
 };

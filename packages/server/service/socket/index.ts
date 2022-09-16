@@ -29,16 +29,24 @@ export interface SocketIOEventMap {
   }
 }
 
-export const trySendSocket = <T extends keyof SocketIOEventMap>(userAddress: string, event: T, data: SocketIOEventMap[T]) => {
-  const socket = socketMap.byAddress.get(userAddress);
-  if (socket) {
-    socket.emit(event, data);
-  }
-};
+interface SendParams<T extends keyof SocketIOEventMap> {
+  event: T
+  data: SocketIOEventMap[T]
+  userAddress?: string
+  broadcast?: boolean
+}
 
-export const broadcast = <T extends keyof SocketIOEventMap>(event: T, data: SocketIOEventMap[T]) => {
-  if (!socketIo) { return; }
-  socketIo.emit(event, data);
+
+export const send = <T extends keyof SocketIOEventMap>(params: SendParams<T>) => {
+  if (params.userAddress) {
+    const socket = socketMap.byAddress.get(params.userAddress);
+    if (socket) {
+      socket.emit(params.event, params.data);
+    }
+  } else if (params.broadcast) {
+    if (!socketIo) { return; }
+    socketIo.emit(params.event, params.data);
+  }
 };
 
 const logout = (socketId: string) => {

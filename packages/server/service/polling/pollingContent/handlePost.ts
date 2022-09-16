@@ -2,9 +2,9 @@ import { TrxStorage } from 'nft-bbs-types';
 import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { Notification, Post, UniqueCounter } from '~/orm';
-import { broadcast } from '~/service/socket';
+import { send } from '~/service/socket';
 
-export const handlePost = async (item: IContent, transactionManager: EntityManager) => {
+export const handlePost = async (item: IContent, transactionManager: EntityManager, queueSocket: typeof send) => {
   const trxContent = Post.parseTrxContent(item);
   if (!trxContent) {
     pollingLog.info(`post ${item.TrxId} failed to validate trxContent`, item.Data.content);
@@ -37,7 +37,11 @@ export const handlePost = async (item: IContent, transactionManager: EntityManag
       { content: post.content },
       transactionManager,
     );
-    broadcast('postEdit', { post, updatedTrxId: trxContent.updatedTrxId });
+    queueSocket({
+      broadcast: true,
+      event: 'postEdit',
+      data: { post, updatedTrxId: trxContent.updatedTrxId },
+    });
     return;
   }
 
@@ -56,10 +60,18 @@ export const handlePost = async (item: IContent, transactionManager: EntityManag
       Notification.deleteWith({ groupId: deletedPost.groupId, trxId: deletedPost.trxId }, transactionManager),
       UniqueCounter.deleteWith({ groupId: deletedPost.groupId, trxId: deletedPost.trxId }, transactionManager),
     ]);
-    broadcast('postDelete', { post, deletedTrxId: trxContent.deletedTrxId });
+    queueSocket({
+      broadcast: true,
+      event: 'postDelete',
+      data: { post, deletedTrxId: trxContent.deletedTrxId },
+    });
     return;
   }
 
   await Post.add(post, transactionManager);
-  broadcast('trx', { trxId: post.trxId, type: 'post' });
+  queueSocket({
+    broadcast: true,
+    event: 'trx',
+    data: { trxId: post.trxId, type: 'post' },
+  });
 };

@@ -2,10 +2,13 @@ import { CounterName } from 'nft-bbs-types';
 import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { UniqueCounter, Post, Comment, Notification } from '~/orm';
-import { broadcast, trySendSocket } from '~/service/socket';
-import { store, LOADED_DATA_KEY } from '~/utils/';
+import { send } from '~/service/socket';
 
-export const handleCounter = async (item: IContent, transactionManager: EntityManager) => {
+export const handleCounter = async (
+  item: IContent,
+  transactionManager: EntityManager,
+  queueSocket: typeof send,
+) => {
   const trxContent = UniqueCounter.parseTrxContent(item);
   if (!trxContent) {
     pollingLog.info(`counter ${item.TrxId} failed to validate trxContent`, item.Data.content);
@@ -23,7 +26,11 @@ export const handleCounter = async (item: IContent, transactionManager: EntityMa
   };
   const from = uniqueCounter.userAddress;
 
-  broadcast('uniqueCounter', { uniqueCounter });
+  queueSocket({
+    broadcast: true,
+    event: 'uniqueCounter',
+    data: { uniqueCounter },
+  });
 
   if (value > 0) {
     // ignore duplicated counter
@@ -55,7 +62,7 @@ export const handleCounter = async (item: IContent, transactionManager: EntityMa
     if (value > 0 && from !== post.userAddress) {
       const notification = await Notification.add({
         groupId: item.GroupId,
-        status: store(LOADED_DATA_KEY) ? 'unread' : 'read',
+        status: 'unread',
         type: 'like',
         objectId: post.trxId,
         objectType: 'post',
@@ -65,10 +72,12 @@ export const handleCounter = async (item: IContent, transactionManager: EntityMa
         from,
         timestamp: item.TimeStamp / 1000000,
       }, transactionManager);
-      if (store(LOADED_DATA_KEY)) {
-        const item = await Notification.appendExtra(notification, transactionManager);
-        trySendSocket(notification.to, 'notification', item);
-      }
+      const notificationItem = await Notification.appendExtra(notification, transactionManager);
+      queueSocket({
+        userAddress: notification.to,
+        event: 'notification',
+        data: notificationItem,
+      });
     }
   }
 
@@ -94,7 +103,7 @@ export const handleCounter = async (item: IContent, transactionManager: EntityMa
     if (value > 0 && from !== comment.userAddress) {
       const notification = await Notification.add({
         groupId: item.GroupId,
-        status: store(LOADED_DATA_KEY) ? 'unread' : 'read',
+        status: 'unread',
         type: 'like',
         objectId: comment.trxId,
         objectType: 'comment',
@@ -104,10 +113,12 @@ export const handleCounter = async (item: IContent, transactionManager: EntityMa
         from,
         timestamp: item.TimeStamp / 1000000,
       }, transactionManager);
-      if (store(LOADED_DATA_KEY)) {
-        const item = await Notification.appendExtra(notification, transactionManager);
-        trySendSocket(notification.to, 'notification', item);
-      }
+      const notificationItem = await Notification.appendExtra(notification, transactionManager);
+      queueSocket({
+        userAddress: notification.to,
+        event: 'notification',
+        data: notificationItem,
+      });
     }
   }
 };

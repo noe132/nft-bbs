@@ -2,10 +2,13 @@ import { TrxStorage } from 'nft-bbs-types';
 import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { Post, Comment, Notification, UniqueCounter } from '~/orm';
-import { broadcast, trySendSocket } from '~/service/socket';
-import { LOADED_DATA_KEY, store } from '~/utils';
+import { send } from '~/service/socket';
 
-export const handleComment = async (item: IContent, transactionManager: EntityManager) => {
+export const handleComment = async (
+  item: IContent,
+  transactionManager: EntityManager,
+  queueSocket: typeof send,
+) => {
   const trxContent = Comment.parseTrxContent(item);
   if (!trxContent) {
     pollingLog.info(`$1 ${item.TrxId} failed to validate trxContent`, item.Data.content);
@@ -86,7 +89,11 @@ export const handleComment = async (item: IContent, transactionManager: EntityMa
   }
 
   await Comment.add(comment, transactionManager);
-  broadcast('trx', { trxId: comment.trxId, type: 'comment' });
+  queueSocket({
+    broadcast: true,
+    event: 'trx',
+    data: { trxId: comment.trxId, type: 'comment' },
+  });
 
   const commentAuthorAddress = comment.userAddress;
   const post = await Post.get(
@@ -118,7 +125,7 @@ export const handleComment = async (item: IContent, transactionManager: EntityMa
   if (replyToPost) {
     notifications.push({
       groupId: item.GroupId,
-      status: store(LOADED_DATA_KEY) ? 'unread' : 'read',
+      status: 'unread',
       type: 'comment',
       objectId: post.trxId,
       objectType: 'post',
@@ -136,7 +143,7 @@ export const handleComment = async (item: IContent, transactionManager: EntityMa
   if (replyToReplyId) {
     notifications.push({
       groupId: item.GroupId,
-      status: store(LOADED_DATA_KEY) ? 'unread' : 'read',
+      status: 'unread',
       type: 'comment',
       objectId: parentReplyComment.trxId,
       objectType: 'comment',
@@ -157,7 +164,7 @@ export const handleComment = async (item: IContent, transactionManager: EntityMa
     await Comment.save(parentThreadComment, transactionManager);
     notifications.push({
       groupId: item.GroupId,
-      status: store(LOADED_DATA_KEY) ? 'unread' : 'read',
+      status: 'unread',
       type: 'comment',
       objectId: parentThreadComment.trxId,
       objectType: 'comment',
@@ -170,10 +177,12 @@ export const handleComment = async (item: IContent, transactionManager: EntityMa
   }
 
   await Notification.bulkAdd(notifications, transactionManager);
-  if (store(LOADED_DATA_KEY)) {
-    for (const item of notifications) {
-      const notification = await Notification.appendExtra(item, transactionManager);
-      trySendSocket(notification.to, 'notification', notification);
-    }
+  for (const item of notifications) {
+    const notification = await Notification.appendExtra(item, transactionManager);
+    queueSocket({
+      userAddress: notification.to,
+      event: 'notification',
+      data: notification,
+    });
   }
 };

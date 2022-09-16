@@ -13,8 +13,10 @@ export * from './node';
 export * from './snackbar';
 
 export const initService = () => {
-  (window as any).nodeService = nodeService;
-  (window as any).keyService = keyService;
+  if (process.env.NODE_ENV === 'development') {
+    (window as any).nodeService = nodeService;
+    (window as any).keyService = keyService;
+  }
 
   const disposes = [
     langService.init(),

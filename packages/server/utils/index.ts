@@ -3,7 +3,6 @@ import { Type } from 'io-ts';
 import { PathReporter } from 'io-ts/lib/PathReporter';
 import { BadRequest } from 'http-errors';
 
-export * from './constant';
 export * from './store';
 export * from './truncate';
 
