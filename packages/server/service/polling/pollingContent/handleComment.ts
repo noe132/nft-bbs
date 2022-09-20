@@ -3,6 +3,7 @@ import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { Post, Comment, Notification, UniqueCounter } from '~/orm';
 import { send } from '~/service/socket';
+import { parseQuorumTimestamp } from '~/utils';
 
 export const handleComment = async (
   item: IContent,
@@ -24,7 +25,7 @@ export const handleComment = async (
     dislikeCount: 0,
     hotCount: 0,
     likeCount: 0,
-    timestamp: item.TimeStamp / 1000000,
+    timestamp: parseQuorumTimestamp(item.TimeStamp),
   };
 
   if (trxContent.updatedTrxId) {
@@ -133,7 +134,7 @@ export const handleComment = async (
       actionObjectType: 'comment',
       to: post.userAddress,
       from: commentAuthorAddress,
-      timestamp: item.TimeStamp / 1000000,
+      timestamp: parseQuorumTimestamp(item.TimeStamp),
     });
   }
 
@@ -151,7 +152,7 @@ export const handleComment = async (
       actionObjectType: 'comment',
       to: parentReplyComment.userAddress,
       from: commentAuthorAddress,
-      timestamp: item.TimeStamp / 1000000,
+      timestamp: parseQuorumTimestamp(item.TimeStamp),
     });
   }
 
@@ -172,7 +173,7 @@ export const handleComment = async (
       actionObjectType: 'comment',
       to: parentThreadComment.userAddress,
       from: commentAuthorAddress,
-      timestamp: item.TimeStamp / 1000000,
+      timestamp: parseQuorumTimestamp(item.TimeStamp),
     });
   }
 

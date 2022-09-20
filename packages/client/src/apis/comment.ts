@@ -1,6 +1,8 @@
+import { either, function as fp } from 'fp-ts';
 import qs from 'query-string';
 import type { Comment } from 'nft-bbs-server';
 import request from '~/request';
+import { snackbarService } from '~/service/snackbar';
 import { API_BASE_URL } from './common';
 
 export const list = async (groupId: string, options: {
@@ -9,31 +11,41 @@ export const list = async (groupId: string, options: {
   offset?: number
   limit?: number
 }) => {
-  const items: Array<Comment> = await request(`${API_BASE_URL}/comment/${groupId}?${qs.stringify(options)}`);
-  return items;
+  const item = await request<Array<Comment>>(
+    `${API_BASE_URL}/comment/${groupId}?${qs.stringify(options)}`,
+  );
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      snackbarService.networkError(v);
+      return null;
+    }),
+  );
 };
 
 export const get = async (params: { groupId: string, trxId: string, viewer?: string }) => {
   const { groupId, trxId, viewer } = params;
-  try {
-    const item: Comment = await request(`${API_BASE_URL}/comment/${groupId}/${trxId}?${qs.stringify({ viewer })}`);
-    return item;
-  } catch (e: any) {
-    if (e.status === 404) {
+  const item = await request<Comment>(`${API_BASE_URL}/comment/${groupId}/${trxId}?${qs.stringify({ viewer })}`);
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      if (v.status !== 404) {
+        snackbarService.networkError(v);
+      }
       return null;
-    }
-    throw e;
-  }
+    }),
+  );
 };
 
 export const getFirst = async (groupId: string, userAddress: string, viewer: string) => {
-  try {
-    const item: Comment = await request(`${API_BASE_URL}/comment/${groupId}/first?${qs.stringify({ userAddress, viewer })}`);
-    return item;
-  } catch (e: any) {
-    if (e.status === 404) {
+  const item = await request<Comment>(`${API_BASE_URL}/comment/${groupId}/first?${qs.stringify({ userAddress, viewer })}`);
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      if (v.status !== 404) {
+        snackbarService.networkError(v);
+      }
       return null;
-    }
-    throw e;
-  }
+    }),
+  );
 };

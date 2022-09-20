@@ -1,32 +1,36 @@
-import QuorumLightNodeSDK, { IGroup } from 'quorum-light-node-sdk';
+import { matchPath } from 'react-router-dom';
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import { action, observable, runInAction } from 'mobx';
 import { either } from 'fp-ts';
-import type {
-  Post, Comment, Profile, Notification, UniqueCounter,
-} from 'nft-bbs-server';
+import type { Post, Comment, Profile, Notification, UniqueCounter } from 'nft-bbs-server';
 import {
   CounterName, ICommentTrxContent, IProfileTrxContent, ICounterTrxContent,
   IPostTrxContent, IImageTrxContent, IGroupInfoTrxContent, TrxType, TrxStorage,
 } from 'nft-bbs-types';
-import store from 'store2';
-import { runLoading } from '~/utils';
-import { CommentApi, GroupApi, GroupInfoApi, NotificationApi, PostApi, ProfileApi } from '~/apis';
+import { getLoginState, runLoading, setLoginState } from '~/utils';
+import { CommentApi, ConfigApi, GroupApi, GroupInfoApi, NotificationApi, PostApi, ProfileApi, VaultApi } from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
-import { snackbarService } from '~/service/snackbar';
 import { pageStateMap } from '~/utils/pageState';
 import type { createPostlistState } from '~/views/Main/PostList';
-import { matchPath } from 'react-router-dom';
+import { nftService } from '../nft';
 
 const state = observable({
+  allowMixinLogin: false,
+  checkNFT: false,
   showJoin: false,
   showMain: false,
   groupId: '',
-  group: null as null | IGroup,
+  group: null as null | QuorumLightNodeSDK.IGroup,
   get groupOwnerAddress() {
     return nodeService.state.group?.ownerPubKey
       ? QuorumLightNodeSDK.utils.pubkeyToAddress(nodeService.state.group.ownerPubKey)
       : '';
+  },
+  get postPermissionTip() {
+    if (!this.logined) { return '请先登录'; }
+    if (!nftService.state.hasPermission) { return '无权限发布内容'; }
+    return '';
   },
 
   post: {
@@ -92,7 +96,7 @@ const profile = {
       profileItem = {
         userAddress: params.userAddress,
         trxId: '',
-        groupId: '',
+        groupId: state.groupId,
         name: '',
         avatar: '',
         intro: '',
@@ -120,7 +124,7 @@ const profile = {
       const timestamp = Math.min(firstPost?.timestamp ?? now, firstComment?.timestamp ?? now);
       runInAction(() => {
         profile.set(userProfile);
-        state.profile.userPostCountMap.set(userAddress, postCount);
+        state.profile.userPostCountMap.set(userAddress, postCount ?? 0);
         state.profile.firstPostMap.set(userAddress, new Date(timestamp));
       });
     }
@@ -143,7 +147,7 @@ const profile = {
           type: 'Note',
         },
         aesKey: group.cipherKey,
-        privateKey: keyService.state.privateKey,
+        ...keyService.getTrxCreateParam(),
       });
       const profileItem: Profile = {
         ...params,
@@ -201,14 +205,16 @@ const post = {
       userAddress: params.userAddress,
       search: params.search,
     });
-    runInAction(() => {
-      posts.forEach((v) => {
-        state.post.map.set(v.trxId, v);
-        if (v.extra?.userProfile) {
-          profile.set(v.extra.userProfile);
-        }
+    if (posts) {
+      runInAction(() => {
+        posts.forEach((v) => {
+          state.post.map.set(v.trxId, v);
+          if (v.extra?.userProfile) {
+            profile.set(v.extra.userProfile);
+          }
+        });
       });
-    });
+    }
     return posts;
   },
 
@@ -227,7 +233,7 @@ const post = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.privateKey,
+      ...keyService.getTrxCreateParam(),
     });
     const post: Post = {
       trxId: res.trx_id,
@@ -269,7 +275,7 @@ const post = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.privateKey,
+      ...keyService.getTrxCreateParam(),
     });
     const editedPost = {
       trxId: res.trx_id,
@@ -298,7 +304,7 @@ const post = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.privateKey,
+      ...keyService.getTrxCreateParam(),
     });
   },
 
@@ -361,7 +367,7 @@ const post = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.privateKey,
+      ...keyService.getTrxCreateParam(),
     });
 
     runInAction(() => {
@@ -406,6 +412,9 @@ const comment = {
       offset: 0,
       limit: 500,
     });
+    if (!comments) {
+      return null;
+    }
     runInAction(() => {
       comments.forEach((v) => {
         if (v.extra?.userProfile.trxId) {
@@ -437,7 +446,7 @@ const comment = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.privateKey,
+      ...keyService.getTrxCreateParam(),
     });
     const comment: Comment = {
       content: params.content,
@@ -546,13 +555,15 @@ const notification = {
           state.notification.offset,
           state.notification.limit,
         );
-        runInAction(() => {
-          state.notification.offset += state.notification.limit;
-          notifications.forEach((v) => {
-            state.notification.list.push(v);
+        if (notifications) {
+          runInAction(() => {
+            state.notification.offset += state.notification.limit;
+            notifications.forEach((v) => {
+              state.notification.list.push(v);
+            });
+            state.notification.done = notifications.length < state.notification.limit;
           });
-          state.notification.done = notifications.length < state.notification.limit;
-        });
+        }
       },
     );
     notification.getUnreadCount();
@@ -569,7 +580,7 @@ const notification = {
   getUnreadCount: async () => {
     const count = await NotificationApi.getUnreadCount(state.groupId, keyService.state.address);
     runInAction(() => {
-      state.notification.unreadCount = count;
+      state.notification.unreadCount = count ?? 0;
     });
     return count;
   },
@@ -605,7 +616,7 @@ const counter = {
           type: 'Note',
         },
         aesKey: group.cipherKey,
-        privateKey: keyService.state.privateKey,
+        ...keyService.getTrxCreateParam(),
       });
 
       const uniqueCounter: UniqueCounter & { value: 1 | -1 } = {
@@ -642,7 +653,7 @@ const group = {
         type: 'Note',
       },
       aesKey: group.cipherKey,
-      privateKey: keyService.state.privateKey,
+      ...keyService.getTrxCreateParam(),
     });
     runInAction(() => {
       state.groupInfo.avatar = info.avatar;
@@ -651,6 +662,7 @@ const group = {
   },
   updateInfo: async () => {
     const item = await GroupInfoApi.get(state.groupId);
+    if (!item) { return; }
     runInAction(() => {
       state.groupInfo.avatar = item.avatar;
       state.groupInfo.desc = item.desc;
@@ -673,30 +685,46 @@ const group = {
     group.updateInfo();
   },
   savedLoginCheck: async (groupId?: string) => {
-    const seedUrl = store('seedUrl');
-    const keystore = store('keystore');
-    const password = store('password');
-    const autoJoin = store('seedUrlAutoJoin');
+    const loginState = getLoginState();
+    let logined = false;
 
-    if (keystore && password) {
-      const loginResult = await keyService.login(keystore, password);
-      if (either.isLeft(loginResult)) {
-        snackbarService.error('自动登录失败，keystore或密码错误');
-        store.remove('keystore');
-        store.remove('password');
-        return;
+    if (loginState && loginState.autoLogin === 'mixin' && loginState.mixinJWT) {
+      const result = await VaultApi.getOrCreateAppUser(loginState.mixinJWT);
+      if (either.isRight(result)) {
+        const { jwt, user, appUser } = result.right;
+        keyService.mixinLogin(jwt, user, appUser);
+        logined = true;
+      } else {
+        setLoginState({
+          mixinJWT: '',
+          autoLogin: null,
+        });
       }
     }
 
-    if (seedUrl && autoJoin) {
+    if (loginState && loginState.autoLogin === 'keystore') {
+      const loginResult = await keyService.login(loginState.keystore, loginState.password);
+      if (either.isLeft(loginResult)) {
+        setLoginState({
+          keystore: '',
+          password: '',
+          autoLogin: null,
+        });
+        return;
+      }
+      logined = true;
+    }
+
+    if (loginState.seedUrl && logined) {
       try {
-        const seedUrlGroup = QuorumLightNodeSDK.utils.restoreSeedFromUrl(seedUrl);
+        const seedUrlGroup = QuorumLightNodeSDK.utils.restoreSeedFromUrl(loginState.seedUrl);
         if (!groupId || seedUrlGroup.group_id === groupId) {
-          group.join(seedUrl);
+          group.join(loginState.seedUrl);
         }
       } catch (e) {
         console.error(e);
-        snackbarService.error('自动登录失败，seedUrl错误');
+        loginState.seedUrl = '';
+        setLoginState(loginState);
       }
     }
   },
@@ -767,7 +795,7 @@ const init = () => {
     const groupId = postdetailMatch?.params.groupId ?? userprofileMatch?.params.groupId ?? '';
 
     await group.savedLoginCheck(groupId);
-    const postCheck = () => {
+    const detailPageCheck = () => {
       if (!postdetailMatch || !userprofileMatch) { return; }
       if (!state.groupId) {
         runInAction(() => {
@@ -781,7 +809,7 @@ const init = () => {
         return true;
       }
     };
-    if (postCheck() || state.group) {
+    if (detailPageCheck() || state.group) {
       runInAction(() => {
         state.showJoin = false;
         state.showMain = true;
@@ -794,6 +822,15 @@ const init = () => {
     }
   };
   initCheck();
+  ConfigApi.getConfig().then((v) => {
+    if (either.isRight(v)) {
+      runInAction(() => {
+        state.allowMixinLogin = v.right.mixinLogin;
+        // TODO:
+        state.checkNFT = true;
+      });
+    }
+  });
 
   return () => {
     removeListeners();

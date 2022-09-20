@@ -1,18 +1,23 @@
+import { either, function as fp } from 'fp-ts';
 import qs from 'query-string';
 import type { Post } from 'nft-bbs-server';
 import request from '~/request';
+import { snackbarService } from '~/service/snackbar';
 import { API_BASE_URL } from './common';
 
 export const get = async (params: { groupId: string, trxId: string, viewer?: string }) => {
-  try {
-    const item: Post = await request(`${API_BASE_URL}/post/${params.groupId}/${params.trxId}?${qs.stringify({ viewer: params.viewer })}`);
-    return item;
-  } catch (e: any) {
-    if (e.status === 404) {
+  const item = await request<Post>(
+    `${API_BASE_URL}/post/${params.groupId}/${params.trxId}?${qs.stringify({ viewer: params.viewer })}`,
+  );
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      if (v.status !== 404) {
+        snackbarService.networkError(v);
+      }
       return null;
-    }
-    throw e;
-  }
+    }),
+  );
 };
 
 export const getFirst = async (params: { groupId: string, userAddress: string, viewer?: string }) => {
@@ -20,15 +25,18 @@ export const getFirst = async (params: { groupId: string, userAddress: string, v
     userAddress: params.userAddress,
     viewer: params.viewer,
   };
-  try {
-    const item: Post = await request(`${API_BASE_URL}/post/${params.groupId}/first?${qs.stringify(query)}`);
-    return item;
-  } catch (e: any) {
-    if (e.status === 404) {
+  const item = await request<Post>(
+    `${API_BASE_URL}/post/${params.groupId}/first?${qs.stringify(query)}`,
+  );
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      if (v.status !== 404) {
+        snackbarService.networkError(v);
+      }
       return null;
-    }
-    throw e;
-  }
+    }),
+  );
 };
 
 export const list = async (groupId: string, options: {
@@ -39,11 +47,28 @@ export const list = async (groupId: string, options: {
   limit?: number
   search?: string
 } = {}) => {
-  const items: Array<Post> = await request(`${API_BASE_URL}/post/${groupId}?${qs.stringify(options)}`);
-  return items;
+  const item = await request<Array<Post>>(
+    `${API_BASE_URL}/post/${groupId}?${qs.stringify(options)}`,
+  );
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      snackbarService.networkError(v);
+      return null;
+    }),
+  );
 };
 
 export const getCount = async (groupId: string, userAddress: string) => {
-  const count: number = await request(`${API_BASE_URL}/post/count/${groupId}/${userAddress}`);
-  return count;
+  const item = await request<number>(
+    `${API_BASE_URL}/post/count/${groupId}/${userAddress}`,
+  );
+
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      snackbarService.networkError(v);
+      return null;
+    }),
+  );
 };

@@ -1,8 +1,11 @@
 export * as CommentApi from './comment';
-export * as ImageApi from './image';
-export * as NotificationApi from './notification';
-export * as PostApi from './post';
-export * as ProfileApi from './profile';
+export * as ConfigApi from './config';
 export * as GroupApi from './group';
 export * as GroupInfoApi from './groupInfo';
+export * as ImageApi from './image';
+export * as NotificationApi from './notification';
 export * as PixabayApi from './pixabay';
+export * as PostApi from './post';
+export * as ProfileApi from './profile';
+export * as VaultApi from './vault';
+export * as MVMApi from './mvm';

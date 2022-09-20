@@ -1,21 +1,35 @@
 import { action, observable } from 'mobx';
-import { ethers } from 'ethers';
+import { ethers, utils } from 'ethers';
 import { taskEither, either, function as fp } from 'fp-ts';
-import { socketService } from '../socket';
+import { Base64 } from 'js-base64';
+import { VaultApi } from '~/apis';
+import { socketService } from '~/service/socket';
 
-export interface Keys {
+export interface KeystoreData {
+  type: 'keystore'
   privateKey: string
   keystore: string
   password: string
   address: string
 }
 
+export interface MixinData {
+  type: 'mixin'
+  jwt: string
+  user: VaultApi.VaultUser
+  appUser: VaultApi.VaultAppUser
+}
+
 const state = observable({
-  privateKey: '',
-  keystore: '',
-  password: '',
-  address: '',
-} as Keys);
+  keys: null as null | KeystoreData | MixinData,
+
+  get address() {
+    if (this.keys?.type === 'keystore') {
+      return this.keys.address;
+    }
+    return this.keys?.appUser.eth_address ?? '';
+  },
+});
 
 const validate = async (keystore: string, password: string) => {
   const doValidate = fp.pipe(
@@ -33,29 +47,38 @@ const validate = async (keystore: string, password: string) => {
   return doValidate();
 };
 
-const use = action((data: Keys) => {
+const useKeystore = action((data: Omit<KeystoreData, 'type'>) => {
   socketService.authenticate(data.address);
-  state.privateKey = data.privateKey;
-  state.keystore = data.keystore;
-  state.password = data.password;
-  state.address = data.address;
+  state.keys = {
+    type: 'keystore',
+    privateKey: data.privateKey,
+    keystore: data.keystore,
+    password: data.password,
+    address: data.address,
+  };
 });
 
 const logout = action(() => {
   socketService.logout();
-  state.privateKey = '';
-  state.keystore = '';
-  state.password = '';
-  state.address = '';
+  state.keys = null;
 });
 
 const login = async (keystore: string, password: string) => fp.pipe(
   await validate(keystore, password),
   either.map((v) => {
-    use(v);
+    useKeystore(v);
     return v;
   }),
 );
+
+const mixinLogin = action((jwt: string, user: VaultApi.VaultUser, appUser: VaultApi.VaultAppUser) => {
+  state.keys = {
+    type: 'mixin',
+    jwt,
+    user,
+    appUser,
+  };
+});
 
 const createRandom = async (password: string) => {
   const wallet = ethers.Wallet.createRandom();
@@ -71,16 +94,40 @@ const createRandom = async (password: string) => {
 
 const loginRandom = async (password: string) => {
   const keys = await createRandom(password);
-  use(keys);
+  useKeystore(keys);
   return keys;
+};
+
+const getTrxCreateParam = () => {
+  if (state.keys?.type === 'keystore') {
+    return {
+      privateKey: state.keys.privateKey,
+    };
+  }
+  if (state.keys?.type === 'mixin') {
+    const jwt = state.keys.jwt;
+    const compressedPublicKey = utils.arrayify(utils.computePublicKey(state.keys.appUser.eth_pub_key, true));
+    const publicKey = Base64.fromUint8Array(compressedPublicKey, true);
+    return {
+      publicKey,
+      sign: async (m: string) => {
+        const res = await VaultApi.sign(`0x${m}`, jwt);
+        if (!res) { throw new Error(); }
+        return res.signature.replace(/^0x/, '');
+      },
+    };
+  }
+  throw new Error('not logined');
 };
 
 export const keyService = {
   state,
 
   login,
+  mixinLogin,
   loginRandom,
   createRandom,
   logout,
   validate,
+  getTrxCreateParam,
 };

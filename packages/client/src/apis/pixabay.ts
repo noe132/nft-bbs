@@ -1,5 +1,7 @@
+import { either, function as fp } from 'fp-ts';
 import qs from 'query-string';
 import request from '~/request';
+import { snackbarService } from '~/service/snackbar';
 
 export interface PixabayResponse {
   total: number
@@ -30,10 +32,17 @@ export interface PixabayResponse {
   }>
 }
 
-export const search = (options: any = {}) => request(
-  `/api/?key=13927481-1de5dcccace42d9447c90346f&safesearch=true&image_type=photo&${qs.stringify(options)}`,
-  {
-    base: 'https://pixabay.com',
-    minPendingDuration: 300,
-  },
-) as Promise<PixabayResponse>;
+export const search = async (options: any = {}) => {
+  const item = await request<PixabayResponse>(
+    `https://pixabay.com/api/?key=13927481-1de5dcccace42d9447c90346f&safesearch=true&image_type=photo&${qs.stringify(options)}`,
+    { minPendingDuration: 300 },
+  );
+
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      snackbarService.networkError(v);
+      return null;
+    }),
+  );
+};

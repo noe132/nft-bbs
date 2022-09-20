@@ -63,8 +63,8 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const handleUpdatePostCounter = (type: CounterName.postLike | CounterName.postDislike) => {
-    if (!nodeService.state.logined) {
-      snackbarService.show('请先登录');
+    if (!nodeService.state.postPermissionTip) {
+      snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }
     if (state.likeLoading) { return; }
@@ -79,6 +79,10 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const handleEditPost = () => {
+    if (!nodeService.state.postPermissionTip) {
+      snackbarService.show(nodeService.state.postPermissionTip);
+      return;
+    }
     navigate(stringifyUrl({
       url: '/newpost',
       query: { edit: props.post.trxId },
@@ -86,6 +90,10 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const handleDeletePost = async () => {
+    if (!nodeService.state.postPermissionTip) {
+      snackbarService.show(nodeService.state.postPermissionTip);
+      return;
+    }
     const result = await dialogService.open({
       title: '删除帖子',
       content: '确定要删除这个帖子吗？',

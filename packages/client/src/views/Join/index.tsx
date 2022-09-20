@@ -1,17 +1,17 @@
-
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import store from 'store2';
-import QuorumLightNodeSDK from 'quorum-light-node-sdk';
-import { either, taskEither, function as fp } from 'fp-ts';
-import { GroupInfo } from 'nft-bbs-server';
+import { parse } from 'query-string';
+import { toUint8Array } from 'js-base64';
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
+import { either, taskEither, function as fp, task } from 'fp-ts';
+import type { GroupInfo, Profile } from 'nft-bbs-server';
 import { nftbbsAppKeyName } from 'nft-bbs-types';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl,
   FormControlLabel, IconButton, InputLabel, Menu, MenuItem, OutlinedInput, Tooltip,
 } from '@mui/material';
-import { Check, ChevronLeft, Close, Visibility, VisibilityOff } from '@mui/icons-material';
+import { Check, ChevronLeft, Close, Delete, Visibility, VisibilityOff } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 import PasteIcon from 'boxicons/svg/regular/bx-paste.svg?fill-icon';
 
@@ -24,13 +24,13 @@ import RumLogo2x from '~/assets/icons/logo@2x.png';
 import RumLogo3x from '~/assets/icons/logo@3x.png';
 import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
-import { chooseImgByPixelRatio, runLoading, ThemeLight } from '~/utils';
+import { chooseImgByPixelRatio, getLoginState, runLoading, setLoginState, ThemeLight } from '~/utils';
 import {
   AllLanguages, dialogService, keyService, langName,
   langService, nodeService, snackbarService,
 } from '~/service';
 import { GroupAvatar } from '~/components';
-import { GroupInfoApi } from '~/apis';
+import { GroupInfoApi, VaultApi } from '~/apis';
 
 enum Step {
   InputSeedUrl = 1,
@@ -41,8 +41,9 @@ enum Step {
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
     // TODO: remove testing seedurl in future
-    seedUrl: store('seedUrl') || 'rum://seed?v=1&e=0&n=0&b=QaPjfi7LQ4yp2S60ngyJdw&c=fja8EJAAK_ZxLPcyLq-6L7HSKuli68wnhl4ImdwHh_A&g=uZvFqN6-SYGGu9SESABN0w&k=AjlWMMvVpXi9DLpoxmgJgD9ug2fDAaUNQCOhOq5PNfIc&s=bOh-m-h2vCbsS3Z3KBUNoYfB3D3ZyJx3Vf0W2dKibNgNp1Uj_f6U-YSo4MPLZM2QE3ipN7KklOCdoYHS9WT2zgE&t=FxBnshqivLo&a=nft%E8%AE%BA%E5%9D%9B%E6%B5%8B%E8%AF%95%E7%A7%8D%E5%AD%90%E7%BD%91%E7%BB%9C&y=group_nftbbs&u=https%3A%2F%2Fnoe132.com%3A64459%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyJiOTliYzVhOC1kZWJlLTQ5ODEtODZiYi1kNDg0NDgwMDRkZDMiXSwiZXhwIjoxNjkzNDc4ODU1LCJuYW1lIjoibm9kZWp3dCIsInJvbGUiOiJub2RlIn0.BRl1QD0B-Dpngccs8dtsMzm5j-m_BCvet4XgRJx07cA',
+    seedUrl: '',
     keystorePopup: false,
+    mixinLogin: false,
     keystore: '',
     password: '',
     passwordVisibility: false,
@@ -52,6 +53,17 @@ export const Join = observer(() => {
     createWalletLoading: false,
     seed: null as null | ReturnType<typeof QuorumLightNodeSDK.utils.restoreSeedFromUrl>,
     groupInfo: null as null | GroupInfo,
+    crpytoKey: null as CryptoKey | null,
+    keyInHex: '',
+
+    savedLoginState: {
+      mixinCanLogin: false as false | { jwt: string, appUser: VaultApi.VaultAppUser, user: VaultApi.VaultUser },
+      keystoreCanLogin: false as false | {
+        keystore: string
+        password: string
+        profile: Profile
+      },
+    },
     get canLogin() {
       return !!this.password && !!this.keystore;
     },
@@ -90,15 +102,6 @@ export const Join = observer(() => {
           state.step = Step.SeedUrlParsingError;
         });
       }
-      return;
-    }
-    if (state.step === Step.PrepareJoinGroup) {
-      try {
-        QuorumLightNodeSDK.cache.Group.clear();
-        nodeService.group.join(state.seedUrl);
-      } catch (e) {
-        snackbarService.error(`加入失败 (${(e as Error).message})`);
-      }
     }
   };
 
@@ -113,38 +116,154 @@ export const Join = observer(() => {
     }
   };
 
-  const handleAutoLogin = async () => {
-    const keystore: string = store('keystore') ?? '';
-    const password: string = store('password') ?? '123';
-
-    const login = fp.pipe(
-      () => keyService.login(keystore, password),
-      taskEither.getOrElse(() => () => keyService.loginRandom('123')),
-    );
-
+  const joinGroup = () => {
     try {
       nodeService.group.join(state.seedUrl);
+      setLoginState({ seedUrl: state.seedUrl });
+      return true;
     } catch (e: any) {
       snackbarService.error(e.message);
+      return false;
     }
+  };
 
-    const loginedKeystore = await login();
-
+  const handleLoginByRandom = async () => {
+    const loginedKeystore = await keyService.loginRandom('123');
+    if (!joinGroup()) { return; }
     runInAction(() => {
       nodeService.state.showJoin = false;
       nodeService.state.showMain = true;
     });
 
-    store('seedUrlAutoJoin', true);
-    store('seedUrl', state.seedUrl);
-    store('keystore', loginedKeystore.keystore);
-    store('password', loginedKeystore.password);
+    setLoginState({
+      autoLogin: 'keystore',
+      keystore: loginedKeystore.keystore,
+      password: '123',
+      seedUrl: state.seedUrl,
+    });
+  };
+
+  const handleLoginBySaved = async (type: 'keystore' | 'mixin') => {
+    if (type === 'mixin' && state.savedLoginState.mixinCanLogin) {
+      const result = await VaultApi.getOrCreateAppUser(state.savedLoginState.mixinCanLogin.jwt);
+      if (either.isLeft(result)) {
+        snackbarService.error('登录失败');
+        return;
+      }
+      const { jwt, user, appUser } = result.right;
+      keyService.mixinLogin(jwt, user, appUser);
+      if (!joinGroup()) { return; }
+      setLoginState({ autoLogin: 'mixin' });
+      runInAction(() => {
+        nodeService.state.showJoin = false;
+        nodeService.state.showMain = true;
+      });
+    }
+
+    if (type === 'keystore' && state.savedLoginState.keystoreCanLogin) {
+      const { keystore, password } = state.savedLoginState.keystoreCanLogin;
+      const loginResult = await keyService.login(keystore, password);
+      if (either.isLeft(loginResult)) {
+        snackbarService.error('登录失败');
+        return;
+      }
+      if (!joinGroup()) { return; }
+      setLoginState({ autoLogin: 'keystore' });
+      runInAction(() => {
+        nodeService.state.showJoin = false;
+        nodeService.state.showMain = true;
+      });
+    }
+  };
+
+  const handleClearSavedLogin = async (type: 'keystore' | 'mixin') => {
+    const confirm = await dialogService.open({
+      title: '清除保存的登录',
+      content: '确实要清除保存的登录状态吗',
+    });
+    if (confirm === 'cancel') { return; }
+    if (type === 'mixin') {
+      runInAction(() => {
+        state.savedLoginState.mixinCanLogin = false;
+      });
+      setLoginState({
+        mixinJWT: '',
+      });
+    }
+
+    if (type === 'keystore') {
+      runInAction(() => {
+        state.savedLoginState.keystoreCanLogin = false;
+      });
+      setLoginState({
+        keystore: '',
+        password: '',
+      });
+    }
+  };
+
+  const handleOpenMixinLogin = async () => {
+    const aesKey = await window.crypto.subtle.generateKey({
+      name: 'AES-GCM',
+      length: 256,
+    }, true, ['encrypt', 'decrypt']);
+    const keyBuffer = await window.crypto.subtle.exportKey('raw', aesKey);
+    const keyInHex = Array.from(new Uint8Array(keyBuffer)).map((v) => `0${v.toString(16)}`.slice(-2)).join('');
+    runInAction(() => {
+      state.crpytoKey = aesKey;
+      state.keyInHex = keyInHex;
+      state.mixinLogin = true;
+    });
+  };
+
+  const handleMixinLoginCallback = async (search: string) => {
+    const crpytoKey = state.crpytoKey;
+    if (!crpytoKey) { return; }
+    const parseSearch = taskEither.tryCatch(async () => {
+      const query = parse(search);
+      const cipher = new Uint8Array(toUint8Array(query.token as string));
+      const iv = cipher.slice(0, 12);
+      const data = cipher.slice(12);
+      const plain = await window.crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        crpytoKey,
+        data,
+      );
+      const jwt = new TextDecoder().decode(plain);
+      return jwt;
+    }, (v) => v as Error);
+
+    const userResult = await fp.pipe(
+      parseSearch,
+      taskEither.chainW((jwt) => () => VaultApi.getOrCreateAppUser(jwt)),
+      taskEither.getOrElseW(() => {
+        snackbarService.error('登录失败');
+        runInAction(() => { state.mixinLogin = false; });
+        return task.of(null);
+      }),
+    )();
+
+    if (!userResult) { return; }
+    const { jwt, user, appUser } = userResult;
+    setLoginState({
+      autoLogin: 'mixin',
+      mixinJWT: jwt,
+      seedUrl: state.seedUrl,
+    });
+    keyService.mixinLogin(jwt, user, appUser);
+    if (!joinGroup()) { return; }
+    runInAction(() => {
+      state.mixinLogin = false;
+      nodeService.state.showJoin = false;
+      nodeService.state.showMain = true;
+    });
   };
 
   const handleShowKeystoreDialog = action(() => {
+    const loginState = getLoginState();
     state.keystorePopup = true;
-    state.keystore = store('keystore') ?? '';
-    state.password = store('password') ?? '';
+    state.keystore = loginState.keystore;
+    state.password = loginState.password;
     state.rememberPassword = state.canLogin;
   });
 
@@ -154,15 +273,13 @@ export const Join = observer(() => {
       snackbarService.error('keystore或密码错误');
       return;
     }
-    store('seedUrlAutoJoin', true);
-    store('keystore', state.keystore);
-    store('seedUrl', state.seedUrl);
-    if (state.rememberPassword) {
-      store('password', state.password);
-    } else {
-      store('password', '');
-    }
-    nodeService.group.join(state.seedUrl);
+    setLoginState({
+      autoLogin: state.rememberPassword ? 'keystore' : null,
+      keystore: state.keystore,
+      seedUrl: state.seedUrl,
+      password: state.rememberPassword ? state.password : '',
+    });
+    if (!joinGroup()) { return; }
     runInAction(() => {
       nodeService.state.showJoin = false;
       nodeService.state.showMain = true;
@@ -198,6 +315,51 @@ export const Join = observer(() => {
       state.seedUrl = content;
     });
   };
+
+  const validateLoginState = async () => {
+    const loginState = getLoginState();
+    runInAction(() => {
+      state.seedUrl = loginState.seedUrl || 'rum://seed?v=1&e=0&n=0&b=QaPjfi7LQ4yp2S60ngyJdw&c=fja8EJAAK_ZxLPcyLq-6L7HSKuli68wnhl4ImdwHh_A&g=uZvFqN6-SYGGu9SESABN0w&k=AjlWMMvVpXi9DLpoxmgJgD9ug2fDAaUNQCOhOq5PNfIc&s=bOh-m-h2vCbsS3Z3KBUNoYfB3D3ZyJx3Vf0W2dKibNgNp1Uj_f6U-YSo4MPLZM2QE3ipN7KklOCdoYHS9WT2zgE&t=FxBnshqivLo&a=nft%E8%AE%BA%E5%9D%9B%E6%B5%8B%E8%AF%95%E7%A7%8D%E5%AD%90%E7%BD%91%E7%BB%9C&y=group_nftbbs&u=https%3A%2F%2Fnoe132.com%3A64459%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyJiOTliYzVhOC1kZWJlLTQ5ODEtODZiYi1kNDg0NDgwMDRkZDMiXSwiZXhwIjoxNjkzNDc4ODU1LCJuYW1lIjoibm9kZWp3dCIsInJvbGUiOiJub2RlIn0.BRl1QD0B-Dpngccs8dtsMzm5j-m_BCvet4XgRJx07cA';
+    });
+
+    if (loginState && loginState.mixinJWT) {
+      const result = await VaultApi.getOrCreateAppUser(loginState.mixinJWT);
+      if (either.isRight(result)) {
+        runInAction(() => {
+          state.savedLoginState.mixinCanLogin = result.right;
+        });
+      }
+    }
+
+    if (loginState && loginState.keystore && loginState.password) {
+      const loginResult = await keyService.validate(loginState.keystore, loginState.password);
+      if (either.isRight(loginResult)) {
+        runInAction(() => {
+          state.savedLoginState.keystoreCanLogin = {
+            keystore: loginState.keystore,
+            password: loginState.password,
+            profile: nodeService.profile.getFallbackProfile({
+              userAddress: loginResult.right.address,
+            }),
+          };
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    validateLoginState();
+    const handleMessage = (e: MessageEvent<{ name: string, search: string }>) => {
+      const data = e.data;
+      if (typeof data !== 'object') { return; }
+      if (data.name !== 'mixin-login-message') { return; }
+      handleMixinLoginCallback(data.search);
+    };
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.addEventListener('message', handleMessage);
+    };
+  }, []);
 
   return (<>
     <div className="min-h-[100vh] flex-col">
@@ -274,9 +436,9 @@ export const Join = observer(() => {
         }}
       >
         <div className="flex flex-center flex-1">
-          <div className="relative flex-col flex-center bg-black/80 w-[720px] h-[330px] rounded-[10px]">
+          <div className="relative flex-col flex-center bg-black/80 w-[720px] rounded-[10px]">
             {state.step === Step.InputSeedUrl && (
-              <div className="flex-col flex-center">
+              <div className="flex-col flex-center h-[330px]">
                 <div className="text-white text-18">
                   加入 RumPot 种子网络
                 </div>
@@ -339,11 +501,11 @@ export const Join = observer(() => {
               </div>
             )}
             {state.step === Step.SeedUrlParsingError && (
-              <div className="flex-col flex-center">
+              <div className="flex-col flex-center h-[330px] ">
                 <div className="text-white">
                   种子文本解析错误
                 </div>
-                <div className="mt-12 text-white text-16">
+                <div className="mt-12 text-white text-16 truncate-2 break-all px-12">
                   {state.seedUrl}
                 </div>
                 <div className="text-[#f87171] text-16 mt-8">
@@ -355,7 +517,7 @@ export const Join = observer(() => {
                     color="rum"
                     variant="text"
                     size="small"
-                    onClick={action(() => { state.step = 0; })}
+                    onClick={action(() => { state.step = Step.InputSeedUrl; })}
                   >
                     重新输入种子文本
                   </Button>
@@ -375,7 +537,7 @@ export const Join = observer(() => {
               </div>
             )}
             {state.step === Step.PrepareJoinGroup && (
-              <div className="flex-col items-center pt-12">
+              <div className="flex-col items-center py-12">
                 <Button
                   className="flex flex-center absolute left-2 top-2 text-14 font-normal text-gray-9c"
                   variant="text"
@@ -391,7 +553,7 @@ export const Join = observer(() => {
                   avatar={state.groupInfo?.avatar}
                   size={100}
                 />
-                <div className="mt-0 text-gray-f2 text-18 truncate max-w-[400px]">
+                <div className="mt-12 text-gray-f2 text-18 truncate max-w-[400px]">
                   {state.seed?.group_name}
                 </div>
 
@@ -400,14 +562,79 @@ export const Join = observer(() => {
                 </div>
 
                 <div className="flex-col items-stertch mt-4 gap-y-4 min-w-[200px]">
+                  {!!state.savedLoginState.keystoreCanLogin && (
+                    <div className="relative flex items-center gap-x-2">
+                      <Tooltip title="用上次登录使用的keystore登录" placement="right">
+                        <Button
+                          className="text-link-soft rounded-full text-14 px-8 py-2 normal-case flex-1 max-w-[350px]"
+                          color="inherit"
+                          variant="outlined"
+                          onClick={() => handleLoginBySaved('keystore')}
+                        >
+                          <span className="truncate">
+                            上次使用的 keystore 登录{' '}
+                            ({state.savedLoginState.keystoreCanLogin.profile.name
+                          || state.savedLoginState.keystoreCanLogin.profile.userAddress.slice(0, 10)})
+                          </span>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="清除保存的keystore" placement="right">
+                        <IconButton
+                          className="absolute right-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
+                          color="inherit"
+                          onClick={() => handleClearSavedLogin('keystore')}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Tooltip>
+                    </div>
+                  )}
+
+                  {!!state.savedLoginState.mixinCanLogin && nodeService.state.allowMixinLogin && (
+                    <div className="relative flex items-center gap-x-2">
+                      <Tooltip title="用上次登录使用的 mixin账号登录" placement="right">
+                        <Button
+                          className="text-link-soft rounded-full text-14 px-8 py-2 normal-case flex-1 max-w-[350px]"
+                          color="inherit"
+                          variant="outlined"
+                          onClick={() => handleLoginBySaved('mixin')}
+                        >
+                          <span className="truncate">
+                            上次使用的 mixin 账号登录 ({state.savedLoginState.mixinCanLogin.user.display_name})
+                          </span>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="清除保存的 mixin 账号" placement="right">
+                        <IconButton
+                          className="absolute right-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
+                          color="inherit"
+                          onClick={() => handleClearSavedLogin('mixin')}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </Tooltip>
+                    </div>
+                  )}
+                  {nodeService.state.allowMixinLogin && (
+                    <Tooltip title="使用 Mixin 账号登录" placement="right">
+                      <Button
+                        className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
+                        color="inherit"
+                        variant="outlined"
+                        onClick={handleOpenMixinLogin}
+                      >
+                        使用 Mixin 扫码登录
+                      </Button>
+                    </Tooltip>
+                  )}
                   <Tooltip title="用保存的账号登录 或 创建一个随机账号" placement="right">
                     <Button
                       className="text-rum-orange rounded-full text-16 px-8 py-2"
                       color="inherit"
                       variant="outlined"
-                      onClick={handleAutoLogin}
+                      onClick={handleLoginByRandom}
                     >
-                      快速登录/注册
+                      使用随机账号登录
                     </Button>
                   </Tooltip>
                   <Tooltip title="输入 keystore 和 密码" placement="right">
@@ -529,6 +756,76 @@ export const Join = observer(() => {
                   确定
                 </Button>
               </div>
+            </div>
+          </div>
+        )}
+        {false && (
+          <div className="flex-col relative w-[400px] h-[350px]">
+            <IconButton
+              className="absolute top-2 right-2"
+              onClick={action(() => { state.keystorePopup = false; })}
+            >
+              <Close />
+            </IconButton>
+            <div className="flex-col flex-1 justify-between items-center p-6 pt-10 gap-y-4">
+              <div className="text-16 font-medium">
+                编辑身份资料
+              </div>
+              <div className="w-20 h-20 bg-black/20" />
+              <FormControl size="small">
+                <InputLabel>昵称</InputLabel>
+                <OutlinedInput
+                  label="昵称"
+                  size="small"
+                />
+              </FormControl>
+              <button className="text-gray-9c rounded-full text-14">
+                暂时跳过
+              </button>
+              <Button
+                className="rounded-full text-16 px-10 py-2"
+                color="link"
+                variant="outlined"
+              >
+                确定
+              </Button>
+            </div>
+          </div>
+        )}
+      </Dialog>
+      <Dialog
+        open={state.mixinLogin}
+        onClose={action(() => { state.mixinLogin = false; })}
+      >
+        {true && (
+          <div className="flex-col relative text-black">
+            <IconButton
+              className="absolute top-2 right-2"
+              onClick={action(() => { state.mixinLogin = false; })}
+            >
+              <Close />
+            </IconButton>
+            <div className="flex-col flex-1 justify-between items-center p-6 gap-y-6">
+              <div className="text-18">
+                Mixin
+              </div>
+              <div className="flex-col gap-y-4 items-stretch">
+                <iframe
+                  className="w-[400px] h-[650px]"
+                  src={`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${state.keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`}
+                  // src="https://vault.rumsystem.net/v1/user"
+                />
+              </div>
+              {/* <div className="flex gap-x-4">
+                <Button
+                  className="rounded-full text-16 px-10 py-2"
+                  color="link"
+                  variant="outlined"
+                  onClick={action(() => { state.mixinLogin = false; })}
+                >
+                  取消
+                </Button>
+              </div> */}
             </div>
           </div>
         )}

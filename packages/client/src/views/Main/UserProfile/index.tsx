@@ -71,8 +71,8 @@ export const UserProfile = observer((props: { className?: string }) => {
   };
 
   const handleUpdatePostCounter = (post: Post, type: CounterName.postLike | CounterName.postDislike) => {
-    if (!nodeService.state.logined) {
-      snackbarService.show('请先登录');
+    if (!nodeService.state.postPermissionTip) {
+      snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }
     if (state.likeLoading) { return; }
@@ -99,6 +99,7 @@ export const UserProfile = observer((props: { className?: string }) => {
           limit: state.limit,
           offset: state.offset,
         });
+        if (!posts) { return; }
 
         runInAction(() => {
           posts.forEach((v) => {

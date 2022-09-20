@@ -2,6 +2,7 @@ import { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { ImageFile } from '~/orm';
 import { send } from '~/service/socket';
+import { parseQuorumTimestamp } from '~/utils';
 
 export const handleImage = async (
   item: IContent,
@@ -18,6 +19,6 @@ export const handleImage = async (
     ...trxContent,
     groupId: item.GroupId,
     trxId: item.TrxId,
-    timestamp: item.TimeStamp / 1000000,
+    timestamp: parseQuorumTimestamp(item.TimeStamp),
   }, transactionManager);
 };

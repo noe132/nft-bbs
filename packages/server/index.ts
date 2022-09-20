@@ -3,6 +3,7 @@ import './utils/alias';
 import './utils/env';
 import * as path from 'path';
 import { createWriteStream } from 'fs';
+import { performance } from 'perf_hooks';
 import * as fs from 'fs/promises';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -11,6 +12,7 @@ import pino from 'pino';
 import { initDB } from '~/orm';
 import { controllers } from '~/controllers';
 import { initService, disposeService } from '~/service';
+import { getLoggerWrite, patchLogger } from './utils';
 
 export type {
   Comment, GroupInfo, ImageFile,
@@ -22,37 +24,20 @@ export type { SocketIOEventMap } from '~/service/socket';
 const port = Number(process.env.PORT) || 8002;
 
 const main = async () => {
+  console.log('starting server...');
   await fs.mkdir(path.join(__dirname, 'logs')).catch(() => 1);
 
   const appLogFile = createWriteStream(path.join(__dirname, 'logs/app.log'), { flags: 'a' });
   const pollingLogFile = createWriteStream(path.join(__dirname, 'logs/polling.log'), { flags: 'a' });
-
-  await initDB();
 
   const fastify = Fastify({
     logger: {
       level: 'info',
       base: undefined,
       stream: {
-        write(msg) {
-          /* eslint-disable no-console */
-          const obj = JSON.parse(msg);
-          console.log(msg.trim());
-          if (obj.level === 50) {
-            if (obj.stack) {
-              console.log('');
-              console.log(obj.stack);
-            } else if (obj.err?.stack) {
-              console.log('');
-              console.log(obj.err.stack);
-            }
-          }
-          appLogFile.write(msg);
-          /* eslint-enable no-console */
-        },
+        write: getLoggerWrite(appLogFile),
       },
     },
-    // ...cert && key ? { https: { cert, key } } : {},
   });
 
   (globalThis as any).log = fastify.log;
@@ -60,24 +45,13 @@ const main = async () => {
     level: 'info',
     base: undefined,
   }, {
-    write(msg) {
-      /* eslint-disable no-console */
-      const obj = JSON.parse(msg);
-      console.log(msg.trim());
-      if (obj.level === 50) {
-        if (obj.stack) {
-          console.log('');
-          console.log(obj.stack);
-        } else if (obj.err?.stack) {
-          console.log('');
-          console.log(obj.err.stack);
-        }
-      }
-      pollingLogFile.write(msg);
-      /* eslint-enable no-console */
-    },
+    write: getLoggerWrite(pollingLogFile),
   });
   (globalThis as any).s = fastify;
+  patchLogger(log);
+  patchLogger(pollingLog);
+
+  await log.time('init db', () => initDB());
 
   fastify.addContentTypeParser(
     'application/json',

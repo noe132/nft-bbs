@@ -1,27 +1,33 @@
+import { either, function as fp } from 'fp-ts';
 import type { Profile } from 'nft-bbs-server';
 import request from '~/request';
+import { snackbarService } from '~/service/snackbar';
 import { API_BASE_URL } from './common';
 
 export const getByUserAddress = async (groupId: string, userAddress: string) => {
-  try {
-    const item: Profile = await request(`${API_BASE_URL}/profile/${groupId}/userAddress/${userAddress}`);
-    return item;
-  } catch (e: any) {
-    if (e.status === 404) {
+  const item = await request<Profile>(`${API_BASE_URL}/profile/${groupId}/userAddress/${userAddress}`);
+
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      if (v.status !== 404) {
+        snackbarService.networkError(v);
+      }
       return null;
-    }
-    throw e;
-  }
+    }),
+  );
 };
 
 export const getByTrxId = async (groupId: string, trxId: string) => {
-  try {
-    const item: Profile = await request(`${API_BASE_URL}/profile/${groupId}/trxId/${trxId}`);
-    return item;
-  } catch (e: any) {
-    if (e.status === 404) {
+  const item = await request<Profile>(`${API_BASE_URL}/profile/${groupId}/trxId/${trxId}`);
+
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      if (v.status !== 404) {
+        snackbarService.networkError(v);
+      }
       return null;
-    }
-    throw e;
-  }
+    }),
+  );
 };

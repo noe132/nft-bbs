@@ -1,4 +1,5 @@
 import './mobxConfigure';
+import './devGlobals';
 
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/theme/lucario.css';

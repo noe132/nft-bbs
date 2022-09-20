@@ -230,7 +230,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
         <div className="fixed w-[280px]">
           <GroupSideBox className="mt-16" showNewPost />
 
-          <NFTSideBox className="mt-8" />
+          {false && <NFTSideBox className="mt-8" />}
         </div>
       </div>
     </div>

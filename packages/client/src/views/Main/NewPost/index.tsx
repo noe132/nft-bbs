@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import CodeMirror from 'codemirror';
-import { Button, CircularProgress, IconButton, OutlinedInput } from '@mui/material';
+import { Button, CircularProgress, IconButton, OutlinedInput, Tooltip } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import {
   AddLink, FormatBold, FormatItalic, FormatListBulleted,
@@ -81,6 +81,10 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
   });
 
   const handlePost = async () => {
+    if (!nodeService.state.postPermissionTip) {
+      snackbarService.show(nodeService.state.postPermissionTip);
+      return;
+    }
     const allImages = state.postContent.matchAll(/!\[.*?\]\((blob:.+?)\)/g);
     const allLinks = Array.from(new Set([...allImages].map((v) => v[1])));
     const images = state.images.filter((v) => allLinks.includes(v.url)).map((v) => ({
@@ -285,20 +289,24 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
             !state.preview && 'flex',
           )}
         >
-          <LoadingButton
-            className="rounded-full text-16 py-2 px-6"
-            classes={{ loadingIndicator: 'left-5' }}
-            loadingIndicator={<CircularProgress color="inherit" size={18} />}
-            color="rum"
-            variant="outlined"
-            disabled={!state.canPost}
-            onClick={handlePost}
-            loading={state.posting}
-            loadingPosition="start"
-            startIcon={<EditIcon className="text-22" />}
-          >
-            {state.postToEdit ? '提交修改' : '立即发布'}
-          </LoadingButton>
+          <Tooltip title={nodeService.state.postPermissionTip}>
+            <div>
+              <LoadingButton
+                className="rounded-full text-16 py-2 px-6"
+                classes={{ loadingIndicator: 'left-5' }}
+                loadingIndicator={<CircularProgress color="inherit" size={18} />}
+                color="rum"
+                variant="outlined"
+                disabled={!state.canPost}
+                onClick={handlePost}
+                loading={state.posting}
+                loadingPosition="start"
+                startIcon={<EditIcon className="text-22" />}
+              >
+                {state.postToEdit ? '提交修改' : '立即发布'}
+              </LoadingButton>
+            </div>
+          </Tooltip>
         </div>
       </div>
 
@@ -306,7 +314,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
         <div className="fixed w-[280px]">
           <GroupSideBox className="mt-16" />
 
-          <NFTSideBox className="mt-8" />
+          {false && <NFTSideBox className="mt-8" />}
         </div>
       </div>
     </div>

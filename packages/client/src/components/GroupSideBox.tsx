@@ -23,8 +23,8 @@ export const GroupSideBox = observer((props: Props) => {
   }));
 
   const handleNewPost = () => {
-    if (!nodeService.state.logined) {
-      snackbarService.show('请先登录');
+    if (!nodeService.state.postPermissionTip) {
+      snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }
     navigate('/newpost');
@@ -59,11 +59,11 @@ export const GroupSideBox = observer((props: Props) => {
       )}
       {props.showNewPost && (
         <div className="flex flex-center mt-8">
-          <Tooltip title={!nodeService.state.logined ? '请先登录' : ''}>
+          <Tooltip title={nodeService.state.postPermissionTip}>
             <Button
               className="rounded-full text-16 px-5 py-[7px]"
               variant="outlined"
-              color={nodeService.state.logined ? 'rum' : 'dark-blue'}
+              color={nodeService.state.postPermissionTip ? 'dark-blue' : 'rum'}
               onClick={handleNewPost}
             >
               <EditIcon className="text-22 mr-3 mb-px" />

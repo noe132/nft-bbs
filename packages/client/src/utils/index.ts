@@ -1,4 +1,5 @@
 import { runInAction } from 'mobx';
+import store from 'store2';
 
 export * from './PollingTask';
 export * from './ago';
@@ -103,3 +104,30 @@ export const chooseImgByPixelRatio = (params: { x1: string, x2?: string, x3?: st
 };
 
 export const notNullFilter = <T>(v: T | undefined | null): v is T => !!v;
+
+
+export interface LoginState {
+  seedUrl: string
+  mixinJWT: string
+  keystore: string
+  password: string
+  autoLogin: null | 'keystore' | 'mixin'
+}
+export const getLoginState = () => {
+  const loginState: LoginState = store('login_state') || {
+    seedUrl: '',
+    mixinJWT: '',
+    keystore: '',
+    password: '',
+    autoLogin: null as null | 'keystore' | 'mixin',
+  };
+
+  return loginState;
+};
+
+export const setLoginState = (v: Partial<LoginState>) => {
+  store('login_state', {
+    ...getLoginState(),
+    ...v,
+  });
+};

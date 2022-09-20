@@ -113,49 +113,51 @@ const A = observer((props: { rs: (file: Blob) => unknown }) => {
     return () => io.disconnect();
   }, []);
 
-  React.useEffect(() => {
-    if (state.isFetching || !state.hasMore) {
-      return;
-    }
-    runInAction(() => {
-      state.isFetching = true;
-    });
-    (async () => {
-      try {
-        const query = state.searchKeyword.split(' ').join('+');
-        const res = await PixabayApi.search({
-          q: query,
-          page: state.page,
-          per_page: LIMIT,
-          lang: containsChinese(query) ? 'zh' : 'en',
-        });
-        runInAction(() => {
-          for (const image of res.hits) {
-            if (!state.ids.includes(image.id)) {
-              state.images.push(image);
+  const loadData = async () => {
+    if (state.isFetching || !state.hasMore) { return; }
+    await runLoading(
+      (l) => { state.isFetched = l; },
+      async () => {
+        try {
+          const query = state.searchKeyword.split(' ').join('+');
+          const res = await PixabayApi.search({
+            q: query,
+            page: state.page,
+            per_page: LIMIT,
+            lang: containsChinese(query) ? 'zh' : 'en',
+          });
+          if (!res) { return; }
+          runInAction(() => {
+            for (const image of res.hits) {
+              if (!state.ids.includes(image.id)) {
+                state.images.push(image);
+              }
             }
-          }
-          state.total = res.totalHits;
-          state.hasMore = res.hits.length === LIMIT;
-        });
-      } catch (err) {
+            state.total = res.totalHits;
+            state.hasMore = res.hits.length === LIMIT;
+          });
+        } catch (err) {
+          runInAction(() => {
+            state.hasMore = false;
+          });
+          // eslint-disable-next-line no-console
+          console.log(err);
+        }
         runInAction(() => {
-          state.hasMore = false;
+          state.isFetched = true;
         });
-        // eslint-disable-next-line no-console
-        console.log(err);
-      }
-      runInAction(() => {
-        state.isFetching = false;
-        state.isFetched = true;
-      });
-      if (state.tooltipDisableHoverListener) {
-        await sleep(2000);
-        runInAction(() => {
-          state.tooltipDisableHoverListener = false;
-        });
-      }
-    })();
+        if (state.tooltipDisableHoverListener) {
+          await sleep(2000);
+          runInAction(() => {
+            state.tooltipDisableHoverListener = false;
+          });
+        }
+      },
+    );
+  };
+
+  React.useEffect(() => {
+    loadData();
   }, [state.page, state.searchKeyword]);
 
   return (

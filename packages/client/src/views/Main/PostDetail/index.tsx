@@ -12,7 +12,7 @@ import { LoadingButton } from '@mui/lab';
 import CommentMinusIcon from 'boxicons/svg/regular/bx-comment-minus.svg?fill-icon';
 
 import { BackButton, ScrollToTopButton, UserAvatar } from '~/components';
-import { nodeService, snackbarService } from '~/service';
+import { nftService, nodeService, snackbarService } from '~/service';
 import { runLoading, usePageState } from '~/utils';
 
 import { PostDetailBox } from '../components/PostDetailBox';
@@ -130,6 +130,10 @@ export const PostDetail = observer((props: { className?: string }) => {
   });
 
   const handleReply = action((e: React.MouseEvent, v: Comment) => {
+    if (!nftService.state.hasPermission) {
+      snackbarService.show('无权限发表内容');
+      return;
+    }
     state.replyTo = {
       comment: v,
       open: true,
@@ -141,6 +145,10 @@ export const PostDetail = observer((props: { className?: string }) => {
   });
 
   const handlePostComment = async (type: 'direct' | 'reply') => {
+    if (!nodeService.state.postPermissionTip) {
+      snackbarService.show(nodeService.state.postPermissionTip);
+      return;
+    }
     const post = state.post;
     if (!post || state.commentPosting) { return; }
     const replyTo = state.replyTo.comment;
@@ -193,6 +201,7 @@ export const PostDetail = observer((props: { className?: string }) => {
       (l) => { state.commentLoading = l; },
       async () => {
         const commentTrxIds = await nodeService.comment.list(post.trxId);
+        if (!commentTrxIds) { return; }
         runInAction(() => {
           state.commentTrxIds = commentTrxIds;
         });
@@ -289,14 +298,14 @@ export const PostDetail = observer((props: { className?: string }) => {
                 }
               }}
             />
-            <Tooltip title={nodeService.state.logined ? '' : '请先登录'}>
+            <Tooltip title={nodeService.state.postPermissionTip}>
               <div className="flex self-stretch">
                 <LoadingButton
                   className="rounded-l-none"
                   color="rum"
                   variant="contained"
                   onClick={() => handlePostComment('direct')}
-                  disabled={!nodeService.state.logined}
+                  disabled={!!nodeService.state.postPermissionTip}
                   loading={state.commentPosting}
                 >
                   发布评论

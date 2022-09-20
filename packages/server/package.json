@@ -5,8 +5,8 @@
    "main": "dist/index.js",
    "types": "dist/index.d.ts",
    "scripts": {
-      "dev": "nodemon --config ./nodemon.json",
-      "dev:debug": "nodemon --config ./nodemon-debug.json",
+      "dev": "cross-env NODE_ENV=development nodemon --config ./nodemon.json",
+      "dev:debug": "cross-env NODE_ENV=development nodemon --config ./nodemon-debug.json",
       "build": "rimraf dist && yarn tsc -b",
       "start": "ts-node-transpile-only index.ts",
       "start:prod": "node dist/index.js",
@@ -20,9 +20,9 @@
    "license": "ISC",
    "dependencies": {
       "@fastify/cors": "^8.1.0",
-      "date-fns": "^2.29.2",
+      "date-fns": "^2.29.3",
       "dotenv": "^16.0.2",
-      "fastify": "^4.5.3",
+      "fastify": "^4.6.0",
       "fp-ts": "^2.12.2",
       "http-errors": "^2.0.0",
       "io-ts": "^2.2.17",
@@ -31,18 +31,18 @@
       "module-alias": "^2.2.2",
       "nft-bbs-types": "*",
       "node-localstorage": "^2.2.1",
-      "nodemon": "^2.0.19",
+      "nodemon": "^2.0.20",
       "pg": "^8.4.0",
-      "quorum-light-node-sdk-nodejs": "^0.1.20",
+      "quorum-light-node-sdk-nodejs": "^0.1.29",
       "reflect-metadata": "^0.1.13",
-      "socket.io": "^4.5.1",
-      "typeorm": "0.3.9"
+      "socket.io": "^4.5.2",
+      "typeorm": "0.3.10"
    },
    "devDependencies": {
       "@types/http-errors": "^1.8.2",
-      "@types/lodash": "^4.14.184",
+      "@types/lodash": "^4.14.185",
       "@types/module-alias": "^2.0.1",
-      "@types/node": "^18.7.14",
+      "@types/node": "^18.7.21",
       "rimraf": "^3.0.2",
       "ts-node": "10.9.1",
       "tsconfig-paths": "^4.1.0"

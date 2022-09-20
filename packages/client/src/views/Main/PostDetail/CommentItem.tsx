@@ -13,7 +13,7 @@ import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import UnfoldIcon from '~/assets/icons/icon_unfold.svg?fill-icon';
 import { Foldable, UserAvatar } from '~/components';
-import { nodeService, snackbarService } from '~/service';
+import { nftService, nodeService, snackbarService } from '~/service';
 import { showTrxDetail } from '~/modals';
 import { ago, runLoading } from '~/utils';
 import { ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
@@ -77,8 +77,8 @@ export const CommentItem = observer((props: CommentItemProps) => {
   });
 
   const handleUpdateCommentCounter = (type: CounterName.commentLike | CounterName.commentDislike) => {
-    if (!nodeService.state.logined) {
-      snackbarService.show('请先登录');
+    if (!nodeService.state.postPermissionTip) {
+      snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }
     if (state.likeLoading) { return; }
@@ -174,24 +174,26 @@ export const CommentItem = observer((props: CommentItemProps) => {
               </Button>
             )}
             {state.comment.storage === 'chain' && (
-              <Button
-                className={classNames(
-                  'min-w-0 px-2 text-14',
-                  !state.commentStat.liked && 'text-link-soft',
-                  state.commentStat.liked && 'text-rum-orange',
-                )}
-                variant="text"
-                size="small"
-                onClick={() => handleUpdateCommentCounter(CounterName.commentLike)}
-              >
-                {!state.commentStat.likeCount && (
-                  <ThumbUpOffAlt className="mr-2 text-18" />
-                )}
-                {!!state.commentStat.likeCount && (
-                  <ThumbUpAlt className="mr-2 text-18" />
-                )}
-                {state.commentStat.likeCount || '赞'}
-              </Button>
+              <Tooltip title={nodeService.state.postPermissionTip}>
+                <Button
+                  className={classNames(
+                    'min-w-0 px-2 text-14',
+                    !state.commentStat.liked && 'text-link-soft',
+                    state.commentStat.liked && 'text-rum-orange',
+                  )}
+                  variant="text"
+                  size="small"
+                  onClick={() => handleUpdateCommentCounter(CounterName.commentLike)}
+                >
+                  {!state.commentStat.likeCount && (
+                    <ThumbUpOffAlt className="mr-2 text-18" />
+                  )}
+                  {!!state.commentStat.likeCount && (
+                    <ThumbUpAlt className="mr-2 text-18" />
+                  )}
+                  {state.commentStat.likeCount || '赞'}
+                </Button>
+              </Tooltip>
             )}
             {/* {state.comment.storage === 'chain' && (
               <Button
@@ -214,16 +216,18 @@ export const CommentItem = observer((props: CommentItemProps) => {
               </Button>
             )} */}
             {nodeService.state.logined && (
-              <Button
-                className="text-link-soft text-14 font-normal"
-                variant="text"
-                color="inherit"
-                size="small"
-                onClick={(e) => props.onReply(e, state.comment)}
-              >
-                <ReplyIcon className="mr-1 -mt-[2px] text-24" />
-                回复
-              </Button>
+              <Tooltip title={nodeService.state.postPermissionTip}>
+                <Button
+                  className="text-link-soft text-14 font-normal"
+                  variant="text"
+                  color="inherit"
+                  size="small"
+                  onClick={(e) => props.onReply(e, state.comment)}
+                >
+                  <ReplyIcon className="mr-1 -mt-[2px] text-24" />
+                  回复
+                </Button>
+              </Tooltip>
             )}
           </div>
         </div>

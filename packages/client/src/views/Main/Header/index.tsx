@@ -3,12 +3,11 @@ import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import store from 'store2';
 import { ethers } from 'ethers';
-import QuorumLightNodeSDK from 'quorum-light-node-sdk';
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import {
   Check, Close, Logout, MoreVert, NotificationsNone,
-  PersonOutline, Search, SwapHoriz,
+  PersonOutline, Search,
 } from '@mui/icons-material';
 import {
   Badge, Button, FormControl, IconButton, Input,
@@ -21,7 +20,7 @@ import RumLogo from '~/assets/icons/logo.png';
 import RumLogo2x from '~/assets/icons/logo@2x.png';
 import RumLogo3x from '~/assets/icons/logo@3x.png';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
-import { ThemeLight, usePageState } from '~/utils';
+import { setLoginState, ThemeLight, usePageState } from '~/utils';
 import {
   nodeService, langService, keyService,
   AllLanguages, langName, dialogService,
@@ -38,7 +37,7 @@ export const Header = observer((props: { className?: string }) => {
   const routeParams = useParams();
   const routeLocation = useLocation();
   const navigate = useNavigate();
-  const postlistState = usePageState('postlist', routeLocation.key, 'readonly', createPostlistState);
+  const postlistState = usePageState('postlist', routeLocation.key, createPostlistState, 'readonly');
   const state = useLocalObservable(() => ({
     tab: 0,
     userDropdown: false,
@@ -139,8 +138,11 @@ export const Header = observer((props: { className?: string }) => {
         N: 64,
       },
     });
-    store('keystore', keystore);
-    store('password', password);
+
+    setLoginState({
+      keystore,
+      password,
+    });
     QuorumLightNodeSDK.cache.Group.clear();
     if (window.location.pathname !== '/') {
       history.replaceState(null, '', '/');
@@ -150,72 +152,59 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleShowAccountInfo = action(() => {
     state.menu = false;
-    dialogService.open({
-      title: '账号信息',
-      content: (
-        <div className="flex-col gap-y-4 py-2 w-[400px]">
-          <FormControl size="small">
-            <InputLabel>keystore</InputLabel>
-            <OutlinedInput
-              className="text-14 break-all"
-              size="small"
-              label="keystore"
-              type="text"
-              multiline
-              rows={10}
-              onFocus={(e) => e.target.select()}
-              value={keyService.state.keystore}
-            />
-          </FormControl>
-          <FormControl size="small">
-            <InputLabel>password</InputLabel>
-            <OutlinedInput
-              size="small"
-              label="keystore"
-              type="text"
-              multiline
-              onFocus={(e) => e.target.select()}
-              value={keyService.state.password}
-            />
-          </FormControl>
-        </div>
-      ),
-      cancel: null,
-      maxWidth: 0,
-    });
-  });
-
-  const handleLogin = action(() => {
-    if (window.location.pathname !== '/') {
-      history.replaceState(null, '', '/');
+    if (keyService.state.keys?.type === 'keystore') {
+      dialogService.open({
+        title: '账号信息',
+        content: (
+          <div className="flex-col gap-y-4 py-2 w-[400px]">
+            <FormControl size="small">
+              <InputLabel>keystore</InputLabel>
+              <OutlinedInput
+                className="text-14 break-all"
+                size="small"
+                label="keystore"
+                type="text"
+                multiline
+                rows={10}
+                onFocus={(e) => e.target.select()}
+                value={keyService.state.keys.keystore}
+              />
+            </FormControl>
+            <FormControl size="small">
+              <InputLabel>password</InputLabel>
+              <OutlinedInput
+                size="small"
+                label="keystore"
+                type="text"
+                multiline
+                onFocus={(e) => e.target.select()}
+                value={keyService.state.keys.password}
+              />
+            </FormControl>
+          </div>
+        ),
+        cancel: null,
+        maxWidth: 0,
+      });
     }
-
-    state.userDropdown = false;
-    store('seedUrlAutoJoin', false);
-    window.location.reload();
   });
 
-  const handleLogout = action(() => {
+  const handleBackToLogin = action(() => {
+    if (routeLocation.pathname !== '/') {
+      navigate('/', { replace: true });
+    }
     state.userDropdown = false;
     state.menu = false;
-    store.remove('password');
-    store.remove('keystore');
-    keyService.logout();
-    if (window.location.pathname !== '/') {
-      history.replaceState(null, '', '/');
-    }
+    setLoginState({ autoLogin: null });
+    window.location.reload();
   });
 
-  const handleExitGroup = () => {
-    if (window.location.pathname !== '/') {
-      history.replaceState(null, '', '/');
-    }
-    store('seedUrlAutoJoin', false);
-    window.location.reload();
-  };
-
   const handleClickLogo = () => {
-    navigate('/');
+    if (routeLocation.pathname === '/') {
+      postlistState?.loadPosts();
+    } else {
+      navigate('/');
+    }
   };
 
   return (<>
@@ -360,7 +349,7 @@ export const Header = observer((props: { className?: string }) => {
             <Button
               className="rounded-full py-px px-5 text-16"
               color="rum"
-              onClick={handleLogin}
+              onClick={handleBackToLogin}
             >
               登录
             </Button>
@@ -435,7 +424,7 @@ export const Header = observer((props: { className?: string }) => {
           <Button
             className="rounded-none w-full border-solid border-t border-black/10 mt-6 h-12 font-normal text-14"
             variant="text"
-            onClick={handleLogout}
+            onClick={handleBackToLogin}
           >
             退出登录
           </Button>
@@ -465,7 +454,7 @@ export const Header = observer((props: { className?: string }) => {
           </div>
         </MenuItem> */}
         {([
-          {
+          keyService.state.keys?.type === 'keystore' && {
             text: '我的账号信息',
             onClick: handleShowAccountInfo,
             icon: <PersonOutline className="text-22 text-blue-500/90" />,
@@ -481,15 +470,10 @@ export const Header = observer((props: { className?: string }) => {
             icon: '',
           },
           // process.env.NODE_ENV === 'development' && { text: '使用新号', onClick: () => handleChangeAccount('new') },
-          nodeService.state.logined && {
-            text: '退出登录',
-            onClick: handleLogout,
+          {
+            text: '退出',
+            onClick: handleBackToLogin,
             icon: <Logout className="text-22 text-amber-500/90" />,
-          },
-          !!nodeService.state.group && {
-            text: '切换种子网络',
-            onClick: handleExitGroup,
-            icon: <SwapHoriz className="text-22 text-black/60" />,
           },
         ] as const).filter(<T extends unknown>(v: T | false): v is T => !!v).map((v, i) => (
           <MenuItem onClick={v.onClick} key={i}>

@@ -2,6 +2,7 @@ import { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { GroupInfo } from '~/orm/entity/groupInfo';
 import { send } from '~/service/socket';
+import { parseQuorumTimestamp } from '~/utils';
 
 export const handleGroupInfo = async (
   item: IContent,
@@ -18,7 +19,7 @@ export const handleGroupInfo = async (
     ...trxContent,
     trxId: item.TrxId,
     groupId: item.GroupId,
-    timestamp: item.TimeStamp / 1000000,
+    timestamp: parseQuorumTimestamp(item.TimeStamp),
   }, transactionManager);
   queueSocket({
     broadcast: true,

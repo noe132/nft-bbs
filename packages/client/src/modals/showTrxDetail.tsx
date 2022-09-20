@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import QuorumLightNodeSdk, { ITrx } from 'quorum-light-node-sdk';
+import * as QuorumLightNodeSdk from 'quorum-light-node-sdk';
 import { Close } from '@mui/icons-material';
 import { Button, CircularProgress, Dialog, IconButton, Tooltip } from '@mui/material';
 
@@ -69,7 +69,7 @@ interface Props {
 }
 export const TrxDetailView = observer((props: Props) => {
   const state = useLocalObservable(() => ({
-    trx: null as null | ITrx,
+    trx: null as null | QuorumLightNodeSdk.ITrx,
     loading: false,
   }));
 

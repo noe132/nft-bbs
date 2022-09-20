@@ -3,6 +3,7 @@ import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { UniqueCounter, Post, Comment, Notification } from '~/orm';
 import { send } from '~/service/socket';
+import { parseQuorumTimestamp } from '~/utils';
 
 export const handleCounter = async (
   item: IContent,
@@ -22,7 +23,7 @@ export const handleCounter = async (
     groupId: item.GroupId,
     objectId,
     userAddress: QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey),
-    timestamp: item.TimeStamp / 1000000,
+    timestamp: parseQuorumTimestamp(item.TimeStamp),
   };
   const from = uniqueCounter.userAddress;
 
@@ -70,7 +71,7 @@ export const handleCounter = async (
         actionObjectType: 'counter',
         to: post.userAddress,
         from,
-        timestamp: item.TimeStamp / 1000000,
+        timestamp: parseQuorumTimestamp(item.TimeStamp),
       }, transactionManager);
       const notificationItem = await Notification.appendExtra(notification, transactionManager);
       queueSocket({
@@ -111,7 +112,7 @@ export const handleCounter = async (
         actionObjectType: 'counter',
         to: comment.userAddress,
         from,
-        timestamp: item.TimeStamp / 1000000,
+        timestamp: parseQuorumTimestamp(item.TimeStamp),
       }, transactionManager);
       const notificationItem = await Notification.appendExtra(notification, transactionManager);
       queueSocket({

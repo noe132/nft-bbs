@@ -1,4 +1,6 @@
+import { either } from 'fp-ts';
 import { action, observable } from 'mobx';
+import { ResponseError } from '~/request';
 import type {
   SnackbarItemData,
   SnackbarItemParam,
@@ -34,9 +36,28 @@ const error: ShowFunction = (p1: SnackbarItemParam | string, p2?: number) => {
   add(item);
 };
 
+/** 显示 error snackbar */
+const networkError = (err: string | ResponseError | either.Left<ResponseError>, p2?: SnackbarItemParam) => {
+  let message: string;
+  if (typeof err === 'string') {
+    message = err;
+  } else {
+    const error = '_tag' in err ? err.left : err;
+    message = error.message;
+  }
+  const params = {
+    ...p2,
+    content: `网络请求错误 (${message})`,
+  };
+  const item = formatParams('error', params);
+  item.urgent = true;
+  add(item);
+};
+
 export const snackbarService = {
   state,
 
   show,
   error,
+  networkError,
 };

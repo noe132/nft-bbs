@@ -59,6 +59,8 @@ export const createPostlistState = () => ({
           search: this.mode.type === 'search' ? this.mode.search : undefined,
         });
 
+        if (!posts) { return; }
+
         runInAction(() => {
           posts.forEach((v) => {
             if (!this.trxIds.includes(v.trxId)) {
@@ -94,8 +96,8 @@ export const PostList = observer((props: { className?: string }) => {
   };
 
   const handleUpdatePostCounter = (post: Post, type: CounterName.postLike | CounterName.postDislike) => {
-    if (!nodeService.state.logined) {
-      snackbarService.show('请先登录');
+    if (!nodeService.state.postPermissionTip) {
+      snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }
     if (state.likeLoadingMap.get(post.trxId)) { return; }
@@ -291,7 +293,7 @@ export const PostList = observer((props: { className?: string }) => {
       <div className="w-[280px]">
         <div className="fixed w-[280px]">
           <GroupSideBox className="mt-16" showNewPost />
-          <NFTSideBox className="mt-8" />
+          {false && <NFTSideBox className="mt-8" />}
         </div>
       </div>
     </div>

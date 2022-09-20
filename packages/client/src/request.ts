@@ -1,14 +1,33 @@
+import { either } from 'fp-ts';
 import { sleep } from './utils';
 
-const BASE = '';
 type RequestOptions = Omit<RequestInit, 'body'> & {
-  base?: string
   minPendingDuration?: number
   isTextResponse?: boolean
   body?: any
   json?: boolean
 };
-export default async (url: any, options: RequestOptions = {}) => {
+
+export class ResponseError {
+  res: Response;
+  resData: any;
+  status: number;
+  message: string;
+
+  public constructor(params: {
+    res: Response
+    resData: any
+    status: number
+    message: string
+  }) {
+    this.res = params.res;
+    this.resData = params.resData;
+    this.status = params.status;
+    this.message = params.message;
+  }
+}
+
+export default async <T = unknown>(url: any, options: RequestOptions = {}): Promise<either.Either<ResponseError, T>> => {
   if (options.json) {
     options.headers = {
       ...options.headers,
@@ -16,26 +35,24 @@ export default async (url: any, options: RequestOptions = {}) => {
     };
     options.body = JSON.stringify(options.body);
   }
-  if (!options.base) {
-    options.credentials = 'include';
-  }
   const result = await Promise.all([
-    fetch(new Request((options.base || BASE) + url), options),
+    fetch(new Request(url), options),
     sleep(options.minPendingDuration ? options.minPendingDuration : 0),
   ]);
-  const res: any = result[0];
+  const res = result[0];
   let resData;
   if (options.isTextResponse) {
-    resData = await res.text();
+    resData = await res.text().catch(() => null);
   } else {
-    resData = await res.json();
+    resData = await res.json().catch(() => null);
   }
   if (res.ok) {
-    return resData;
+    return either.right(resData as T);
   }
-  throw Object.assign(new Error(), {
-    code: resData.code,
+  return either.left(new ResponseError({
+    res,
+    resData,
     status: res.status,
     message: resData.message,
-  });
+  }));
 };

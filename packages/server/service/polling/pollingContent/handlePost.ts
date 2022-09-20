@@ -3,6 +3,7 @@ import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { Notification, Post, UniqueCounter } from '~/orm';
 import { send } from '~/service/socket';
+import { parseQuorumTimestamp } from '~/utils';
 
 export const handlePost = async (item: IContent, transactionManager: EntityManager, queueSocket: typeof send) => {
   const trxContent = Post.parseTrxContent(item);
@@ -20,7 +21,7 @@ export const handlePost = async (item: IContent, transactionManager: EntityManag
     dislikeCount: 0,
     hotCount: 0,
     likeCount: 0,
-    timestamp: parseInt(String(item.TimeStamp / 1000000), 10),
+    timestamp: parseQuorumTimestamp(item.TimeStamp),
   };
 
   if (trxContent.updatedTrxId) {

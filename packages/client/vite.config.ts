@@ -1,5 +1,5 @@
 import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -41,6 +41,14 @@ export default async () => {
     },
     define: {
       'process.env.SSR': JSON.stringify(''),
+    },
+    build: {
+      rollupOptions: {
+        input: {
+          main: resolve(__dirname, 'index.html'),
+          nested: resolve(__dirname, 'mixin-login.html'),
+        },
+      },
     },
     esbuild: {
       // https://github.com/vitejs/vite/issues/8644#issuecomment-1159308803
