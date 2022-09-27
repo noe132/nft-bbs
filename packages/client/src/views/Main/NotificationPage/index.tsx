@@ -198,6 +198,11 @@ export const NotificationPage = observer((props: { className?: string }) => {
             })}
 
             <div className="flex flex-center h-16 pb-4">
+              {!nodeService.state.notification.loading && !state.notificationsWithoutDislike.length && (
+                <div className="flex flex-center text-white text-14">
+                  暂无消息通知
+                </div>
+              )}
               <div
                 className="absolute h-[400px] w-0 bottom-0 pointer-events-none"
                 ref={loadingTriggerBox}
