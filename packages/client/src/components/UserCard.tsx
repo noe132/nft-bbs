@@ -9,11 +9,12 @@ import { ChevronRight } from '@mui/icons-material';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { nodeService } from '~/service';
-import { UserAvatar } from '~/components';
+import { UserAvatar } from '~/components/UserAvatar';
 
 interface Props {
   className?: string
   profile?: Profile | null
+  disableClickAction?: boolean
 }
 
 export const UserCard = observer((props: Props) => {
@@ -34,6 +35,15 @@ export const UserCard = observer((props: Props) => {
     },
   }));
 
+  const handleClick = () => {
+    if (props.disableClickAction) {
+      return;
+    }
+    if (state.profile) {
+      navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`);
+    }
+  };
+
   const loadUserData = () => {
     const userAddress = props.profile?.userAddress;
     if (!userAddress) { return; }
@@ -47,14 +57,19 @@ export const UserCard = observer((props: Props) => {
   return (
     <div className={classNames('flex-col relative bg-black/80 py-5 px-5', props.className)}>
       <div
-        className="flex items-center self-stretch cursor-pointer"
-        onClick={() => state.profile && navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`)}
+        className={classNames(
+          'flex items-center self-stretch',
+          !props.disableClickAction && 'cursor-pointer',
+        )}
+        onClick={handleClick}
       >
         <UserAvatar className="mr-3" profile={state.profile} size={48} />
         <div className="text-rum-orange text-16 flex-1">
           {state.profile?.name || state.profile?.userAddress.slice(0, 10)}
         </div>
-        <ChevronRight className="text-link-soft text-26 -mr-2" />
+        {!props.disableClickAction && (
+          <ChevronRight className="text-link-soft text-26 -mr-2" />
+        )}
       </div>
       <div className="text-gray-9c text-14 mt-3">
         {state.profile?.intro}

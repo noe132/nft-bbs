@@ -11,12 +11,11 @@ import { LoadingButton } from '@mui/lab';
 
 import CommentMinusIcon from 'boxicons/svg/regular/bx-comment-minus.svg?fill-icon';
 
-import { BackButton, ScrollToTopButton, UserAvatar } from '~/components';
+import { BackButton, ScrollToTopButton, UserAvatar, UserCard } from '~/components';
 import { nftService, nodeService, snackbarService } from '~/service';
 import { runLoading, usePageState } from '~/utils';
 
 import { PostDetailBox } from '../components/PostDetailBox';
-import { UserCard } from '../components/UserCard';
 import { commentContext, CommentItem } from './CommentItem';
 
 interface UserCardItem {
@@ -464,7 +463,7 @@ export const PostDetail = observer((props: { className?: string }) => {
       </div>
 
       <div className="w-[280px]">
-        <UserCard className="mt-5" profile={state.profile} />
+        <UserCard className="mt-6" profile={state.profile} />
       </div>
     </div>
   );

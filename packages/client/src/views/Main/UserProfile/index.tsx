@@ -15,7 +15,7 @@ import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-i
 import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
-import { ScrollToTopButton, BackButton, UserAvatar } from '~/components';
+import { ScrollToTopButton, BackButton, UserAvatar, UserCard } from '~/components';
 import { imageZoomService, keyService, nodeService, snackbarService } from '~/service';
 import { ago, runLoading, usePageState } from '~/utils';
 import { editProfile } from '~/modals';
@@ -359,9 +359,15 @@ export const UserProfile = observer((props: { className?: string }) => {
       </div>
 
       <div className="w-[280px]">
+        <UserCard
+          className="mt-6"
+          profile={state.profile}
+          disableClickAction
+        />
+        {/* TODO: nft */}
         <div
           className={classNames(
-            'flex-col relative py-5 px-5 mt-6 rounded',
+            '!hidden flex-col relative py-5 px-5 mt-6 rounded',
             state.selfProfile && 'bg-white shadow-4 text-black',
             !state.selfProfile && 'bg-black/80 text-white',
           )}
