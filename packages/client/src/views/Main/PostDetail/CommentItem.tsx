@@ -20,6 +20,7 @@ import { ago, runLoading } from '~/utils';
 
 interface CommentItemProps {
   className?: string
+  indent?: boolean
   comment: Comment
   topComment?: Comment
   onOpenUserCard: (e: React.MouseEvent, v: Comment) => unknown
@@ -121,6 +122,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
         className={classNames(
           'py-4 group duration-200',
           highlighted && 'bg-blue-400/20',
+          props.indent && 'pl-5',
         )}
       >
         <div className="flex justify-between">
@@ -240,7 +242,8 @@ export const CommentItem = observer((props: CommentItemProps) => {
       {!!subComments.length && (
         <div className="border-l !border-l-cyan-blue">
           <CommentItem
-            className="pl-5 border-t border-t-white/20"
+            className="border-t border-t-white/20"
+            indent
             key={subComments[0].trxId}
             comment={subComments[0]}
             topComment={props.topComment || state.comment}
@@ -250,7 +253,8 @@ export const CommentItem = observer((props: CommentItemProps) => {
           <Foldable fold={!state.expand}>
             {subComments.slice(1).map((v) => (
               <CommentItem
-                className="pl-5 border-t border-t-white/20"
+                className="border-t border-t-white/20"
+                indent
                 key={v.trxId}
                 comment={v}
                 topComment={props.topComment || state.comment}
