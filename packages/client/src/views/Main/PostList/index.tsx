@@ -96,7 +96,7 @@ export const PostList = observer((props: { className?: string }) => {
   };
 
   const handleUpdatePostCounter = (post: Post, type: CounterName.postLike | CounterName.postDislike) => {
-    if (!nodeService.state.postPermissionTip) {
+    if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }

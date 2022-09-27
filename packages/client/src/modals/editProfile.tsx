@@ -118,7 +118,7 @@ export const EditProfileView = observer((props: Props) => {
   };
 
   const handleSubmitProfile = async () => {
-    if (!nodeService.state.postPermissionTip) {
+    if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }

@@ -5,7 +5,9 @@ import { API_BASE_URL } from './common';
 
 export interface SiteConfig {
   mixinLogin: boolean
+  keystoreLogin: boolean
   checkNFT: boolean
+  seedUrl: string
 }
 
 export const getConfig = async () => {

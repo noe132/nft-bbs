@@ -12,6 +12,8 @@ interface Props {
   trackClassName?: string
   thumbClassName?: string
   scrollBoxRef?: React.MutableRefObject<HTMLDivElement | null>
+  scrollBoxProps?: Partial<React.HTMLAttributes<HTMLDivElement>>
+  scrollBoxClassName?: string
   onScroll?: () => unknown
   light?: boolean
   autoHideMode?: boolean
@@ -267,6 +269,7 @@ export const Scrollable = observer((props: Props) => {
           className={classNames(
             'scroll-box flex-col flex-auto overflow-x-hidden overflow-y-scroll',
             state.noScrollBar && 'pr-0',
+            props.scrollBoxClassName,
           )}
           onScroll={() => {
             calcScrollbar();
@@ -281,6 +284,7 @@ export const Scrollable = observer((props: Props) => {
             }
             containerRef.current = a || null;
           }}
+          {...props.scrollBoxProps}
         >
           <div
             className={classNames(

@@ -58,7 +58,11 @@ export const Main = observer(() => {
         light
         wrapperClassName="flex-col"
         size="large"
+        scrollBoxClassName="outline-none"
         scrollBoxRef={scrollBox}
+        scrollBoxProps={{
+          tabIndex: 0,
+        }}
         onScroll={handleScroll}
       >
         <Routes>

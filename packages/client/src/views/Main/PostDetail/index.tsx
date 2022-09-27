@@ -145,7 +145,7 @@ export const PostDetail = observer((props: { className?: string }) => {
   });
 
   const handlePostComment = async (type: 'direct' | 'reply') => {
-    if (!nodeService.state.postPermissionTip) {
+    if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }

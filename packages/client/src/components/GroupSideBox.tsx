@@ -23,7 +23,7 @@ export const GroupSideBox = observer((props: Props) => {
   }));
 
   const handleNewPost = () => {
-    if (!nodeService.state.postPermissionTip) {
+    if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }

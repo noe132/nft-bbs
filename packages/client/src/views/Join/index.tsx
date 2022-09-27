@@ -40,7 +40,6 @@ enum Step {
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
-    // TODO: remove testing seedurl in future
     seedUrl: '',
     keystorePopup: false,
     mixinLogin: false,
@@ -64,6 +63,9 @@ export const Join = observer(() => {
         profile: Profile
       },
     },
+    get computedSeedUrl() {
+      return configService.state.seedUrl || state.seedUrl;
+    },
     get canLogin() {
       return !!this.password && !!this.keystore;
     },
@@ -80,7 +82,7 @@ export const Join = observer(() => {
   const handleNextStep = () => {
     if (state.step === Step.InputSeedUrl) {
       try {
-        const seed = QuorumLightNodeSDK.utils.restoreSeedFromUrl(state.seedUrl);
+        const seed = QuorumLightNodeSDK.utils.restoreSeedFromUrl(state.computedSeedUrl);
         if (seed.app_key !== nftbbsAppKeyName) {
           dialogService.open({
             title: '种子网络类型不支持',
@@ -118,8 +120,8 @@ export const Join = observer(() => {
 
   const joinGroup = () => {
     try {
-      nodeService.group.join(state.seedUrl);
-      setLoginState({ seedUrl: state.seedUrl });
+      nodeService.group.join(state.computedSeedUrl);
+      setLoginState({ seedUrl: state.computedSeedUrl });
       return true;
     } catch (e: any) {
       snackbarService.error(e.message);
@@ -139,7 +141,7 @@ export const Join = observer(() => {
       autoLogin: 'keystore',
       keystore: loginedKeystore.keystore,
       password: '123',
-      seedUrl: state.seedUrl,
+      seedUrl: state.computedSeedUrl,
     });
   };
 
@@ -248,7 +250,7 @@ export const Join = observer(() => {
     setLoginState({
       autoLogin: 'mixin',
       mixinJWT: jwt,
-      seedUrl: state.seedUrl,
+      seedUrl: state.computedSeedUrl,
     });
     keyService.mixinLogin(jwt, user, appUser);
     if (!joinGroup()) { return; }
@@ -276,7 +278,7 @@ export const Join = observer(() => {
     setLoginState({
       autoLogin: state.rememberPassword ? 'keystore' : null,
       keystore: state.keystore,
-      seedUrl: state.seedUrl,
+      seedUrl: state.computedSeedUrl,
       password: state.rememberPassword ? state.password : '',
     });
     if (!joinGroup()) { return; }
@@ -319,7 +321,7 @@ export const Join = observer(() => {
   const validateLoginState = async () => {
     const loginState = getLoginState();
     runInAction(() => {
-      state.seedUrl = loginState.seedUrl || 'rum://seed?v=1&e=0&n=0&b=QaPjfi7LQ4yp2S60ngyJdw&c=fja8EJAAK_ZxLPcyLq-6L7HSKuli68wnhl4ImdwHh_A&g=uZvFqN6-SYGGu9SESABN0w&k=AjlWMMvVpXi9DLpoxmgJgD9ug2fDAaUNQCOhOq5PNfIc&s=bOh-m-h2vCbsS3Z3KBUNoYfB3D3ZyJx3Vf0W2dKibNgNp1Uj_f6U-YSo4MPLZM2QE3ipN7KklOCdoYHS9WT2zgE&t=FxBnshqivLo&a=nft%E8%AE%BA%E5%9D%9B%E6%B5%8B%E8%AF%95%E7%A7%8D%E5%AD%90%E7%BD%91%E7%BB%9C&y=group_nftbbs&u=https%3A%2F%2Fnoe132.com%3A64459%3Fjwt%3DeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhbGxvd0dyb3VwcyI6WyJiOTliYzVhOC1kZWJlLTQ5ODEtODZiYi1kNDg0NDgwMDRkZDMiXSwiZXhwIjoxNjkzNDc4ODU1LCJuYW1lIjoibm9kZWp3dCIsInJvbGUiOiJub2RlIn0.BRl1QD0B-Dpngccs8dtsMzm5j-m_BCvet4XgRJx07cA';
+      state.seedUrl = loginState.seedUrl;
     });
 
     if (loginState && loginState.mixinJWT) {
@@ -442,23 +444,33 @@ export const Join = observer(() => {
                 <div className="text-white text-18">
                   加入 RumPot 种子网络
                 </div>
-                <OutlinedInput
-                  className="text-white w-[440px] mt-12 pl-2"
-                  value={state.seedUrl}
-                  onChange={action((e) => { state.seedUrl = e.target.value; })}
-                  endAdornment={(
-                    <Button
-                      className="flex flex-none text-white ml-2"
-                      variant="text"
-                      color="inherit"
-                      onClick={handlePaste}
-                    >
-                      <PasteIcon className="text-20 mr-1" />
-                      粘贴
-                    </Button>
-                  )}
-                  placeholder="输入种子文本 Rum://"
-                />
+                {!configService.state.seedUrl && (
+                  <OutlinedInput
+                    className="text-white w-[440px] mt-12 pl-2"
+                    value={state.seedUrl}
+                    onChange={action((e) => { state.seedUrl = e.target.value; })}
+                    endAdornment={(
+                      <Button
+                        className="flex flex-none text-white ml-2"
+                        variant="text"
+                        color="inherit"
+                        onClick={handlePaste}
+                      >
+                        <PasteIcon className="text-20 mr-1" />
+                        粘贴
+                      </Button>
+                    )}
+                    placeholder="输入种子文本 Rum://"
+                  />
+                )}
+                {!!configService.state.seedUrl && (
+                  <OutlinedInput
+                    className="text-white w-[440px] mt-12 pl-2"
+                    value={configService.state.seedUrl}
+                    disabled
+                    placeholder="输入种子文本 Rum://"
+                  />
+                )}
 
                 <div className="flex gap-x-4 mt-12">
                   {/* <Button
@@ -562,7 +574,7 @@ export const Join = observer(() => {
                 </div>
 
                 <div className="flex-col items-stertch mt-4 gap-y-4 min-w-[200px]">
-                  {!!state.savedLoginState.keystoreCanLogin && (
+                  {!!state.savedLoginState.keystoreCanLogin && configService.state.keystoreLogin && (
                     <div className="relative flex items-center gap-x-2">
                       <Tooltip title="用上次登录使用的keystore登录" placement="right">
                         <Button
@@ -627,26 +639,30 @@ export const Join = observer(() => {
                       </Button>
                     </Tooltip>
                   )}
-                  <Tooltip title="用保存的账号登录 或 创建一个随机账号" placement="right">
-                    <Button
-                      className="text-rum-orange rounded-full text-16 px-8 py-2"
-                      color="inherit"
-                      variant="outlined"
-                      onClick={handleLoginByRandom}
-                    >
-                      使用随机账号登录
-                    </Button>
-                  </Tooltip>
-                  <Tooltip title="输入 keystore 和 密码" placement="right">
-                    <Button
-                      className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
-                      color="inherit"
-                      variant="outlined"
-                      onClick={handleShowKeystoreDialog}
-                    >
-                      输入 keystore
-                    </Button>
-                  </Tooltip>
+                  {configService.state.keystoreLogin && (
+                    <Tooltip title="用保存的账号登录 或 创建一个随机账号" placement="right">
+                      <Button
+                        className="text-rum-orange rounded-full text-16 px-8 py-2"
+                        color="inherit"
+                        variant="outlined"
+                        onClick={handleLoginByRandom}
+                      >
+                        使用随机账号登录
+                      </Button>
+                    </Tooltip>
+                  )}
+                  {configService.state.keystoreLogin && (
+                    <Tooltip title="输入 keystore 和 密码" placement="right">
+                      <Button
+                        className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
+                        color="inherit"
+                        variant="outlined"
+                        onClick={handleShowKeystoreDialog}
+                      >
+                        输入 keystore
+                      </Button>
+                    </Tooltip>
+                  )}
                 </div>
               </div>
             )}

@@ -77,7 +77,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
   });
 
   const handleUpdateCommentCounter = (type: CounterName.commentLike | CounterName.commentDislike) => {
-    if (!nodeService.state.postPermissionTip) {
+    if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }

@@ -110,7 +110,6 @@ export const NotificationPage = observer((props: { className?: string }) => {
                   content = RemoveMarkdown(md);
                 }
                 if (v.objectType === 'comment') {
-                  // TODO: 给评论点赞的notification。需要获取被点赞评论的content
                   const commentContent = v.extra?.object?.value.content ?? '';
                   content = commentContent;
                 }

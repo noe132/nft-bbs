@@ -63,7 +63,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const handleUpdatePostCounter = (type: CounterName.postLike | CounterName.postDislike) => {
-    if (!nodeService.state.postPermissionTip) {
+    if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }
@@ -79,7 +79,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const handleEditPost = () => {
-    if (!nodeService.state.postPermissionTip) {
+    if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }
@@ -90,7 +90,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const handleDeletePost = async () => {
-    if (!nodeService.state.postPermissionTip) {
+    if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }
