@@ -8,16 +8,15 @@ import {
   IPostTrxContent, IImageTrxContent, IGroupInfoTrxContent, TrxType, TrxStorage,
 } from 'nft-bbs-types';
 import { getLoginState, runLoading, setLoginState } from '~/utils';
-import { CommentApi, ConfigApi, GroupApi, GroupInfoApi, NotificationApi, PostApi, ProfileApi, VaultApi } from '~/apis';
+import { CommentApi, GroupApi, GroupInfoApi, NotificationApi, PostApi, ProfileApi, VaultApi } from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
+import { nftService } from '~/service/nft';
 import { pageStateMap } from '~/utils/pageState';
 import type { createPostlistState } from '~/views/Main/PostList';
-import { nftService } from '../nft';
 
 const state = observable({
   allowMixinLogin: false,
-  checkNFT: false,
   showJoin: false,
   showMain: false,
   groupId: '',
@@ -822,15 +821,6 @@ const init = () => {
     }
   };
   initCheck();
-  ConfigApi.getConfig().then((v) => {
-    if (either.isRight(v)) {
-      runInAction(() => {
-        state.allowMixinLogin = v.right.mixinLogin;
-        // TODO:
-        state.checkNFT = true;
-      });
-    }
-  });
 
   return () => {
     removeListeners();

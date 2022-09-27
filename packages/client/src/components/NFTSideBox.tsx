@@ -9,7 +9,6 @@ import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
 
 import { ThemeLight } from '~/utils';
-import { nftService } from '~/service';
 
 interface Props {
   className?: string
@@ -17,17 +16,12 @@ interface Props {
 
 export const NFTSideBox = observer((props: Props) => {
   const state = useLocalObservable(() => ({
-    ntfPopup: {
-      nft: null,
-      open: false,
-    } as {
-      nft: typeof nftService.state.nfts[0] | null
-      open: boolean
-    },
+    ntfPopup: false,
     get nfts() {
+      return [];
       // const list = Array(4).fill(0).map((_, i) => i);
       // return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
-      return nftService.state.nfts;
+      // return nftService.state.nfts;
     },
   }));
   const nftSmallIconBox = useRef<HTMLDivElement>(null);
@@ -57,14 +51,14 @@ export const NFTSideBox = observer((props: Props) => {
             </button>
           </Tooltip>
         ))} */}
-        {state.nfts.map((v) => (
-          <Tooltip key={v.blockNumber} title={<ExpandIcon className="text-20 -mx-1" />}>
+        {state.nfts.map((v, i) => (
+          <Tooltip key={i} title={<ExpandIcon className="text-20 -mx-1" />}>
             <button
               className="flex items-stretch w-9 h-9 p-1 border border-white/80"
-              onClick={action(() => { state.ntfPopup = { open: true, nft: v }; })}
+              onClick={action(() => { state.ntfPopup = true; })}
             >
               <div className="flex flex-center flex-1 bg-white/60">
-                {v.tokenId}
+                {/* {v.tokenId} */}
                 {/* <LockIcon className="text-white text-18" /> */}
               </div>
             </button>
@@ -76,9 +70,9 @@ export const NFTSideBox = observer((props: Props) => {
     <ThemeLight>
       <Popover
         className="mt-6"
-        open={state.ntfPopup.open}
+        open={state.ntfPopup}
         anchorEl={nftSmallIconBox.current}
-        onClose={action(() => { state.ntfPopup.open = false; })}
+        onClose={action(() => { state.ntfPopup = false; })}
         transformOrigin={{
           horizontal: 'center',
           vertical: 'top',
@@ -93,16 +87,16 @@ export const NFTSideBox = observer((props: Props) => {
           <IconButton
             className="absolute top-1 right-1"
             size="small"
-            onClick={action(() => { state.ntfPopup.open = false; })}
+            onClick={action(() => { state.ntfPopup = false; })}
           >
             <CollapseIcon className="text-link text-20" />
           </IconButton>
 
-          {!!state.ntfPopup.nft && (
+          {/* {!!state.ntfPopup.nft && (
             <div className="break-all">
               {JSON.stringify(state.ntfPopup.nft)}
             </div>
-          )}
+          )} */}
 
           {/* <div className="flex-col gap-y-4 mt-8">
             {state.nfts.map((row, i) => (

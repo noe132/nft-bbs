@@ -3,8 +3,13 @@ import request from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { API_BASE_URL } from './common';
 
+export interface SiteConfig {
+  mixinLogin: boolean
+  checkNFT: boolean
+}
+
 export const getConfig = async () => {
-  const item = await request<{ mixinLogin: boolean }>(
+  const item = await request<SiteConfig>(
     `${API_BASE_URL}/config`,
   );
   return fp.pipe(

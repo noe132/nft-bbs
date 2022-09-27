@@ -26,7 +26,7 @@ import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
 import { chooseImgByPixelRatio, getLoginState, runLoading, setLoginState, ThemeLight } from '~/utils';
 import {
-  AllLanguages, dialogService, keyService, langName,
+  AllLanguages, configService, dialogService, keyService, langName,
   langService, nodeService, snackbarService,
 } from '~/service';
 import { GroupAvatar } from '~/components';
@@ -590,7 +590,7 @@ export const Join = observer(() => {
                     </div>
                   )}
 
-                  {!!state.savedLoginState.mixinCanLogin && nodeService.state.allowMixinLogin && (
+                  {!!state.savedLoginState.mixinCanLogin && configService.state.mixinLogin && (
                     <div className="relative flex items-center gap-x-2">
                       <Tooltip title="用上次登录使用的 mixin账号登录" placement="right">
                         <Button
@@ -615,7 +615,7 @@ export const Join = observer(() => {
                       </Tooltip>
                     </div>
                   )}
-                  {nodeService.state.allowMixinLogin && (
+                  {configService.state.mixinLogin && (
                     <Tooltip title="使用 Mixin 账号登录" placement="right">
                       <Button
                         className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"

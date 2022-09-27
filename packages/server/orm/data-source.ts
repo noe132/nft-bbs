@@ -1,4 +1,4 @@
-import '~/utils/env';
+import '~/utils/bootstrap';
 import { DataSource } from 'typeorm';
 
 const inTSNode = !!(process as any)[Symbol.for('ts-node.register.instance')];

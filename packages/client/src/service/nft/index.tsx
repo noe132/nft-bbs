@@ -1,14 +1,17 @@
 import { either } from 'fp-ts';
-import { action, observable, reaction, runInAction } from 'mobx';
+import { observable, reaction, runInAction, when } from 'mobx';
 import { MVMApi } from '~/apis';
 import { keyService } from '~/service/key';
+import { configService } from '~/service/config';
 
 const state = observable({
-  nfts: [] as MVMApi.NFTTransactions['data'],
+  // nfts: [] as MVMApi.NFTTransactions['data'],
   hasNFT: false,
 
   get hasPermission() {
-    // TODO: check if nft was enabled
+    if (!configService.state.checkNFT) {
+      return true;
+    }
     return this.hasNFT;
   },
 });
@@ -22,23 +25,23 @@ const requestNFT = async (mixinUserId: string) => {
   return hasNFT;
 };
 
-const getNFTsByAddress = async (_address: string) => {
-  // const res = await MVMApi.getNFT(address);
-  const res = await MVMApi.getNFT('0xC8407A1F2B2467074c7FA8da72d473C6675375e6');
-  if (either.isRight(res)) {
-    state.nfts = res.right.data;
-  }
-  // https://prs-bp2.press.one/api/nfts/transactions?account=0xC8407A1F2B2467074c7FA8da72d473C6675375e6&count=100
+// const getNFTsByAddress = async (_address: string) => {
+//   const res = await MVMApi.getNFT(address);
+//   const res = await MVMApi.getNFT('0xC8407A1F2B2467074c7FA8da72d473C6675375e6');
+//   if (either.isRight(res)) {
+//     state.nfts = res.right.data;
+//   }
+//   https://prs-bp2.press.one/api/nfts/transactions?account=0xC8407A1F2B2467074c7FA8da72d473C6675375e6&count=100
 
-  // if (res.data.length === 0) {
-  //   return [];
-  // }
-  // return _.unionBy(res.data.reverse(), 'tokenId').filter((item) => item.to.toLowerCase() === address.toLowerCase()).reverse();
-};
+//   if (res.data.length === 0) {
+//     return [];
+//   }
+//   return _.unionBy(res.data.reverse(), 'tokenId').filter((item) => item.to.toLowerCase() === address.toLowerCase()).reverse();
+// };
 
-const clearNFT = action(() => {
-  state.nfts = [];
-});
+// const clearNFT = action(() => {
+//   state.nfts = [];
+// });
 
 // const getNfts = () => {
 //   const provider = new providers.JsonRpcProvider('http://149.56.22.113:8545');
@@ -58,32 +61,38 @@ const clearNFT = action(() => {
 //   }
 // };
 
-export const init = () => reaction(
-  () => {
-    if (keyService.state.keys?.type === 'mixin') {
-      return {
-        userId: keyService.state.keys.user.mixin.mixin_userid,
-        address: keyService.state.keys.appUser.eth_address,
-      };
-    }
-  },
-  async (data) => {
-    // TODO: check config if nft was enabled
-    if (!data) {
-      clearNFT();
-      return;
-    }
-    // const hasNFT = await requestNFT(data.userId)
-    // if (hasNFT) {
-    //   await getNFTsByAddress(data.address);
-    // }
-    await getNFTsByAddress(data.address);
-  },
-);
+export const init = () => {
+  const disposes: Array<() => unknown> = [];
+
+  when(() => configService.state.inited).then(() => {
+    const dispose = reaction(
+      () => {
+        if (keyService.state.keys?.type === 'mixin') {
+          return {
+            mixinUserId: keyService.state.keys.user.mixin.mixin_userid,
+            address: keyService.state.keys.appUser.eth_address,
+          };
+        }
+      },
+      (data) => {
+        if (!data) {
+          runInAction(() => {
+            state.hasNFT = false;
+          });
+          return;
+        }
+        requestNFT(data.mixinUserId);
+      },
+    );
+    disposes.push(dispose);
+  });
+
+  return () => disposes.forEach((v) => v());
+};
 
 export const nftService = {
   state,
   init,
+
   requestNFT,
-  getNFTsByAddress,
 };

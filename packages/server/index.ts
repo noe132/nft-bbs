@@ -1,9 +1,6 @@
-import 'reflect-metadata';
-import './utils/alias';
-import './utils/env';
+import './utils/bootstrap';
 import * as path from 'path';
 import { createWriteStream } from 'fs';
-import { performance } from 'perf_hooks';
 import * as fs from 'fs/promises';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
@@ -24,6 +21,7 @@ export type { SocketIOEventMap } from '~/service/socket';
 const port = Number(process.env.PORT) || 8002;
 
 const main = async () => {
+  // eslint-disable-next-line no-console
   console.log('starting server...');
   await fs.mkdir(path.join(__dirname, 'logs')).catch(() => 1);
 

@@ -7,16 +7,16 @@ import scrollIntoView from 'scroll-into-view-if-needed';
 import type { Comment } from 'nft-bbs-server';
 import { CounterName } from 'nft-bbs-types';
 import { Button, Tooltip } from '@mui/material';
+import { ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import UnfoldIcon from '~/assets/icons/icon_unfold.svg?fill-icon';
 import { Foldable, UserAvatar } from '~/components';
-import { nftService, nodeService, snackbarService } from '~/service';
+import { nodeService, snackbarService } from '~/service';
 import { showTrxDetail } from '~/modals';
 import { ago, runLoading } from '~/utils';
-import { ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 
 interface CommentItemProps {
   className?: string
