@@ -160,6 +160,10 @@ export const PostDetail = observer((props: { className?: string }) => {
       snackbarService.show('请输入评论');
       return;
     }
+    if (content.length > 300) {
+      snackbarService.show('请输入少于300字');
+      return;
+    }
     const comment = await runLoading(
       (l) => { state.commentPosting = l; },
       () => nodeService.comment.submit({
@@ -419,6 +423,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                   'mt-1 text-14 h-[144px] text-white px-3 py-2 bg-transparent resize-none rounded',
                   'outline-none border border-white/20 hover:border-white/80',
                   'focus:border-white focus:border-2 focus:px-[11px] focus:py-[7px]',
+                  state.replyTo.content.length > 300 && '!border-red-400',
                 )}
                 ref={replyTextarea}
                 value={state.replyTo.content}
