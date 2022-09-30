@@ -4,7 +4,6 @@ import request from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { VAULT_API_BASE_URL } from './common';
 
-// const appId = 1053252857925;
 const appId = 1065804423237;
 
 export interface VaultUser {

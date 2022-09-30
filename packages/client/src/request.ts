@@ -53,6 +53,6 @@ export default async <T = unknown>(url: any, options: RequestOptions = {}): Prom
     res,
     resData,
     status: res.status,
-    message: resData.message,
+    message: resData?.message ?? '',
   }));
 };

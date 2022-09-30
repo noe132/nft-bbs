@@ -5,7 +5,7 @@ import { snackbarService } from '~/service/snackbar';
 const groupId = '7000103413';
 
 export const mixinAuth = async (userId: string) => {
-  const item = await request(
+  const item = await request<null>(
     'https://prs-bp2.press.one/api/groups/mixinauth',
     {
       method: 'post',
@@ -19,6 +19,12 @@ export const mixinAuth = async (userId: string) => {
 
   return fp.pipe(
     item,
+    either.orElse((e) => {
+      if (e.status === 304) {
+        return either.right(null);
+      }
+      return either.left(e);
+    }),
     either.mapLeft((v) => {
       const errorMessage = v.resData?.error ?? '';
       const errors = [
