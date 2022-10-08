@@ -7,6 +7,7 @@ import { Logger } from 'pino';
 import { performance } from 'perf_hooks';
 import { FastifyBaseLogger } from 'fastify';
 
+export * from './PollingTask';
 export * from './store';
 export * from './truncate';
 

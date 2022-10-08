@@ -4,6 +4,7 @@ import { langService } from './lang';
 import { DialogContainer } from './dialog/DialogContainer';
 import { nftService } from './nft';
 import { configService } from './config';
+import { nodeService } from './node';
 
 export * from './config';
 export * from './dialog';
@@ -19,6 +20,7 @@ export const initService = () => {
     configService.init(),
     nftService.init(),
     langService.init(),
+    nodeService.init(),
   ];
 
   return () => {

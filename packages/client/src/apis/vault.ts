@@ -1,6 +1,5 @@
 import { either, function as fp, taskEither } from 'fp-ts';
-import qs from 'query-string';
-import request from '~/request';
+import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { VAULT_API_BASE_URL } from './common';
 
@@ -38,10 +37,10 @@ export interface VaultAppUser {
 }
 
 export const getUser = async (jwt: string) => {
-  const item = await request<VaultUser>(
-    `${VAULT_API_BASE_URL}/user`,
-    { headers: { Authorization: `Bearer ${jwt}` } },
-  );
+  const item = await request<VaultUser>({
+    url: `${VAULT_API_BASE_URL}/user`,
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
 
   return fp.pipe(
     item,
@@ -53,15 +52,16 @@ export const getUser = async (jwt: string) => {
 };
 
 export const getAppUser = async (jwt: string, userId: number) => {
-  const item = await request<VaultAppUser>(
-    `${VAULT_API_BASE_URL}/app/user?${qs.stringify({ appid: appId, userid: userId })}`,
-    { headers: { Authorization: `Bearer ${jwt}` } },
-  );
+  const item = await request<VaultAppUser>({
+    url: `${VAULT_API_BASE_URL}/app/user`,
+    params: { appid: appId, userid: userId },
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
 
   return fp.pipe(
     item,
     either.mapLeft((v) => {
-      if (v.status === 500 && v.message === 'record not found') {
+      if (v.response?.status === 500 && v.response.data?.message === 'record not found') {
         return 'no user' as const;
       }
       snackbarService.networkError(v);
@@ -71,20 +71,18 @@ export const getAppUser = async (jwt: string, userId: number) => {
 };
 
 export const createAppUser = async (jwt: string) => {
-  const item = await request<VaultAppUser>(
-    `${VAULT_API_BASE_URL}/app/user?${qs.stringify({ appid: appId })}`,
-    {
-      method: 'post',
-      headers: { Authorization: `Bearer ${jwt}` },
-      body: { appid: appId },
-      json: true,
-    },
-  );
+  const item = await request<VaultAppUser>({
+    url: `${VAULT_API_BASE_URL}/app/user`,
+    params: { appid: appId },
+    method: 'post',
+    headers: { Authorization: `Bearer ${jwt}` },
+    data: { appid: appId },
+  });
 
   return fp.pipe(
     item,
     either.mapLeft((v) => {
-      if (v.status === 500 && v.message.includes('Duplicate entry')) {
+      if (v.response?.status === 500 && (v.response.data?.message ?? '').includes('Duplicate entry')) {
         return 'already created' as const;
       }
       snackbarService.networkError(v);
@@ -97,20 +95,12 @@ export const sign = async (hash: string, jwt: string) => {
   const item = await request<{
     address: string
     signature: string
-  }>(
-    `${VAULT_API_BASE_URL}/app/user/sign`,
-    {
-      method: 'post',
-      headers: {
-        Authorization: `Bearer ${jwt}`,
-      },
-      json: true,
-      body: {
-        appid: appId,
-        hash,
-      },
-    },
-  );
+  }>({
+    url: `${VAULT_API_BASE_URL}/app/user/sign`,
+    method: 'post',
+    headers: { Authorization: `Bearer ${jwt}` },
+    data: { appid: appId, hash },
+  });
 
   return fp.pipe(
     item,

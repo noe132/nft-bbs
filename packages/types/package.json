@@ -13,10 +13,10 @@
   "author": "raimonfuns",
   "license": "ISC",
   "dependencies": {
-     "fp-ts": "^2.12.2",
-     "io-ts": "^2.2.17"
+    "fp-ts": "^2.12.2",
+    "io-ts": "^2.2.19"
   },
   "devDependencies": {
-     "rimraf": "^3.0.2"
+    "rimraf": "^3.0.2"
   }
 }

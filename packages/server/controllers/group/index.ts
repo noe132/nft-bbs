@@ -4,7 +4,8 @@ import { BadRequest } from 'http-errors';
 import QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
 import { either } from 'fp-ts';
 import { assertValidation } from '~/utils';
-import { GroupStatus } from '~/orm/entity/groupStatus';
+import { GroupStatus } from '~/orm/entity';
+import { pollingService } from '~/service';
 
 export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.post('/join', async (req) => {
@@ -38,7 +39,7 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
       startTrx: '',
     });
 
-    QuorumLightNodeSDK.cache.Group.add(seedUrl);
+    pollingService.addGroup(seedUrl);
 
     return {
       status: 0,

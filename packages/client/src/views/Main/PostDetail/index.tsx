@@ -15,7 +15,7 @@ import { BackButton, ScrollToTopButton, UserAvatar, UserCard } from '~/component
 import { nftService, nodeService, snackbarService } from '~/service';
 import { runLoading, usePageState } from '~/utils';
 
-import { PostDetailBox } from '../components/PostDetailBox';
+import { PostDetailBox } from './PostDetailBox';
 import { commentContext, CommentItem } from './CommentItem';
 
 interface UserCardItem {
@@ -292,9 +292,10 @@ export const PostDetail = observer((props: { className?: string }) => {
           <div className="flex flex-1 h-[40px] items-stretch">
             <InputBase
               className="bg-white flex-1 rounded-l text-black px-4 text-14"
-              placeholder="在这里写下你的评论…"
+              placeholder={nodeService.state.postPermissionTip ? '无权限发布内容' : '在这里写下你的评论…'}
               value={state.commentInput}
               onChange={action((e) => { state.commentInput = e.target.value; })}
+              disabled={!!nodeService.state.postPermissionTip}
               onKeyDown={(e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                   handlePostComment('direct');

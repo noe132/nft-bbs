@@ -1,5 +1,5 @@
 import io from 'socket.io-client';
-import type { SocketIOEventMap } from 'nft-bbs-server';
+import type { SocketIOEventMap, AuthenticateData } from 'nft-bbs-server';
 
 export type SocketEventListeners = {
   [K in keyof SocketIOEventMap]: (v: SocketIOEventMap[K]) => unknown
@@ -25,14 +25,13 @@ const addListeners = (listeners: Partial<SocketEventListeners>) => {
   };
 };
 
-const authenticate = (address: string) => {
-  socket.emit('authenticate', address);
+const authenticate = (data: AuthenticateData) => {
+  socket.emit('authenticate', data);
 };
 
 const logout = () => {
   socket.emit('logout');
 };
-
 
 export const socketService = {
   addListeners,

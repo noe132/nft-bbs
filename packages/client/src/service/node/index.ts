@@ -1,6 +1,6 @@
 import { matchPath } from 'react-router-dom';
 import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
-import { action, observable, runInAction } from 'mobx';
+import { action, observable, reaction, runInAction } from 'mobx';
 import { either } from 'fp-ts';
 import type { Post, Comment, Profile, Notification, UniqueCounter } from 'nft-bbs-server';
 import {
@@ -788,6 +788,19 @@ const socketEventHandler: Partial<SocketEventListeners> = {
 
 const init = () => {
   const removeListeners = socketService.addListeners(socketEventHandler);
+  const dispose = reaction(
+    () => ({
+      userAddress: keyService.state.address,
+      groupId: nodeService.state.groupId,
+    }),
+    (data) => {
+      if (data.userAddress && data.groupId) {
+        socketService.authenticate(data);
+      } else {
+        socketService.logout();
+      }
+    },
+  );
   const initCheck = async () => {
     const postdetailMatch = matchPath('/post/:groupId/:trxId', location.pathname);
     const userprofileMatch = matchPath('/userprofile/:groupId/:userAddress', location.pathname);
@@ -824,6 +837,7 @@ const init = () => {
 
   return () => {
     removeListeners();
+    dispose();
   };
 };
 

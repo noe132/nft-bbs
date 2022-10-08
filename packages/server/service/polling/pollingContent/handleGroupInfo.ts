@@ -1,6 +1,6 @@
 import { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
-import { GroupInfo } from '~/orm/entity/groupInfo';
+import { GroupInfo } from '~/orm/entity';
 import { send } from '~/service/socket';
 import { parseQuorumTimestamp } from '~/utils';
 

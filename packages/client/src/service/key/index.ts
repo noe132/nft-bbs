@@ -3,7 +3,6 @@ import { ethers, utils } from 'ethers';
 import { taskEither, either, function as fp } from 'fp-ts';
 import { Base64 } from 'js-base64';
 import { VaultApi } from '~/apis';
-import { socketService } from '~/service/socket';
 
 export interface KeystoreData {
   type: 'keystore'
@@ -48,7 +47,6 @@ const validate = async (keystore: string, password: string) => {
 };
 
 const useKeystore = action((data: Omit<KeystoreData, 'type'>) => {
-  socketService.authenticate(data.address);
   state.keys = {
     type: 'keystore',
     privateKey: data.privateKey,
@@ -59,7 +57,6 @@ const useKeystore = action((data: Omit<KeystoreData, 'type'>) => {
 });
 
 const logout = action(() => {
-  socketService.logout();
   state.keys = null;
 });
 

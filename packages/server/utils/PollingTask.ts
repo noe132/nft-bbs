@@ -1,5 +1,5 @@
 export class PollingTask {
-  private timerId = 0;
+  private timerId: NodeJS.Timeout | null = null;
   private task: (...args: Array<any>) => unknown;
   private stopFlag = false;
   private taskRunning = false;
@@ -15,7 +15,7 @@ export class PollingTask {
       await Promise.resolve(task()).catch((e) => console.error(e));
       this.taskRunning = false;
       if (this.stopFlag) { return; }
-      this.timerId = window.setTimeout(() => {
+      this.timerId = setTimeout(() => {
         this.task();
       }, this.interval);
     };
@@ -28,12 +28,14 @@ export class PollingTask {
     if (runOnStart) {
       this.task();
     } else {
-      this.timerId = window.setTimeout(this.task, this.interval);
+      this.timerId = setTimeout(this.task, this.interval);
     }
   }
 
   public stop() {
-    window.clearTimeout(this.timerId);
+    if (this.timerId) {
+      clearTimeout(this.timerId);
+    }
     this.stopFlag = true;
   }
 
@@ -41,7 +43,9 @@ export class PollingTask {
     if (this.stopFlag || this.taskRunning) {
       return;
     }
-    window.clearTimeout(this.timerId);
+    if (this.timerId) {
+      clearTimeout(this.timerId);
+    }
     this.task();
   }
 }

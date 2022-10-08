@@ -1,6 +1,5 @@
 import { either, function as fp } from 'fp-ts';
-import qs from 'query-string';
-import request from '~/request';
+import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 
 export interface PixabayResponse {
@@ -33,10 +32,15 @@ export interface PixabayResponse {
 }
 
 export const search = async (options: any = {}) => {
-  const item = await request<PixabayResponse>(
-    `https://pixabay.com/api/?key=13927481-1de5dcccace42d9447c90346f&safesearch=true&image_type=photo&${qs.stringify(options)}`,
-    { minPendingDuration: 300 },
-  );
+  const item = await request<PixabayResponse>({
+    url: 'https://pixabay.com/api',
+    params: {
+      key: '13927481-1de5dcccace42d9447c90346f',
+      safesearch: 'true',
+      image_type: 'photo',
+      ...options,
+    },
+  });
 
   return fp.pipe(
     item,

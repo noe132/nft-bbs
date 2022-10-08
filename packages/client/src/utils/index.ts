@@ -1,7 +1,7 @@
 import { runInAction } from 'mobx';
 import store from 'store2';
 
-export * from './PollingTask';
+export * from 'nft-bbs-server/utils/PollingTask';
 export * from './ago';
 export * from './compressImage';
 export * from './constants';

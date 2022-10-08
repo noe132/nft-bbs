@@ -1,13 +1,15 @@
 import { FastifyInstance } from 'fastify';
+import { either } from 'fp-ts';
+import { string, type, TypeOf } from 'io-ts';
 import { Server, Socket } from 'socket.io';
 import { Notification, Post, UniqueCounter } from '~/orm';
 
 let socketIo: Server | null = null;
 
-// TODO: by groupId-userAddress
 const socketMap = {
   byId: new Map<string, Socket>(),
   byAddress: new Map<string, Socket>(),
+  byGroupId: new Map<string, Socket>(),
 };
 
 export interface SocketIOEventMap {
@@ -32,17 +34,24 @@ export interface SocketIOEventMap {
 interface SendParams<T extends keyof SocketIOEventMap> {
   event: T
   data: SocketIOEventMap[T]
+  groupId?: string
   userAddress?: string
   broadcast?: boolean
 }
 
+const authenticateData = type({
+  userAddress: string,
+  groupId: string,
+});
+
+export type AuthenticateData = TypeOf<typeof authenticateData>;
 
 export const send = <T extends keyof SocketIOEventMap>(params: SendParams<T>) => {
-  if (params.userAddress) {
-    const socket = socketMap.byAddress.get(params.userAddress);
-    if (socket) {
-      socket.emit(params.event, params.data);
-    }
+  if (params.userAddress && params.groupId) {
+    const socket1 = socketMap.byAddress.get(params.userAddress);
+    const socket2 = socketMap.byGroupId.get(params.groupId);
+    if (!socket1 || socket1 !== socket2) { return; }
+    socket1.emit(params.event, params.data);
   } else if (params.broadcast) {
     if (!socketIo) { return; }
     socketIo.emit(params.event, params.data);
@@ -50,11 +59,13 @@ export const send = <T extends keyof SocketIOEventMap>(params: SendParams<T>) =>
 };
 
 const logout = (socketId: string) => {
-  Array.from(socketMap.byAddress.entries())
-    .filter(([_k, v]) => v.id === socketId)
-    .forEach(([k]) => {
-      socketMap.byAddress.delete(k);
-    });
+  [socketMap.byAddress, socketMap.byGroupId].forEach((map) => {
+    Array.from(map.entries())
+      .filter(([_k, v]) => v.id === socketId)
+      .forEach(([k]) => {
+        socketMap.byAddress.delete(k);
+      });
+  });
 };
 
 export const initSocket = (fastify: FastifyInstance) => {
@@ -75,11 +86,13 @@ export const initSocket = (fastify: FastifyInstance) => {
       logout(socket.id);
     });
 
-    socket.on('authenticate', (userAddress) => {
-      if (!userAddress) {
-        socket.emit('authenticateResult', 'userAddress is required');
+    socket.on('authenticate', (data: AuthenticateData) => {
+      const result = authenticateData.decode(data);
+      if (either.isLeft(result)) {
+        socket.emit('authenticateResult', 'invalid authenticate');
       }
-      socketMap.byAddress.set(userAddress, socket);
+      socketMap.byAddress.set(data.userAddress, socket);
+      socketMap.byGroupId.set(data.groupId, socket);
       socket.emit('authenticateResult', 'socket connected');
     });
 
@@ -87,8 +100,8 @@ export const initSocket = (fastify: FastifyInstance) => {
       logout(socket.id);
     });
   });
-};
 
-export const disposeSocket = () => {
-  socketIo?.close();
+  return () => {
+    socketIo?.close();
+  };
 };

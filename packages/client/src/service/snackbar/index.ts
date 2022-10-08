@@ -1,6 +1,5 @@
-import { either } from 'fp-ts';
+import axios, { AxiosError } from 'axios';
 import { action, observable } from 'mobx';
-import { ResponseError } from '~/request';
 import type {
   SnackbarItemData,
   SnackbarItemParam,
@@ -37,13 +36,17 @@ const error: ShowFunction = (p1: SnackbarItemParam | string, p2?: number) => {
 };
 
 /** 显示 error snackbar */
-const networkError = (err: string | ResponseError | either.Left<ResponseError>, p2?: SnackbarItemParam) => {
+const networkError = (err: string | AxiosError<any> | Error, p2?: SnackbarItemParam) => {
   let message: string;
   if (typeof err === 'string') {
     message = err;
+  } else if (err instanceof axios.AxiosError) {
+    // TODO: fix https://github.com/axios/axios/issues/5062
+    message = err.response?.data?.message
+      ?? err.response?.data?.error
+      ?? err.message;
   } else {
-    const error = '_tag' in err ? err.left : err;
-    message = error.message;
+    message = err.message;
   }
   const params = {
     ...p2,

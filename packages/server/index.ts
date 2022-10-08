@@ -16,7 +16,7 @@ export type {
   Notification, Post, Profile, UniqueCounter,
 } from '~/orm/entity';
 
-export type { SocketIOEventMap } from '~/service/socket';
+export type { SocketIOEventMap, AuthenticateData } from '~/service/socket';
 
 const port = Number(process.env.PORT) || 8002;
 

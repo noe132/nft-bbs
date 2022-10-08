@@ -1,15 +1,21 @@
 import { FastifyInstance } from 'fastify';
-import { pollingContent, stopPolling } from './polling';
-import { disposeSocket, initSocket } from './socket';
+import { pollingService } from './polling';
+import { initSocket } from './socket';
 
 export * from './socket';
+export * from './polling';
+
+const disposes: Array<() => unknown> = [];
 
 export const initService = (fastify: FastifyInstance) => {
-  initSocket(fastify);
-  pollingContent(2000);
+  [
+    initSocket(fastify),
+    pollingService.init(),
+  ].forEach((v) => {
+    disposes.push(v);
+  });
 };
 
 export const disposeService = () => {
-  disposeSocket();
-  stopPolling();
+  disposes.forEach((v) => v());
 };

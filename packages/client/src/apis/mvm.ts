@@ -1,40 +1,36 @@
 import { either, function as fp } from 'fp-ts';
-import request from '~/request';
+import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 
 const groupId = '7000103413';
 
 export const mixinAuth = async (userId: string) => {
   const item = await request<null>(
-    'https://prs-bp2.press.one/api/groups/mixinauth',
     {
+      url: 'https://prs-bp2.press.one/api/groups/mixinauth',
       method: 'post',
-      json: true,
-      body: {
-        groupId,
-        'userId': userId,
-      },
+      data: { groupId, 'userId': userId },
     },
   );
 
   return fp.pipe(
     item,
     either.orElse((e) => {
-      if (e.status === 304) {
+      if (e.response?.status === 304) {
         return either.right(null);
       }
       return either.left(e);
     }),
-    either.mapLeft((v) => {
-      const errorMessage = v.resData?.error ?? '';
+    either.mapLeft((e) => {
+      const errorMessage = e.response?.data?.error ?? '';
       const errors = [
         'Invalid Mixin user id.',
         'Invalid user state.',
       ];
       if (!errors.includes(errorMessage)) {
-        snackbarService.networkError(errorMessage || v);
+        snackbarService.networkError(e);
       }
-      return v;
+      return e;
     }),
   );
 };
@@ -59,22 +55,22 @@ export interface NFTTransactions {
 }
 
 export const getNFT = async (address: string) => {
-  const item = await request<NFTTransactions>(
-    `https://prs-bp2.press.one/api/nfts/transactions?account=${address}&count=100`,
-  );
+  const item = await request<NFTTransactions>({
+    url: `https://prs-bp2.press.one/api/nfts/transactions?account=${address}&count=100`,
+  });
 
   return fp.pipe(
     item,
-    either.mapLeft((v) => {
-      const errorMessage = v.resData?.error ?? '';
+    either.mapLeft((e) => {
+      const errorMessage = e.response?.data?.error ?? '';
       const errors = [
         'Invalid Mixin user id.',
         'Invalid user state.',
       ];
       if (!errors.includes(errorMessage)) {
-        snackbarService.networkError(errorMessage || v);
+        snackbarService.networkError(e);
       }
-      return v;
+      return e;
     }),
   );
 };
