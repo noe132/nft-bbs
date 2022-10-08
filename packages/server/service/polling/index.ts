@@ -22,14 +22,17 @@ const updatePollingTasks = () => {
     if (state.map.has(group.groupId)) {
       return;
     }
-    const task = new PollingTask(async () => {
-      await pollingTask(group);
-    }, 2000);
+    const task = new PollingTask(
+      async () => {
+        await pollingTask(group);
+      },
+      2000,
+    );
     state.map.set(group.groupId, task);
   });
 
   Array.from(state.map.keys())
-    .filter((groupId) => groups.some((group) => group.groupId === groupId))
+    .filter((groupId) => groups.every((group) => group.groupId !== groupId))
     .forEach((groupId) => {
       const task = state.map.get(groupId);
       if (task) {

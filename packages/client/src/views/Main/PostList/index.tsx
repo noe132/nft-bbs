@@ -285,6 +285,7 @@ export const PostList = observer((props: { className?: string }) => {
             )}
             {state.done && (
               <span className="text-white/60 text-14">
+                {!state.trxIds.length && state.mode.type !== 'search' && '暂无帖子'}
                 {state.trxIds.length > 10 && state.mode.type !== 'search' && '没有啦'}
                 {!state.trxIds.length && state.mode.type === 'search' && '没有找到搜索结果'}
               </span>

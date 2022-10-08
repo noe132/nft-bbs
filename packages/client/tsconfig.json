@@ -15,7 +15,7 @@
     "src",
     "build",
     "vite.config.ts"
-, "../server/utils/PollingTask.ts"  ],
+  ],
   "references": [
     { "path": "../types/tsconfig.json" },
     { "path": "../server/tsconfig.json" }

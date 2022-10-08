@@ -1,3 +1,4 @@
+import { either, taskEither } from 'fp-ts';
 import QuorumLightNodeSDK, { IContent, IGroup } from 'quorum-light-node-sdk-nodejs';
 import { AppDataSource } from '~/orm/data-source';
 import { GroupStatus } from '~/orm/entity';
@@ -65,7 +66,15 @@ export const pollingTask = async (group: IGroup) => {
       count: LIMIT,
       ...startTrx ? { startTrx } : {},
     };
-    const contents = await QuorumLightNodeSDK.chain.Content.list(listOptions);
+    const contentsResult = await taskEither.tryCatch(
+      () => QuorumLightNodeSDK.chain.Content.list(listOptions),
+      (e) => e as Error,
+    )();
+    if (either.isLeft(contentsResult)) {
+      pollingLog.error(contentsResult.left);
+      return;
+    }
+    const contents = contentsResult.right;
     if (contents.length > 0) {
       await handleContents(group.groupId, contents);
     }
