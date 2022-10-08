@@ -43,7 +43,7 @@ const handleContents = async (groupId: string, contents: Array<IContent>) => {
           case 'image': await handleImage(content, transactionManager, queueSocket); break;
           default: break;
         }
-        await GroupStatus.update(groupId, content.TrxId, transactionManager);
+        await GroupStatus.update(groupId, { startTrx: content.TrxId }, transactionManager);
       });
 
       if (groupLoadedMap[content.GroupId]) {

@@ -1,5 +1,6 @@
 export * from './comment';
 export * from './groupInfo';
+export * from './groupSeed';
 export * from './groupStatus';
 export * from './imageFile';
 export * from './notification';

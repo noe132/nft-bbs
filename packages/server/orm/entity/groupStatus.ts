@@ -28,8 +28,8 @@ export class GroupStatus {
     return (manager || AppDataSource.manager).save(GroupStatus, item);
   }
 
-  public static async update(groupId: string, startTrx: string, manager?: EntityManager) {
-    return (manager || AppDataSource.manager).update(GroupStatus, { groupId }, { startTrx });
+  public static async update(groupId: string, fields: Partial<EntityConstructorParams<GroupStatus>>, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).update(GroupStatus, { groupId }, fields);
   }
 
   public static async get(groupId: string, manager?: EntityManager) {

@@ -42,7 +42,8 @@ const updatePollingTasks = () => {
     });
 };
 
-const addGroup = (seedUrl: string) => {
+const addGroup = (groupId: string, seedUrl: string) => {
+  QuorumLightNodeSDK.cache.Group.remove(groupId);
   QuorumLightNodeSDK.cache.Group.add(seedUrl);
   updatePollingTasks();
 };
