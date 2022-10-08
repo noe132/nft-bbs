@@ -10,6 +10,7 @@ export const handleGroupInfo = async (
   queueSocket: typeof send,
 ) => {
   const trxContent = GroupInfo.parseTrxContent(item);
+  const groupId = item.GroupId;
   if (!trxContent) {
     pollingLog.info(`groupInfo ${item.TrxId} failed to validate trxContent`, item.Data.content);
     return;
@@ -18,12 +19,13 @@ export const handleGroupInfo = async (
   await GroupInfo.add({
     ...trxContent,
     trxId: item.TrxId,
-    groupId: item.GroupId,
+    groupId,
     timestamp: parseQuorumTimestamp(item.TimeStamp),
   }, transactionManager);
   queueSocket({
     broadcast: true,
     event: 'trx',
+    groupId,
     data: { trxId: item.TrxId, type: 'groupInfo' },
   });
 };

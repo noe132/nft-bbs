@@ -31,13 +31,15 @@ export interface SocketIOEventMap {
   }
 }
 
-interface SendParams<T extends keyof SocketIOEventMap> {
+type SendParams<T extends keyof SocketIOEventMap> = {
   event: T
   data: SocketIOEventMap[T]
-  groupId?: string
-  userAddress?: string
-  broadcast?: boolean
-}
+  groupId: string
+} & ({
+  userAddress: string
+} | {
+  broadcast: true
+});
 
 const authenticateData = type({
   userAddress: string,
@@ -47,7 +49,7 @@ const authenticateData = type({
 export type AuthenticateData = TypeOf<typeof authenticateData>;
 
 export const send = <T extends keyof SocketIOEventMap>(params: SendParams<T>) => {
-  if (params.userAddress && params.groupId) {
+  if ('userAddress' in params) {
     const socket1 = socketMap.byAddress.get(params.userAddress);
     const socket2 = socketMap.byGroupId.get(params.groupId);
     if (!socket1 || socket1 !== socket2) { return; }

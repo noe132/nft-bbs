@@ -9,6 +9,7 @@ export const handleProfile = async (
   queueSocket: typeof send,
 ) => {
   const trxContent = Profile.parseTrxContent(item);
+  const groupId = item.GroupId;
   if (!trxContent) {
     pollingLog.info(`profile ${item.TrxId} failed to validate trxContent`, item.Data.content);
     return;
@@ -17,12 +18,13 @@ export const handleProfile = async (
     ...trxContent,
     trxId: item.TrxId,
     userAddress: QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey),
-    groupId: item.GroupId,
+    groupId,
   };
   await Profile.add(profile, transactionManager);
   queueSocket({
     broadcast: true,
     event: 'trx',
+    groupId,
     data: { trxId: profile.trxId, type: 'profile' },
   });
 };

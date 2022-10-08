@@ -10,6 +10,7 @@ export const handleComment = async (
   transactionManager: EntityManager,
   queueSocket: typeof send,
 ) => {
+  const groupId = item.GroupId;
   const trxContent = Comment.parseTrxContent(item);
   if (!trxContent) {
     pollingLog.info(`$1 ${item.TrxId} failed to validate trxContent`, item.Data.content);
@@ -18,7 +19,7 @@ export const handleComment = async (
   const comment: Comment = {
     ...trxContent,
     userAddress: QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey),
-    groupId: item.GroupId,
+    groupId,
     trxId: item.TrxId,
     storage: TrxStorage.chain,
     commentCount: 0,
@@ -30,7 +31,7 @@ export const handleComment = async (
 
   if (trxContent.updatedTrxId) {
     const updatedComment = await Comment.get(
-      { groupId: item.GroupId, trxId: trxContent.updatedTrxId },
+      { groupId, trxId: trxContent.updatedTrxId },
       transactionManager,
     );
     if (!updatedComment) { return; }
@@ -44,7 +45,7 @@ export const handleComment = async (
 
   if (trxContent.deletedTrxId) {
     const deletedComment = await Comment.get(
-      { groupId: item.GroupId, trxId: trxContent.deletedTrxId },
+      { groupId, trxId: trxContent.deletedTrxId },
       transactionManager,
     );
     if (!deletedComment) { return; }
@@ -53,34 +54,34 @@ export const handleComment = async (
     }
 
     await Promise.all([
-      Comment.delete({ groupId: deletedComment.groupId, trxId: deletedComment.trxId }, transactionManager),
-      Notification.deleteWith({ groupId: deletedComment.groupId, trxId: deletedComment.trxId }, transactionManager),
-      UniqueCounter.deleteWith({ groupId: deletedComment.groupId, trxId: deletedComment.trxId }, transactionManager),
+      Comment.delete({ groupId, trxId: deletedComment.trxId }, transactionManager),
+      Notification.deleteWith({ groupId, trxId: deletedComment.trxId }, transactionManager),
+      UniqueCounter.deleteWith({ groupId, trxId: deletedComment.trxId }, transactionManager),
     ]);
 
     const post = await Post.get(
-      { groupId: deletedComment.groupId, trxId: deletedComment.objectId },
+      { groupId, trxId: deletedComment.objectId },
       transactionManager,
     );
     if (post) {
       post.commentCount = await Comment.count({
-        groupId: post.groupId,
+        groupId,
         objectId: deletedComment.objectId,
       }, transactionManager);
       await Post.update(
-        { trxId: post.trxId, groupId: post.groupId },
+        { trxId: post.trxId, groupId },
         post,
         transactionManager,
       );
     }
     if (deletedComment.threadId) {
       const comment = await Comment.get(
-        { groupId: deletedComment.groupId, trxId: deletedComment.threadId },
+        { groupId, trxId: deletedComment.threadId },
         transactionManager,
       );
       if (comment) {
         comment.commentCount = await Comment.count({
-          groupId: comment.groupId,
+          groupId,
           threadId: deletedComment.threadId,
         }, transactionManager);
         await Comment.save(comment, transactionManager);
@@ -93,24 +94,25 @@ export const handleComment = async (
   queueSocket({
     broadcast: true,
     event: 'trx',
+    groupId,
     data: { trxId: comment.trxId, type: 'comment' },
   });
 
   const commentAuthorAddress = comment.userAddress;
   const post = await Post.get(
-    { groupId: comment.groupId, trxId: comment.objectId },
+    { groupId, trxId: comment.objectId },
     transactionManager,
   );
   const parentReplyComment = comment.replyId
-    ? await Comment.get({ groupId: comment.groupId, trxId: comment.replyId }, transactionManager)
+    ? await Comment.get({ groupId, trxId: comment.replyId }, transactionManager)
     : null;
   const parentThreadComment = comment.threadId
-    ? await Comment.get({ groupId: comment.groupId, trxId: comment.threadId }, transactionManager)
+    ? await Comment.get({ groupId, trxId: comment.threadId }, transactionManager)
     : null;
 
   if (post) {
     post.commentCount = await Comment.count({
-      groupId: post.groupId,
+      groupId,
       objectId: post.trxId,
     }, transactionManager);
     await Post.save(post, transactionManager);
@@ -125,7 +127,7 @@ export const handleComment = async (
     && post.userAddress !== commentAuthorAddress;
   if (replyToPost) {
     notifications.push({
-      groupId: item.GroupId,
+      groupId,
       status: 'unread',
       type: 'comment',
       objectId: post.trxId,
@@ -143,7 +145,7 @@ export const handleComment = async (
     && parentReplyComment.userAddress !== commentAuthorAddress;
   if (replyToReplyId) {
     notifications.push({
-      groupId: item.GroupId,
+      groupId,
       status: 'unread',
       type: 'comment',
       objectId: parentReplyComment.trxId,
@@ -164,7 +166,7 @@ export const handleComment = async (
     parentThreadComment.commentCount += 1;
     await Comment.save(parentThreadComment, transactionManager);
     notifications.push({
-      groupId: item.GroupId,
+      groupId,
       status: 'unread',
       type: 'comment',
       objectId: parentThreadComment.trxId,
@@ -183,6 +185,7 @@ export const handleComment = async (
     queueSocket({
       userAddress: notification.to,
       event: 'notification',
+      groupId,
       data: notification,
     });
   }

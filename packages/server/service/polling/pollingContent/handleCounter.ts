@@ -11,6 +11,7 @@ export const handleCounter = async (
   queueSocket: typeof send,
 ) => {
   const trxContent = UniqueCounter.parseTrxContent(item);
+  const groupId = item.GroupId;
   if (!trxContent) {
     pollingLog.info(`counter ${item.TrxId} failed to validate trxContent`, item.Data.content);
     return;
@@ -20,7 +21,7 @@ export const handleCounter = async (
   const uniqueCounter: UniqueCounter = {
     trxId: item.TrxId,
     name,
-    groupId: item.GroupId,
+    groupId,
     objectId,
     userAddress: QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey),
     timestamp: parseQuorumTimestamp(item.TimeStamp),
@@ -30,13 +31,14 @@ export const handleCounter = async (
   queueSocket({
     broadcast: true,
     event: 'uniqueCounter',
+    groupId,
     data: { uniqueCounter },
   });
 
   if (value > 0) {
     // ignore duplicated counter
     const hasCounter = await UniqueCounter.has(
-      { groupId: item.GroupId, name, objectId, userAddress: from },
+      { groupId, name, objectId, userAddress: from },
       transactionManager,
     );
     if (hasCounter) { return; }
@@ -46,7 +48,7 @@ export const handleCounter = async (
   }
 
   if ([CounterName.postLike, CounterName.postDislike].includes(name)) {
-    const post = await Post.get({ groupId: item.GroupId, trxId: objectId }, transactionManager);
+    const post = await Post.get({ groupId, trxId: objectId }, transactionManager);
     if (!post) {
       return;
     }
@@ -59,10 +61,10 @@ export const handleCounter = async (
     } else if (name === 'postDislike') {
       post.dislikeCount = count;
     }
-    await Post.update({ trxId: post.trxId, groupId: post.groupId }, post, transactionManager);
+    await Post.update({ trxId: post.trxId, groupId }, post, transactionManager);
     if (value > 0 && from !== post.userAddress) {
       const notification = await Notification.add({
-        groupId: item.GroupId,
+        groupId,
         status: 'unread',
         type: 'like',
         objectId: post.trxId,
@@ -77,13 +79,14 @@ export const handleCounter = async (
       queueSocket({
         userAddress: notification.to,
         event: 'notification',
+        groupId,
         data: notificationItem,
       });
     }
   }
 
   if ([CounterName.commentLike, CounterName.commentDislike].includes(name)) {
-    const comment = await Comment.get({ groupId: item.GroupId, trxId: objectId }, transactionManager);
+    const comment = await Comment.get({ groupId, trxId: objectId }, transactionManager);
     if (!comment) {
       return;
     }
@@ -97,13 +100,13 @@ export const handleCounter = async (
       comment.dislikeCount = count;
     }
     await Comment.update(
-      { trxId: comment.trxId, groupId: comment.groupId },
+      { trxId: comment.trxId, groupId },
       comment,
       transactionManager,
     );
     if (value > 0 && from !== comment.userAddress) {
       const notification = await Notification.add({
-        groupId: item.GroupId,
+        groupId,
         status: 'unread',
         type: 'like',
         objectId: comment.trxId,
@@ -118,6 +121,7 @@ export const handleCounter = async (
       queueSocket({
         userAddress: notification.to,
         event: 'notification',
+        groupId,
         data: notificationItem,
       });
     }

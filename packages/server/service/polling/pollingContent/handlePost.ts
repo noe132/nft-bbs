@@ -7,6 +7,7 @@ import { parseQuorumTimestamp } from '~/utils';
 
 export const handlePost = async (item: IContent, transactionManager: EntityManager, queueSocket: typeof send) => {
   const trxContent = Post.parseTrxContent(item);
+  const groupId = item.GroupId;
   if (!trxContent) {
     pollingLog.info(`post ${item.TrxId} failed to validate trxContent`, item.Data.content);
     return;
@@ -14,7 +15,7 @@ export const handlePost = async (item: IContent, transactionManager: EntityManag
   const post: Post = {
     ...trxContent,
     userAddress: QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey),
-    groupId: item.GroupId,
+    groupId,
     trxId: item.TrxId,
     storage: TrxStorage.chain,
     commentCount: 0,
@@ -26,7 +27,7 @@ export const handlePost = async (item: IContent, transactionManager: EntityManag
 
   if (trxContent.updatedTrxId) {
     const updatedPost = await Post.get(
-      { groupId: item.GroupId, trxId: trxContent.updatedTrxId },
+      { groupId, trxId: trxContent.updatedTrxId },
       transactionManager,
     );
     if (!updatedPost) { return; }
@@ -34,13 +35,14 @@ export const handlePost = async (item: IContent, transactionManager: EntityManag
       pollingLog.warn(`post ${post.trxId} no permission update post`);
     }
     await Post.update(
-      { trxId: updatedPost.trxId, groupId: updatedPost.groupId },
+      { trxId: updatedPost.trxId, groupId },
       { content: post.content },
       transactionManager,
     );
     queueSocket({
       broadcast: true,
       event: 'postEdit',
+      groupId,
       data: { post, updatedTrxId: trxContent.updatedTrxId },
     });
     return;
@@ -48,7 +50,7 @@ export const handlePost = async (item: IContent, transactionManager: EntityManag
 
   if (trxContent.deletedTrxId) {
     const deletedPost = await Post.get(
-      { groupId: item.GroupId, trxId: trxContent.deletedTrxId },
+      { groupId, trxId: trxContent.deletedTrxId },
       transactionManager,
     );
     if (!deletedPost) { return; }
@@ -57,13 +59,14 @@ export const handlePost = async (item: IContent, transactionManager: EntityManag
     }
 
     await Promise.all([
-      Post.delete({ groupId: deletedPost.groupId, trxId: deletedPost.trxId }, transactionManager),
-      Notification.deleteWith({ groupId: deletedPost.groupId, trxId: deletedPost.trxId }, transactionManager),
-      UniqueCounter.deleteWith({ groupId: deletedPost.groupId, trxId: deletedPost.trxId }, transactionManager),
+      Post.delete({ groupId, trxId: deletedPost.trxId }, transactionManager),
+      Notification.deleteWith({ groupId, trxId: deletedPost.trxId }, transactionManager),
+      UniqueCounter.deleteWith({ groupId, trxId: deletedPost.trxId }, transactionManager),
     ]);
     queueSocket({
       broadcast: true,
       event: 'postDelete',
+      groupId,
       data: { post, deletedTrxId: trxContent.deletedTrxId },
     });
     return;
@@ -73,6 +76,7 @@ export const handlePost = async (item: IContent, transactionManager: EntityManag
   queueSocket({
     broadcast: true,
     event: 'trx',
+    groupId,
     data: { trxId: post.trxId, type: 'post' },
   });
 };
