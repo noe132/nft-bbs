@@ -37,6 +37,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     postDone: false,
 
     intersectionRatio: 0,
+    pauseAutoLoading: false,
 
     get nfts() {
       const list = Array(4).fill(0).map((_, i) => i);
@@ -102,6 +103,7 @@ export const UserProfile = observer((props: { className?: string }) => {
         if (!posts) { return; }
 
         runInAction(() => {
+          state.pauseAutoLoading = !posts;
           posts.forEach((v) => {
             state.posts.push(v);
           });
@@ -133,9 +135,8 @@ export const UserProfile = observer((props: { className?: string }) => {
     }
 
     const loadNextPage = async () => {
-      if (state.postLoading || state.postDone) {
-        return;
-      }
+      if (state.postLoading || state.postDone) { return; }
+      if (state.pauseAutoLoading) { return; }
       if (state.intersectionRatio > 0.1) {
         await loadPost();
         loadNextPage();

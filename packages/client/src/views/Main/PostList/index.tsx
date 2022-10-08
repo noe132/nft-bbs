@@ -31,6 +31,7 @@ export const createPostlistState = () => ({
   ntfPopup: false,
   likeLoadingMap: new Map<string, boolean>(),
   intersectionRatio: 0,
+  pauseAutoLoading: false,
   get nfts() {
     const list = Array(4).fill(0).map((_, i) => i);
     return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
@@ -62,6 +63,7 @@ export const createPostlistState = () => ({
         if (!posts) { return; }
 
         runInAction(() => {
+          this.pauseAutoLoading = !posts;
           posts.forEach((v) => {
             if (!this.trxIds.includes(v.trxId)) {
               this.trxIds.push(v.trxId);
@@ -122,6 +124,7 @@ export const PostList = observer((props: { className?: string }) => {
     const loadNextPage = async () => {
       if (state.loading || state.done) { return; }
       if (state.intersectionRatio < 0.1) { return; }
+      if (state.pauseAutoLoading) { return; }
       await state.loadPosts(true);
       loadNextPage();
     };

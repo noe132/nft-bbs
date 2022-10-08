@@ -547,7 +547,7 @@ const notification = {
         state.notification.done = false;
       });
     }
-    await runLoading(
+    const list = await runLoading(
       (l) => { state.notification.loading = l; },
       async () => {
         const notifications = await notification.getList(
@@ -563,9 +563,11 @@ const notification = {
             state.notification.done = notifications.length < state.notification.limit;
           });
         }
+        return notifications;
       },
     );
     notification.getUnreadCount();
+    return list;
   },
   getList: async (offset: number, limit: number) => {
     const notifications = await NotificationApi.list({

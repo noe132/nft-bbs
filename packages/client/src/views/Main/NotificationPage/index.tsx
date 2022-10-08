@@ -16,7 +16,6 @@ import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { UserAvatar, BackButton, ScrollToTopButton, GroupSideBox, NFTSideBox } from '~/components';
 import { nodeService } from '~/service';
-// import { NotificationObjectType, NotificationType } from '~/database';
 import { ago } from '~/utils';
 
 export const NotificationPage = observer((props: { className?: string }) => {
@@ -26,6 +25,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
       return nodeService.state.notification.list.filter((v) => v.type !== 'dislike');
     },
     intersectionRatio: 0,
+    pauseAutoLoading: false,
   }));
 
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
@@ -44,8 +44,12 @@ export const NotificationPage = observer((props: { className?: string }) => {
       if (nodeService.state.notification.loading || nodeService.state.notification.done) {
         return;
       }
+      if (state.pauseAutoLoading) { return; }
       if (state.intersectionRatio > 0.1) {
-        await nodeService.notification.load({ nextPage: true });
+        const list = await nodeService.notification.load({ nextPage: true });
+        runInAction(() => {
+          state.pauseAutoLoading = !list;
+        });
         loadNextPage();
       }
     };
