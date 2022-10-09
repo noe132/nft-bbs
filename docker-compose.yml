@@ -2,21 +2,14 @@ version: "3.7"
 
 services:
   router:
-    build:
-      context: .
-      dockerfile: docker/router.dockerfile
+    image: dockerhub.qingcloud.com/pressone/nft-bbs-router:latest
     ports:
-      - "${PORT:-80}:80"
-      - "${TLS_PORT:-443}:443"
-    volumes:
-      - './cert/:/app/cert/'
+      - "${PORT:-35572}:80"
     depends_on:
       - server
 
   server:
-    build:
-      context: .
-      dockerfile: docker/server.dockerfile
+    image: dockerhub.qingcloud.com/pressone/nft-bbs-server:latest
     environment:
       PORT: 80
       db_host: postgres
@@ -24,6 +17,10 @@ services:
       db_user: postgres
       db_password: e72a7e3456874163b3b715297be8a731
       db_database: nft-bbs
+      # MIXIN_LOGIN: true # enable mixin login
+      KEYSTORE_LOGIN: true # enable keystore login
+      # CHECK_NFT=true # check nft permission
+      # SEED_URL: # using a fixed seedUrl
     depends_on:
       - postgres
 
