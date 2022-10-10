@@ -86,7 +86,7 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
       });
     });
     const combinedApis = Object.values(apiMap).join('|');
-    const seedUrlObj = new URL(seedUrl);
+    const seedUrlObj = new URL(existedGroupStatus.seedUrl);
     seedUrlObj.searchParams.set('u', combinedApis);
     const combinedSeedUrl = seedUrlObj.toString();
 
