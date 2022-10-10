@@ -74,3 +74,5 @@ export const parseQuorumTimestamp = (timestamp: string) => {
   const time = parseInt(timestamp.slice(0, -6), 10);
   return time;
 };
+
+export const notNullFilter = <T>(v: T | undefined | null): v is T => !!v;

@@ -29,8 +29,8 @@ import {
   AllLanguages, configService, dialogService, keyService, langName,
   langService, nodeService, snackbarService,
 } from '~/service';
-import { GroupAvatar } from '~/components';
-import { GroupInfoApi, VaultApi } from '~/apis';
+import { GroupAvatar, Scrollable } from '~/components';
+import { GroupApi, GroupInfoApi, VaultApi } from '~/apis';
 
 enum Step {
   InputSeedUrl = 1,
@@ -40,6 +40,7 @@ enum Step {
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
+    groups: [] as Array<GroupApi.GroupItem>,
     seedUrl: '',
     keystorePopup: false,
     mixinLogin: false,
@@ -349,8 +350,18 @@ export const Join = observer(() => {
     }
   };
 
+  const loadGroups = async () => {
+    const groups = await GroupApi.get();
+    runInAction(() => {
+      if (groups) {
+        state.groups = groups;
+      }
+    });
+  };
+
   useEffect(() => {
     validateLoginState();
+    loadGroups();
     const handleMessage = (e: MessageEvent<{ name: string, search: string }>) => {
       const data = e.data;
       if (typeof data !== 'object') { return; }
@@ -440,10 +451,32 @@ export const Join = observer(() => {
         <div className="flex flex-center flex-1">
           <div className="relative flex-col flex-center bg-black/80 w-[720px] rounded-[10px]">
             {state.step === Step.InputSeedUrl && (
-              <div className="flex-col flex-center h-[330px]">
+              <div className="flex-col flex-center min-h-[330px] py-12">
                 <div className="text-white text-18">
                   加入 RumPot 种子网络
                 </div>
+                {!!state.groups.length && !configService.state.seedUrl && (
+                  <div className="flex-col items-center mt-8 -mb-4 text-white gap-y-4">
+                    <div className="text-white/80">可加入的种子网络</div>
+                    <Scrollable className="max-h-[200px]" light size="large">
+                      <div className="flex flex-wrap justify-center gap-4 px-4">
+                        {/* {Array(20).fill(state.groups).flatMap((v) => v).map((v, i) => ( */}
+                        {state.groups.map((v) => (
+                          <button
+                            className="bg-white/20 hover:bg-white/30 rounded-full px-4 py-2"
+                            key={v.groupId}
+                            onClick={() => {
+                              state.seedUrl = v.seedUrl;
+                              handleNextStep();
+                            }}
+                          >
+                            {v.groupName}
+                          </button>
+                        ))}
+                      </div>
+                    </Scrollable>
+                  </div>
+                )}
                 {!configService.state.seedUrl && (
                   <OutlinedInput
                     className="text-white w-[440px] mt-12 pl-2"

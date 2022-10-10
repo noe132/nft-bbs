@@ -8,6 +8,19 @@ import { GroupSeed, GroupStatus } from '~/orm/entity';
 import { pollingService } from '~/service';
 
 export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
+  fastify.get('/', async () => {
+    const groups = await GroupStatus.list();
+
+    return groups.map((v) => {
+      const group = QuorumLightNodeSDK.utils.seedUrlToGroup(v.seedUrl);
+      return {
+        groupId: group.groupId,
+        groupName: group.groupName,
+        seedUrl: v.seedUrl,
+      };
+    });
+  });
+
   fastify.post('/join', async (req) => {
     const body = assertValidation(
       req.body,
@@ -28,6 +41,13 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
     }
 
     const groupId = seed.right.groupId;
+    const existedGroupStatus = await GroupStatus.get(seed.right.groupId);
+    if (existedGroupStatus?.seedUrl === seedUrl) {
+      return {
+        status: 0,
+        msg: `group ${groupId} already joined`,
+      };
+    }
     const existedGroupSeed = await GroupSeed.has(seedUrl);
     if (existedGroupSeed) {
       await GroupSeed.add({
@@ -41,7 +61,6 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
       };
     }
 
-    const existedGroupStatus = await GroupStatus.get(groupId);
     if (!existedGroupStatus) {
       await GroupStatus.add({
         groupId,
