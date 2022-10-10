@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import scrollIntoView from 'scroll-into-view-if-needed';
-import type { Comment, Profile } from 'nft-bbs-server';
+import { Comment, Profile } from 'nft-bbs-server';
 import { Button, CircularProgress, ClickAwayListener, Fade, IconButton, InputBase, Tooltip } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
@@ -16,7 +16,8 @@ import { nftService, nodeService, snackbarService } from '~/service';
 import { runLoading, usePageState } from '~/utils';
 
 import { PostDetailBox } from './PostDetailBox';
-import { commentContext, CommentItem } from './CommentItem';
+import { CommentBox } from './CommentBox';
+import { commentContext } from './CommentBox/context';
 
 interface UserCardItem {
   el: HTMLElement
@@ -46,11 +47,14 @@ export const PostDetail = observer((props: { className?: string }) => {
     commentSort: 'latest' as 'latest' | 'oldest',
     commentInput: '',
     commentPosting: false,
-    highlightedComments: new Set<string>(),
+    commentContextState: {
+      newCommentTrxId: '',
+      highlightedComments: new Set<string>(),
+      weakMap: new WeakMap<Comment, Array<string>>(),
+    },
     get post() {
       return nodeService.state.post.map.get(routeParams.trxId ?? '');
     },
-    commentChildrenWeakMap: new WeakMap<Comment, Array<string>>(),
     get replyToProfile() {
       return nodeService.profile.getComputedProfile(
         state.replyTo.comment?.extra?.userProfile
@@ -64,11 +68,11 @@ export const PostDetail = observer((props: { className?: string }) => {
         if (comment.threadId) {
           const parent = nodeService.state.comment.map.get(comment.threadId);
           if (parent) {
-            const children = this.commentChildrenWeakMap.get(parent) ?? [];
+            const children = this.commentContextState.weakMap.get(parent) ?? [];
             if (!children.includes(comment.trxId)) {
               children.push(comment.trxId);
             }
-            this.commentChildrenWeakMap.set(parent, children);
+            this.commentContextState.weakMap.set(parent, children);
           }
         }
       });
@@ -92,17 +96,7 @@ export const PostDetail = observer((props: { className?: string }) => {
   const commentBox = useRef<HTMLDivElement>(null);
   const replyTextarea = useRef<HTMLTextAreaElement>(null);
 
-  const handleOpenUserCard = action((e: React.MouseEvent, v: Comment) => {
-    let commentBox: null | HTMLElement = null;
-    let parent: HTMLElement | null = e.currentTarget as HTMLElement;
-    while (parent) {
-      if (parent.classList.contains('comment-box')) {
-        commentBox = parent;
-        break;
-      }
-      parent = parent.parentElement;
-    }
-    if (!commentBox) { return; }
+  const handleOpenUserCard = action((v: Comment, commentBox: HTMLElement) => {
     if (state.userCards.some((v) => v.el === commentBox && v.in)) {
       return;
     }
@@ -128,7 +122,7 @@ export const PostDetail = observer((props: { className?: string }) => {
     }), 3000);
   });
 
-  const handleReply = action((e: React.MouseEvent, v: Comment) => {
+  const handleReply = action((v: Comment) => {
     if (!nftService.state.hasPermission) {
       snackbarService.show('无权限发表内容');
       return;
@@ -188,11 +182,8 @@ export const PostDetail = observer((props: { className?: string }) => {
         state.replyTo.open = false;
       }
     });
-    setTimeout(() => {
-      const commentNode = document.querySelector(`[data-comment-trx-id="${comment.trxId}"]`);
-      if (commentNode) {
-        scrollIntoView(commentNode, { behavior: 'smooth' });
-      }
+    runInAction(() => {
+      state.commentContextState.newCommentTrxId = comment.trxId;
     });
   };
 
@@ -239,7 +230,7 @@ export const PostDetail = observer((props: { className?: string }) => {
       const highlightedId = searchParams.get('commentTrx');
       runInAction(() => {
         if (highlightedId) {
-          state.highlightedComments.add(highlightedId);
+          state.commentContextState.highlightedComments.add(highlightedId);
         }
         state.inited = true;
       });
@@ -249,8 +240,9 @@ export const PostDetail = observer((props: { className?: string }) => {
   }, []);
 
   const commentContextValue = useMemo(() => ({
-    highlightedComments: state.highlightedComments,
-    weakMap: state.commentChildrenWeakMap,
+    state: state.commentContextState,
+    onOpenUserCard: handleOpenUserCard,
+    onReply: handleReply,
   }), []);
 
   if (!state.post) {
@@ -367,14 +359,9 @@ export const PostDetail = observer((props: { className?: string }) => {
                 </div>
               )}
               <commentContext.Provider value={commentContextValue}>
-                {state.sortedCommentTree.map((v) => (
-                  <CommentItem
-                    key={v.trxId}
-                    comment={v}
-                    onOpenUserCard={handleOpenUserCard}
-                    onReply={handleReply}
-                  />
-                ))}
+                <CommentBox
+                  comments={state.sortedCommentTree}
+                />
               </commentContext.Provider>
             </div>
 
