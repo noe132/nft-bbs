@@ -17,9 +17,9 @@ services:
       db_user: postgres
       db_password: e72a7e3456874163b3b715297be8a731
       db_database: nft-bbs
-      # MIXIN_LOGIN: true # enable mixin login
-      KEYSTORE_LOGIN: true # enable keystore login
-      # CHECK_NFT=true # check nft permission
+      # MIXIN_LOGIN: 'true' # enable mixin login
+      KEYSTORE_LOGIN: 'true' # enable keystore login
+      # CHECK_NFT='true' # check nft permission
       # SEED_URL: # using a fixed seedUrl
     depends_on:
       - postgres
