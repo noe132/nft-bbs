@@ -377,14 +377,14 @@ export const UserProfile = observer((props: { className?: string }) => {
       </div>
 
       <div className="w-[280px]">
-        {!!configService.state.checkNFT && (
+        {!configService.state.checkNFT && (
           <UserCard
             className="mt-6"
             profile={state.profile}
             disableClickAction
           />
         )}
-        {!configService.state.checkNFT && (
+        {configService.state.checkNFT && (
           <div
             className={classNames(
               'flex-col relative py-5 px-5 mt-6 rounded',
