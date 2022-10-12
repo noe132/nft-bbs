@@ -4,11 +4,13 @@ import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { Button, IconButton, Popover, Tooltip } from '@mui/material';
 
-// import LockIcon from 'boxicons/svg/regular/bx-lock-alt.svg?fill-icon';
+import LockIcon from 'boxicons/svg/regular/bx-lock-alt.svg?fill-icon';
 import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
+import NFTIcon from '~/assets/images/NFT_for_port500.png';
 
 import { ThemeLight } from '~/utils';
+import { nftService } from '~/service';
 
 interface Props {
   className?: string
@@ -17,14 +19,14 @@ interface Props {
 export const NFTSideBox = observer((props: Props) => {
   const state = useLocalObservable(() => ({
     ntfPopup: false,
-    get nfts() {
-      return [];
-      // const list = Array(4).fill(0).map((_, i) => i);
-      // return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
-      // return nftService.state.nfts;
+
+    get hasNFT() {
+      return nftService.state.hasNFT;
     },
+
+    nftSelected: false,
   }));
-  const nftSmallIconBox = useRef<HTMLDivElement>(null);
+  const nftBox = useRef<HTMLDivElement>(null);
 
   return (<>
     <div
@@ -32,38 +34,30 @@ export const NFTSideBox = observer((props: Props) => {
         'flex-col flex-center relative',
         props.className,
       )}
-      ref={nftSmallIconBox}
+      ref={nftBox}
     >
-      <div
-        className="grid gap-5 w-full px-3 justify-center justify-items-center"
-        style={{ gridTemplateColumns: 'repeat(auto-fill, 36px)' }}
-      >
-        {/* <Tooltip title={<ExpandIcon className="text-20 -mx-1" />}> */}
-        {/* {Array(2).fill(0).map((_, i) => (
-          <Tooltip key={i} title="通过所持 NFT 进行权限验证功能开发中">
-            <button
-              className="flex items-stretch w-9 h-9 p-1 border border-white/80"
-            // onClick={action(() => { state.ntfPopup = true; })}
-            >
-              <div className="flex flex-center flex-1 bg-white/20">
-                <LockIcon className="text-white text-18" />
-              </div>
-            </button>
-          </Tooltip>
-        ))} */}
-        {state.nfts.map((v, i) => (
-          <Tooltip key={i} title={<ExpandIcon className="text-20 -mx-1" />}>
-            <button
-              className="flex items-stretch w-9 h-9 p-1 border border-white/80"
-              onClick={action(() => { state.ntfPopup = true; })}
-            >
-              <div className="flex flex-center flex-1 bg-white/60">
-                {/* {v.tokenId} */}
-                {/* <LockIcon className="text-white text-18" /> */}
-              </div>
-            </button>
-          </Tooltip>
-        ))}
+      <div className="flex flex-wrap gap-5 w-full mx-3 max-w-[92px] justify-center justify-items-center">
+        <Tooltip title={<ExpandIcon className="text-20 -mx-1" />}>
+          <button
+            className={classNames(
+              'flex items-stretch flex-none relative w-9 h-9 p-[3px] border',
+              state.hasNFT && 'border-white/80',
+              !state.hasNFT && 'border-white/35',
+            )}
+            onClick={action(() => { state.ntfPopup = true; state.nftSelected = false; })}
+          >
+            <div
+              className={classNames(
+                'flex flex-center flex-1 bg-white/60 bg-contain',
+                !state.hasNFT && 'opacity-40',
+              )}
+              style={{ backgroundImage: `url("${NFTIcon}")` }}
+            />
+            {!state.hasNFT && (
+              <LockIcon className="absolute-center text-white/80 text-18" />
+            )}
+          </button>
+        </Tooltip>
       </div>
     </div>
 
@@ -71,7 +65,7 @@ export const NFTSideBox = observer((props: Props) => {
       <Popover
         className="mt-6"
         open={state.ntfPopup}
-        anchorEl={nftSmallIconBox.current}
+        anchorEl={nftBox.current}
         onClose={action(() => { state.ntfPopup = false; })}
         transformOrigin={{
           horizontal: 'center',
@@ -92,35 +86,67 @@ export const NFTSideBox = observer((props: Props) => {
             <CollapseIcon className="text-link text-20" />
           </IconButton>
 
-          {/* {!!state.ntfPopup.nft && (
-            <div className="break-all">
-              {JSON.stringify(state.ntfPopup.nft)}
-            </div>
-          )} */}
-
-          {/* <div className="flex-col gap-y-4 mt-8">
-            {state.nfts.map((row, i) => (
+          <div className="flex-col gap-y-4 mt-8">
+            <button
+              className={classNames(
+                'flex items-stretch flex-none relative w-24 h-24 p-[3px] border border-black/15',
+                state.nftSelected && 'outline outline-2 outline-rum-orange outline-offset-[-1px]',
+              )}
+              onClick={action(() => { state.nftSelected = state.hasNFT ? !state.nftSelected : false; })}
+            >
               <div
-                className="flex gap-x-4 flex-center"
-                key={i}
-              >
-                {row.map((_, j) => (
-                  <div
-                    className="flex w-22 h-22 p-1 border border-black/15"
-                    key={j}
+                className={classNames(
+                  'flex flex-center flex-1 bg-white/60 bg-contain',
+                  !state.hasNFT && 'opacity-40',
+                )}
+                style={{ backgroundImage: `url("${NFTIcon}")` }}
+              />
+              {!state.hasNFT && (
+                <LockIcon className="absolute-center text-gray-4a/60 text-36" />
+              )}
+            </button>
+          </div>
+
+          {!state.nftSelected && !state.hasNFT && (
+            <div className="text-gray-9c text-center text-12 mt-4">
+              当前没有持有任何 NFT
+            </div>
+          )}
+
+          {state.nftSelected && (
+            <div className="text-gray-9c text-center text-12 mt-4 w-52 leading-relaxed">
+              <div className="flex justify-between">
+                <div>Contract Address</div>
+                <Tooltip title="0x20ABe07F7bbEC816e309e906a823844e7aE37b8d">
+                  <a
+                    href="https://explorer.rumsystem.net/token/0x20ABe07F7bbEC816e309e906a823844e7aE37b8d/"
+                    target="_blank"
+                    rel="noopenner"
                   >
-                    <div className="flex-1 self-stretch bg-red-100" />
-                  </div>
-                ))}
+                    0x20AB...7b8d
+                  </a>
+                </Tooltip>
               </div>
-            ))}
-          </div> */}
+              {/* <div className="flex justify-between">
+                <div>Token ID</div>
+                <div>8407</div>
+              </div> */}
+              <div className="flex justify-between">
+                <div>Token Standard</div>
+                <div>ERC-721</div>
+              </div>
+              <div className="flex justify-between">
+                <div>Blockchain</div>
+                <div>rum-eth</div>
+              </div>
+              {/* <div className="flex justify-between">
+                <div>Creator Fees</div>
+                <div>5%</div>
+              </div> */}
+            </div>
+          )}
 
-          {/* <div className="text-gray-9c text-center text-12 py-4">
-            当前没有持有任何 NFT
-          </div> */}
-
-          <div className="border-t self-stretch mx-5" />
+          <div className="border-t self-stretch mx-5 mt-4" />
           <div className="flex self-stretch">
             <Button
               className="px-5 py-4 flex-1"

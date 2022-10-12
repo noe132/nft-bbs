@@ -8,16 +8,18 @@ import RemoveMarkdown from 'remove-markdown';
 import { format } from 'date-fns';
 import type { Post } from 'nft-bbs-server';
 import { CounterName } from 'nft-bbs-types';
-import { Button, CircularProgress, ClickAwayListener, Tooltip } from '@mui/material';
-import { ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
+import { Button, CircularProgress, ClickAwayListener, IconButton, Popover, Tooltip } from '@mui/material';
+import { Close, ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 
+import LockIcon from 'boxicons/svg/regular/bx-lock-alt.svg?fill-icon';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
+import NFTIcon from '~/assets/images/NFT_for_port500.png';
 
 import { ScrollToTopButton, BackButton, UserAvatar, UserCard } from '~/components';
-import { imageZoomService, keyService, nodeService, snackbarService } from '~/service';
-import { ago, runLoading, usePageState } from '~/utils';
+import { configService, imageZoomService, keyService, nftService, nodeService, snackbarService } from '~/service';
+import { ago, runLoading, ThemeLight, usePageState } from '~/utils';
 import { editProfile } from '~/modals';
 
 export const UserProfile = observer((props: { className?: string }) => {
@@ -26,7 +28,6 @@ export const UserProfile = observer((props: { className?: string }) => {
   const navigate = useNavigate();
   const state = usePageState('userprofile', routeLocation.key, () => ({
     inited: false,
-    nftTradeTooltip: false,
     likeLoading: false,
     profileLoading: true,
 
@@ -39,9 +40,13 @@ export const UserProfile = observer((props: { className?: string }) => {
     intersectionRatio: 0,
     pauseAutoLoading: false,
 
-    get nfts() {
-      const list = Array(4).fill(0).map((_, i) => i);
-      return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
+    nftTradeTooltip: false,
+    ntfPopup: false,
+
+    get hasNFT() {
+      return routeParams.userAddress
+        ? !!nftService.state.hasNFTMap.get(routeParams.userAddress)
+        : false;
     },
     get profile() {
       return routeParams.userAddress
@@ -63,6 +68,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     },
   }));
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
+  const nftBox = useRef<HTMLDivElement>(null);
 
   const handleOpenPost = (post: Post, locateComment: true | undefined = undefined) => {
     navigate(stringifyUrl({
@@ -114,9 +120,14 @@ export const UserProfile = observer((props: { className?: string }) => {
     );
   };
 
-  const loadData = async () => {
-    loadPost();
-    await runLoading(
+  const loadNFT = () => {
+    const userAddress = state.profile?.userAddress;
+    if (!userAddress) { return; }
+    nftService.loadNFT(userAddress);
+  };
+
+  const loadProfile = () => {
+    runLoading(
       (l) => { state.profileLoading = l; },
       async () => {
         const userAddress = state.profile?.userAddress;
@@ -124,6 +135,12 @@ export const UserProfile = observer((props: { className?: string }) => {
         await nodeService.profile.loadUserInfo(userAddress);
       },
     );
+  };
+
+  const loadData = () => {
+    loadPost();
+    loadNFT();
+    loadProfile();
   };
 
   useEffect(() => {
@@ -161,7 +178,7 @@ export const UserProfile = observer((props: { className?: string }) => {
   }, []);
 
   if (!state.profile) { return null; }
-  return (
+  return (<>
     <div
       className={classNames(
         'relative z-20 flex justify-center flex-1 gap-x-[20px]',
@@ -360,73 +377,164 @@ export const UserProfile = observer((props: { className?: string }) => {
       </div>
 
       <div className="w-[280px]">
-        <UserCard
-          className="mt-6"
-          profile={state.profile}
-          disableClickAction
-        />
-        {/* TODO: nft */}
-        <div
-          className={classNames(
-            '!hidden flex-col relative py-5 px-5 mt-6 rounded',
-            state.selfProfile && 'bg-white shadow-4 text-black',
-            !state.selfProfile && 'bg-black/80 text-white',
-          )}
-        >
+        {!!configService.state.checkNFT && (
+          <UserCard
+            className="mt-6"
+            profile={state.profile}
+            disableClickAction
+          />
+        )}
+        {!configService.state.checkNFT && (
           <div
             className={classNames(
-              'text-center',
-              state.selfProfile && 'text-dark-blue',
-              !state.selfProfile && 'text-gray-9c',
+              'flex-col relative py-5 px-5 mt-6 rounded',
+              state.selfProfile && 'bg-white shadow-4 text-black',
+              !state.selfProfile && 'bg-black/80 text-white',
             )}
+            ref={nftBox}
           >
-            {state.selfProfile ? '我' : 'Ta'}
-            持有的 NFT
-          </div>
-          <div className="text-center mt-4 text-12">
-            功能开发中
-          </div>
-          {/* <div className="flex-col gap-y-4 mt-4">
-            {state.nfts.map((row, i) => (
-              <div
-                className="flex gap-x-4 flex-center"
-                key={i}
-              >
-                {row.map((_, j) => (
-                  <div
-                    className="flex w-22 h-22 p-1 border border-white/70"
-                    key={j}
-                  >
-                    <div className="flex-1 self-stretch bg-white/80" />
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div> */}
-          {false && state.selfProfile && (
-            <div className="text-center mt-4">
-              <ClickAwayListener onClickAway={action(() => { state.nftTradeTooltip = false; })}>
-                <Tooltip
-                  PopperProps={{ disablePortal: true }}
-                  onClose={action(() => { state.nftTradeTooltip = false; })}
-                  open={state.nftTradeTooltip}
-                  disableFocusListener
-                  disableHoverListener
-                  disableTouchListener
-                  title="功能开发中"
-                >
-                  <button
-                    className="text-link text-14"
-                    onClick={action(() => { state.nftTradeTooltip = true; })}
-                  >
-                    NFT 交易或转让
-                  </button>
-                </Tooltip>
-              </ClickAwayListener>
+            <div
+              className={classNames(
+                'text-center',
+                state.selfProfile && 'text-dark-blue',
+                !state.selfProfile && 'text-gray-9c',
+              )}
+            >
+              {state.selfProfile ? '我' : 'Ta'}
+              持有的 NFT
             </div>
-          )}
-        </div>
+
+            <div className="flex flex-center mt-4">
+              <div
+                className={classNames(
+                  'flex items-stretch flex-none relative w-24 h-24 p-[3px] border',
+                  state.selfProfile && state.hasNFT && 'border-black/25',
+                  state.selfProfile && !state.hasNFT && 'border-black/15',
+                  !state.selfProfile && state.hasNFT && 'border-white/40',
+                  !state.selfProfile && !state.hasNFT && 'border-white/20',
+                )}
+                onClick={action(() => { state.ntfPopup = state.hasNFT ? !state.ntfPopup : false; })}
+              >
+                <div
+                  className={classNames(
+                    'flex flex-center flex-1 bg-white/60 bg-contain',
+                    !state.hasNFT && 'opacity-40',
+                  )}
+                  style={{ backgroundImage: `url("${NFTIcon}")` }}
+                />
+                {!state.hasNFT && (
+                  <LockIcon
+                    className={classNames(
+                      'absolute-center text-36',
+                      state.selfProfile && 'text-gray-4a/60',
+                      !state.selfProfile && 'text-white/80',
+                    )}
+                  />
+                )}
+              </div>
+            </div>
+
+            {state.selfProfile && (
+              <div className="text-center mt-4">
+                <ClickAwayListener onClickAway={action(() => { state.nftTradeTooltip = false; })}>
+                  <Tooltip
+                    PopperProps={{ disablePortal: true }}
+                    onClose={action(() => { state.nftTradeTooltip = false; })}
+                    open={state.nftTradeTooltip}
+                    disableFocusListener
+                    disableHoverListener
+                    disableTouchListener
+                    title="功能开发中"
+                  >
+                    <button
+                      className="text-link text-14"
+                      onClick={action(() => { state.nftTradeTooltip = true; })}
+                    >
+                      NFT 交易或转让
+                    </button>
+                  </Tooltip>
+                </ClickAwayListener>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
-  );
+
+    <ThemeLight>
+      <Popover
+        className="mt-6"
+        open={state.ntfPopup}
+        anchorEl={nftBox.current}
+        onClose={action(() => { state.ntfPopup = false; })}
+        transformOrigin={{
+          horizontal: 'center',
+          vertical: 'top',
+        }}
+        anchorOrigin={{
+          horizontal: 'center',
+          vertical: 'bottom',
+        }}
+        disableScrollLock
+      >
+        <div className="flex-col items-center relative w-[280px]">
+          <IconButton
+            className="absolute top-1 right-1"
+            size="small"
+            onClick={action(() => { state.ntfPopup = false; })}
+          >
+            <Close className="text-link text-20" />
+          </IconButton>
+
+          <div className="flex-col gap-y-4 mt-6">
+            <div className="flex items-stretch flex-none relative w-24 h-24 p-[3px] border border-black/15">
+              <div
+                className={classNames(
+                  'flex flex-center flex-1 bg-white/60 bg-contain',
+                  !state.hasNFT && 'opacity-40',
+                )}
+                style={{ backgroundImage: `url("${NFTIcon}")` }}
+              />
+              {!state.hasNFT && (
+                <LockIcon className="absolute-center text-gray-4a/60 text-36" />
+              )}
+            </div>
+          </div>
+
+          <div className="text-gray-9c text-center text-12 mt-4 w-52 leading-relaxed">
+            <div className="flex justify-between">
+              <div>Contract Address</div>
+              <Tooltip title="0x20ABe07F7bbEC816e309e906a823844e7aE37b8d">
+                <a
+                  href="https://explorer.rumsystem.net/token/0x20ABe07F7bbEC816e309e906a823844e7aE37b8d/"
+                  target="_blank"
+                  rel="noopenner"
+                >
+                  0x20AB...7b8d
+                </a>
+              </Tooltip>
+            </div>
+            {/* <div className="flex justify-between">
+                <div>Token ID</div>
+                <div>8407</div>
+              </div> */}
+            <div className="flex justify-between">
+              <div>Token Standard</div>
+              <div>ERC-721</div>
+            </div>
+            <div className="flex justify-between">
+              <div>Blockchain</div>
+              <div>rum-eth</div>
+            </div>
+            {/* <div className="flex justify-between">
+                <div>Creator Fees</div>
+                <div>5%</div>
+              </div> */}
+          </div>
+
+          <div className="border-t self-stretch mx-5 mt-4" />
+        </div>
+      </Popover>
+    </ThemeLight>
+  </>);
 });

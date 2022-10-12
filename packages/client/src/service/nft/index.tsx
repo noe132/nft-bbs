@@ -1,12 +1,15 @@
-import { either } from 'fp-ts';
+import { either, taskEither } from 'fp-ts';
 import { observable, reaction, runInAction, when } from 'mobx';
+import { BigNumber, ethers } from 'ethers';
 import { MVMApi } from '~/apis';
 import { keyService } from '~/service/key';
 import { configService } from '~/service/config';
+import { NFT_CONTRACT } from './contract';
 
 const state = observable({
-  // nfts: [] as MVMApi.NFTTransactions['data'],
   hasNFT: false,
+  hasNFTMap: new Map<string, boolean>(),
+  hasNFTLoadingMap: new Map<string, Promise<unknown>>(),
 
   get hasPermission() {
     if (!configService.state.checkNFT) {
@@ -16,13 +19,35 @@ const state = observable({
   },
 });
 
-const requestNFT = async (mixinUserId: string) => {
+const checkNFTPermission = async (mixinUserId: string) => {
   const res = await MVMApi.mixinAuth(mixinUserId);
   const hasNFT = either.isRight(res);
   runInAction(() => {
     state.hasNFT = hasNFT;
   });
   return hasNFT;
+};
+
+const loadNFT = async (address: string) => {
+  if (state.hasNFTMap.has(address)) { return; }
+  if (state.hasNFTLoadingMap.has(address)) {
+    return state.hasNFTLoadingMap.get(address);
+  }
+  const run = taskEither.tryCatch(
+    async () => {
+      const provider = new ethers.providers.JsonRpcProvider('https://eth-rpc.rumsystem.net/');
+      const contractAddress = '0x20ABe07F7bbEC816e309e906a823844e7aE37b8d';
+      const contractWithSigner = new ethers.Contract(contractAddress, NFT_CONTRACT, provider);
+      const tx: BigNumber = await contractWithSigner.balanceOf(address);
+      const has = !tx.eq(0);
+      state.hasNFTMap.set(address, has);
+      state.hasNFTLoadingMap.delete(address);
+    },
+    (e) => e as Error,
+  );
+  const p = run();
+  state.hasNFTLoadingMap.set(address, p);
+  return p;
 };
 
 // const getNFTsByAddress = async (_address: string) => {
@@ -81,7 +106,7 @@ export const init = () => {
           });
           return;
         }
-        requestNFT(data.mixinUserId);
+        checkNFTPermission(data.mixinUserId);
       },
     );
     disposes.push(dispose);
@@ -94,5 +119,6 @@ export const nftService = {
   state,
   init,
 
-  requestNFT,
+  checkNFTPermission,
+  loadNFT,
 };
