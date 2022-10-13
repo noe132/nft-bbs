@@ -12,7 +12,7 @@ import { CommentItem } from './CommentItem';
 export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
   const state = useLocalObservable(() => ({
     page: 1,
-    pageSize: 5 as const,
+    pageSize: 7 as const,
 
 
     comments: [] as Array<Comment>,
