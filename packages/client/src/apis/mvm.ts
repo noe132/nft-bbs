@@ -35,7 +35,27 @@ export const mixinAuth = async (userId: string) => {
   );
 };
 
-export interface NFTTransactions {
+export const getNFTs = async (address: string) => {
+  const item = await request<NFTsResponse>({
+    url: `https://prs-bp2.press.one/api/nfts/accounts/${address}`,
+  });
+
+  return fp.pipe(
+    item,
+    either.mapLeft((e) => {
+      snackbarService.networkError(e);
+      return e;
+    }),
+    either.chainW((res) => {
+      if (res.error) {
+        return either.left(res.error);
+      }
+      return either.right(res);
+    }),
+  );
+};
+
+export interface NFTsResponse {
   data: Array<{
     asset: string
     blockHash: string
@@ -53,24 +73,3 @@ export interface NFTTransactions {
   error: null
   success: boolean
 }
-
-export const getNFT = async (address: string) => {
-  const item = await request<NFTTransactions>({
-    url: `https://prs-bp2.press.one/api/nfts/transactions?account=${address}&count=100`,
-  });
-
-  return fp.pipe(
-    item,
-    either.mapLeft((e) => {
-      const errorMessage = e.response?.data?.error ?? '';
-      const errors = [
-        'Invalid Mixin user id.',
-        'Invalid user state.',
-      ];
-      if (!errors.includes(errorMessage)) {
-        snackbarService.networkError(e);
-      }
-      return e;
-    }),
-  );
-};

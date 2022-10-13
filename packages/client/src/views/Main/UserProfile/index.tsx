@@ -11,13 +11,12 @@ import { CounterName } from 'nft-bbs-types';
 import { Button, CircularProgress, ClickAwayListener, IconButton, Popover, Tooltip } from '@mui/material';
 import { Close, ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 
-import LockIcon from 'boxicons/svg/regular/bx-lock-alt.svg?fill-icon';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
-import NFTIcon from '~/assets/images/NFT_for_port500.png';
 
-import { ScrollToTopButton, BackButton, UserAvatar, UserCard } from '~/components';
+import { MVMApi } from '~/apis';
+import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon } from '~/components';
 import { configService, imageZoomService, keyService, nftService, nodeService, snackbarService } from '~/service';
 import { ago, runLoading, ThemeLight, usePageState } from '~/utils';
 import { editProfile } from '~/modals';
@@ -41,12 +40,18 @@ export const UserProfile = observer((props: { className?: string }) => {
     pauseAutoLoading: false,
 
     nftTradeTooltip: false,
-    ntfPopup: false,
+    ntfPopup: {
+      open: false,
+      nft: null as null | MVMApi.NFTsResponse['data'][0],
+    },
 
-    get hasNFT() {
+    get nfts() {
       return routeParams.userAddress
-        ? !!nftService.state.hasNFTMap.get(routeParams.userAddress)
-        : false;
+        ? nftService.state.nftMap.get(routeParams.userAddress) ?? []
+        : [];
+    },
+    get hasNFT() {
+      return !!this.nfts.length;
     },
     get profile() {
       return routeParams.userAddress
@@ -404,34 +409,23 @@ export const UserProfile = observer((props: { className?: string }) => {
               持有的 NFT
             </div>
 
-            <div className="flex flex-center mt-4">
-              <div
-                className={classNames(
-                  'flex items-stretch flex-none relative w-24 h-24 p-[3px] border',
-                  state.selfProfile && state.hasNFT && 'border-black/25',
-                  state.selfProfile && !state.hasNFT && 'border-black/15',
-                  !state.selfProfile && state.hasNFT && 'border-white/40',
-                  !state.selfProfile && !state.hasNFT && 'border-white/20',
-                )}
-                onClick={action(() => { state.ntfPopup = state.hasNFT ? !state.ntfPopup : false; })}
-              >
-                <div
-                  className={classNames(
-                    'flex flex-center flex-1 bg-white/60 bg-contain',
-                    !state.hasNFT && 'opacity-40',
-                  )}
-                  style={{ backgroundImage: `url("${NFTIcon}")` }}
+            <div className="flex flex-center flex-wrap gap-4 mt-4">
+              {!state.nfts.length && (
+                <NFTIcon
+                  size={96}
+                  color={state.selfProfile ? 'light' : 'dark'}
+                  lock
                 />
-                {!state.hasNFT && (
-                  <LockIcon
-                    className={classNames(
-                      'absolute-center text-36',
-                      state.selfProfile && 'text-gray-4a/60',
-                      !state.selfProfile && 'text-white/80',
-                    )}
-                  />
-                )}
-              </div>
+              )}
+              {state.nfts.map((v) => (
+                <NFTIcon
+                  key={v.tokenId}
+                  size={96}
+                  color={state.selfProfile ? 'light' : 'dark'}
+                  tokenId={v.tokenId}
+                  onClick={action(() => { state.ntfPopup = { open: true, nft: v }; })}
+                />
+              ))}
             </div>
 
             {state.selfProfile && (
@@ -464,9 +458,9 @@ export const UserProfile = observer((props: { className?: string }) => {
     <ThemeLight>
       <Popover
         className="mt-6"
-        open={state.ntfPopup}
+        open={state.ntfPopup.open}
         anchorEl={nftBox.current}
-        onClose={action(() => { state.ntfPopup = false; })}
+        onClose={action(() => { state.ntfPopup.open = false; })}
         transformOrigin={{
           horizontal: 'center',
           vertical: 'top',
@@ -481,56 +475,58 @@ export const UserProfile = observer((props: { className?: string }) => {
           <IconButton
             className="absolute top-1 right-1"
             size="small"
-            onClick={action(() => { state.ntfPopup = false; })}
+            onClick={action(() => { state.ntfPopup.open = false; })}
           >
             <Close className="text-link text-20" />
           </IconButton>
 
-          <div className="flex-col gap-y-4 mt-6">
-            <div className="flex items-stretch flex-none relative w-24 h-24 p-[3px] border border-black/15">
-              <div
-                className={classNames(
-                  'flex flex-center flex-1 bg-white/60 bg-contain',
-                  !state.hasNFT && 'opacity-40',
-                )}
-                style={{ backgroundImage: `url("${NFTIcon}")` }}
+          {state.ntfPopup.nft && (<>
+            <div className="flex-col gap-y-4 mt-6">
+              <NFTIcon
+                key={state.ntfPopup.nft.tokenId}
+                size={96}
+                color={state.selfProfile ? 'light' : 'dark'}
+                tokenId={state.ntfPopup.nft.tokenId}
               />
-              {!state.hasNFT && (
-                <LockIcon className="absolute-center text-gray-4a/60 text-36" />
-              )}
             </div>
-          </div>
 
-          <div className="text-gray-9c text-center text-12 mt-4 w-52 leading-relaxed">
-            <div className="flex justify-between">
-              <div>Contract Address</div>
-              <Tooltip title="0x20ABe07F7bbEC816e309e906a823844e7aE37b8d">
+            <div className="text-gray-9c text-center text-12 mt-4 w-52 leading-relaxed">
+              <div className="flex justify-between">
+                <div>Contract Address</div>
+                <Tooltip title={state.ntfPopup.nft.asset} disableInteractive>
+                  <a
+                    href={`https://explorer.rumsystem.net/token/${state.ntfPopup.nft.asset}/`}
+                    target="_blank"
+                    rel="noopenner"
+                  >
+                    {state.ntfPopup.nft.asset.slice(0, 6)}...{state.ntfPopup.nft.asset.slice(-4)}
+                  </a>
+                </Tooltip>
+              </div>
+              <div className="flex justify-between">
+                <div>Token ID</div>
                 <a
-                  href="https://explorer.rumsystem.net/token/0x20ABe07F7bbEC816e309e906a823844e7aE37b8d/"
+                  href={state.ntfPopup.nft.uri}
                   target="_blank"
                   rel="noopenner"
                 >
-                  0x20AB...7b8d
+                  {state.ntfPopup.nft.tokenId}
                 </a>
-              </Tooltip>
+              </div>
+              <div className="flex justify-between">
+                <div>Token Standard</div>
+                <div>ERC-721</div>
+              </div>
+              <div className="flex justify-between">
+                <div>Blockchain</div>
+                <div>rum-eth</div>
+              </div>
+              {/* <div className="flex justify-between">
+                  <div>Creator Fees</div>
+                  <div>5%</div>
+                </div> */}
             </div>
-            {/* <div className="flex justify-between">
-                <div>Token ID</div>
-                <div>8407</div>
-              </div> */}
-            <div className="flex justify-between">
-              <div>Token Standard</div>
-              <div>ERC-721</div>
-            </div>
-            <div className="flex justify-between">
-              <div>Blockchain</div>
-              <div>rum-eth</div>
-            </div>
-            {/* <div className="flex justify-between">
-                <div>Creator Fees</div>
-                <div>5%</div>
-              </div> */}
-          </div>
+          </>)}
 
           <div className="border-t self-stretch mx-5 mt-4" />
         </div>
