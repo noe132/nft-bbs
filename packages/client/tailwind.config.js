@@ -15,7 +15,7 @@ module.exports = {
         min: '960px',
       },
       ...Object.fromEntries(
-        [960, 1100, 1240].reverse().map(
+        [960, 1100, 1360].reverse().map(
           (v) => [`s${v}`, {
             max: `${v - 1}px`,
           }],

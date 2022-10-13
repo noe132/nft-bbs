@@ -16,9 +16,6 @@ import {
 
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
-import RumLogo from '~/assets/icons/logo.png';
-import RumLogo2x from '~/assets/icons/logo@2x.png';
-import RumLogo3x from '~/assets/icons/logo@3x.png';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 import { setLoginState, ThemeLight, usePageState } from '~/utils';
 import {
@@ -27,7 +24,7 @@ import {
 } from '~/service';
 import { editProfile } from '~/modals';
 import { ACCOUNT1, ACCOUNT2 } from '~/utils/testAccount';
-import { UserAvatar } from '~/components';
+import { SiteLogo, UserAvatar } from '~/components';
 
 import { createPostlistState } from '../PostList';
 
@@ -216,28 +213,18 @@ export const Header = observer((props: { className?: string }) => {
       )}
     >
       <button
-        className="absolute left-5 flex-none w-7 h-auto s1240:hidden"
+        className="s1360:hidden block absolute left-5 flex-none h-auto"
         onClick={handleClickLogo}
       >
-        <img
-          className=""
-          src={RumLogo}
-          srcSet={`${RumLogo2x} 2x, ${RumLogo3x} 3x,`}
-          alt=""
-        />
+        <SiteLogo />
       </button>
       <div className="flex w-[1100px] justify-between self-stretch gap-x-4">
         <div className="flex items-center flex-1">
           <button
-            className="flex-none h-auto hidden s1240:block self-center mr-4"
+            className="s1360:block hidden flex-none h-auto mr-4"
             onClick={handleClickLogo}
           >
-            <img
-              className="w-7 h-auto self-center"
-              src={RumLogo}
-              srcSet={`${RumLogo2x} 2x, ${RumLogo3x} 3x,`}
-              alt=""
-            />
+            <SiteLogo />
           </button>
           {!state.searchMode && routeLocation.pathname === '/' && (
             <div className="flex gap-x-4">
