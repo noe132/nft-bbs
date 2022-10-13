@@ -445,7 +445,7 @@ export const Join = observer(() => {
             {state.step === Step.InputSeedUrl && (
               <div className="flex-col flex-center min-h-[330px] py-12">
                 <div className="text-white text-18">
-                  加入 RumPot 种子网络
+                  加入 Port 种子网络
                 </div>
                 {!!state.groups.length && !configService.state.seedUrl && (
                   <div className="flex-col items-center mt-8 -mb-4 text-white gap-y-4">
@@ -700,8 +700,8 @@ export const Join = observer(() => {
         <div className="flex flex-center gap-x-12 text-14">
           {[
             ['https://rumsystem.net/', '关于'],
-            ['https://rumsystem.net/developers', '文档'],
-            ['https://rumsystem.net/faq/howtocreateseednet', '怎样创建 RumPot 种子网络？'],
+            // ['https://rumsystem.net/developers', '文档'],
+            // ['https://rumsystem.net/faq/howtocreateseednet', '怎样创建 RumPot 种子网络？'],
           ].map((v, i) => (
             <a
               className="text-black"

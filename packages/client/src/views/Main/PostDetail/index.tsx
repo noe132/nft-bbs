@@ -128,9 +128,9 @@ export const PostDetail = observer((props: { className?: string }) => {
       return;
     }
     state.replyTo = {
+      ...state.replyTo,
       comment: v,
       open: true,
-      content: '',
     };
     setTimeout(() => {
       replyTextarea.current?.focus();
@@ -358,11 +358,13 @@ export const PostDetail = observer((props: { className?: string }) => {
                   暂无评论
                 </div>
               )}
-              <commentContext.Provider value={commentContextValue}>
-                <CommentBox
-                  comments={state.sortedCommentTree}
-                />
-              </commentContext.Provider>
+              {!!state.sortedCommentTree.length && (
+                <commentContext.Provider value={commentContextValue}>
+                  <CommentBox
+                    comments={state.sortedCommentTree}
+                  />
+                </commentContext.Provider>
+              )}
             </div>
 
             {state.userCards.map((v) => (
@@ -385,7 +387,7 @@ export const PostDetail = observer((props: { className?: string }) => {
         </div>
 
         <div className="flex justify-end">
-          <Fade in={!!state.replyTo.open} mountOnEnter>
+          <Fade in={!!state.replyTo.open} mountOnEnter key={state.replyTo.comment?.trxId ?? ''}>
             <div
               className={classNames(
                 'fixed bottom-40 translate-x-full -mr-5 p-4',
