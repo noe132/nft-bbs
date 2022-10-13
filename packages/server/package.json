@@ -22,7 +22,7 @@
       "@fastify/cors": "^8.1.0",
       "date-fns": "^2.29.3",
       "dotenv": "^16.0.3",
-      "fastify": "^4.7.0",
+      "fastify": "^4.8.1",
       "fp-ts": "^2.12.2",
       "http-errors": "^2.0.0",
       "io-ts": "^2.2.19",
@@ -42,7 +42,7 @@
       "@types/http-errors": "^1.8.2",
       "@types/lodash": "^4.14.186",
       "@types/module-alias": "^2.0.1",
-      "@types/node": "^18.8.3",
+      "@types/node": "^18.8.5",
       "rimraf": "^3.0.2",
       "ts-node": "10.9.1",
       "tsconfig-paths": "^4.1.0"
