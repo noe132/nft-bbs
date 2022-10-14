@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { reaction } from 'mobx';
+import { reaction, runInAction } from 'mobx';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 import scrollIntoView from 'scroll-into-view-if-needed';
@@ -28,6 +28,16 @@ export const CommentBox = observer((props: Props) => {
       });
     }
   };
+
+  useEffect(() => {
+    const initCommentTrx = context.state.initCommentTrx;
+    if (initCommentTrx && props.comments.some((v) => v.trxId === initCommentTrx)) {
+      handleJumpToReply(initCommentTrx);
+      runInAction(() => {
+        context.state.initCommentTrx = '';
+      });
+    }
+  }, []);
 
   useEffect(() => reaction(
     () => context.state.newCommentTrxId,

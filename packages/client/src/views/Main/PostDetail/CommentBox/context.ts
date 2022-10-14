@@ -3,6 +3,7 @@ import { createContext } from 'react';
 
 export interface CommentContext {
   state: {
+    initCommentTrx: string
     newCommentTrxId: string
     weakMap: WeakMap<Comment, Array<string>>
     highlightedComments: Set<string>
@@ -13,6 +14,7 @@ export interface CommentContext {
 
 export const commentContext = createContext<CommentContext>({
   state: {
+    initCommentTrx: '',
     newCommentTrxId: '',
     weakMap: new WeakMap(),
     highlightedComments: new Set(),

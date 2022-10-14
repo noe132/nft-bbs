@@ -13,9 +13,9 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
   const state = useLocalObservable(() => ({
     page: 1,
     pageSize: 7 as const,
+    scrollToComment: '',
 
-
-    comments: [] as Array<Comment>,
+    comments: [...props.comments].reverse() as Array<Comment>,
     get displayedComments() {
       return state.comments.slice(
         (this.page - 1) * this.pageSize,
@@ -33,36 +33,66 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
 
   const context = useContext(commentContext);
 
-  const handleJumpToReply = async (commentTrx: string) => {
+  const handleJumpToReply = (commentTrx: string) => {
     const index = state.comments.findIndex((v) => v.trxId === commentTrx);
     if (index === -1) { return; }
     const page = Math.ceil((index + 1) / state.pageSize);
     runInAction(() => {
       state.page = page;
       context.state.highlightedComments.add(commentTrx);
+      state.scrollToComment = commentTrx;
     });
-    await sleep();
-    const commentElement = document.querySelector(`[data-comment-trx-id="${commentTrx}"]`);
-    if (commentElement) {
-      scrollIntoView(commentElement, {
-        behavior: 'smooth',
-      });
-    }
   };
 
   useEffect(action(() => {
     state.comments = [...props.comments].reverse();
   }), [props.comments]);
 
-  useEffect(() => reaction(
-    () => context.state.newCommentTrxId,
-    async (trxId) => {
-      await sleep();
-      if (state.comments.some((v) => v.trxId === trxId)) {
-        handleJumpToReply(trxId);
-      }
-    },
-  ), []);
+  useEffect(action(() => {
+    if (!state.scrollToComment) { return; }
+    const commentElement = document.querySelector(`[data-comment-trx-id="${state.scrollToComment}"]`);
+    runInAction(() => {
+      state.scrollToComment = '';
+    });
+    if (commentElement) {
+      scrollIntoView(commentElement, {
+        behavior: 'smooth',
+      });
+    }
+  }), [state.scrollToComment]);
+
+  useEffect(() => {
+    const disposes = [
+      reaction(
+        () => context.state.newCommentTrxId,
+        async (trxId) => {
+          await sleep();
+          if (state.comments.some((v) => v.trxId === trxId)) {
+            handleJumpToReply(trxId);
+          }
+        },
+      ),
+      reaction(
+        () => context.state.newCommentTrxId,
+        async (trxId) => {
+          await sleep();
+          if (state.comments.some((v) => v.trxId === trxId)) {
+            handleJumpToReply(trxId);
+          }
+        },
+      ),
+    ];
+
+    const initCommentTrx = context.state.initCommentTrx;
+    if (initCommentTrx && props.comments.some((v) => v.trxId === initCommentTrx)) {
+      handleJumpToReply(initCommentTrx);
+      runInAction(() => {
+        context.state.initCommentTrx = '';
+      });
+    }
+
+    return () => disposes.forEach((v) => v());
+  }, []);
 
   return (
     <>

@@ -48,6 +48,7 @@ export const PostDetail = observer((props: { className?: string }) => {
     commentInput: '',
     commentPosting: false,
     commentContextState: {
+      initCommentTrx: '',
       newCommentTrxId: '',
       highlightedComments: new Set<string>(),
       weakMap: new WeakMap<Comment, Array<string>>(),
@@ -230,6 +231,7 @@ export const PostDetail = observer((props: { className?: string }) => {
       const highlightedId = searchParams.get('commentTrx');
       runInAction(() => {
         if (highlightedId) {
+          state.commentContextState.initCommentTrx = highlightedId;
           state.commentContextState.highlightedComments.add(highlightedId);
         }
         state.inited = true;
