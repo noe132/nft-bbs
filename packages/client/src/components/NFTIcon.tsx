@@ -19,6 +19,8 @@ export const NFTIcon = (props: Props) => {
   const dark = props.color === 'dark';
   const size = props.size ?? 60;
   const lockSize = Math.ceil(size * 0.375);
+  const tokenIdSize = Math.ceil(size * 0.1666);
+  const tokenIdOffset = 4 + Math.max(Math.ceil((size - 24) / 18), 0);
   return (
     <div
       className={classNames(
@@ -56,9 +58,14 @@ export const NFTIcon = (props: Props) => {
       {props.tokenId && (
         <div
           className={classNames(
-            'absolute bottom-2 right-2 text-16 text-white leading-[1] select-none',
+            'absolute text-white leading-[1] select-none',
             props.tokenIdClassName,
           )}
+          style={{
+            bottom: `${tokenIdOffset}px`,
+            right: `${tokenIdOffset}px`,
+            fontSize: `${tokenIdSize}px`,
+          }}
         >
           {props.tokenId}
         </div>

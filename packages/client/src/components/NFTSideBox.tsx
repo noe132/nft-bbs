@@ -58,7 +58,12 @@ export const NFTSideBox = observer((props: Props) => {
         {state.nfts.map((v) => (
           <Tooltip title={<ExpandIcon className="text-20 -mx-1" />} key={v.tokenId}>
             <span>
-              <NFTIcon color="dark" size={60} onClick={action(() => { state.ntfPopup = { open: true, nft: v }; })} />
+              <NFTIcon
+                color="dark"
+                size={60}
+                onClick={action(() => { state.ntfPopup = { open: true, nft: v }; })}
+                tokenId={v.tokenId}
+              />
             </span>
           </Tooltip>
         ))}
@@ -100,6 +105,7 @@ export const NFTSideBox = observer((props: Props) => {
                 key={v.tokenId}
                 color="light"
                 size={96}
+                tokenId={v.tokenId}
                 onClick={action(() => { state.ntfPopup.nft = v; })}
               />
             ))}
