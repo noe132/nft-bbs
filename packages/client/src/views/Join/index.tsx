@@ -18,7 +18,9 @@ import PasteIcon from 'boxicons/svg/regular/bx-paste.svg?fill-icon';
 import bgImg1x from '~/assets/images/rum_barrel_bg.jpg';
 import bgImg2x from '~/assets/images/rum_barrel_bg@2x.jpg';
 import bgImg3x from '~/assets/images/rum_barrel_bg@3x.jpg';
-import logoImg from '~/assets/icons/rumsystem.svg';
+import RumLogo from '~/assets/icons/logo.png';
+import RumLogo2x from '~/assets/icons/logo@2x.png';
+import RumLogo3x from '~/assets/icons/logo@3x.png';
 import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
 import { chooseImgByPixelRatio, getLoginState, runLoading, setLoginState, ThemeLight } from '~/utils';
@@ -26,7 +28,7 @@ import {
   AllLanguages, configService, dialogService, keyService, langName,
   langService, nodeService, snackbarService,
 } from '~/service';
-import { GroupAvatar, Scrollable, SiteLogo } from '~/components';
+import { GroupAvatar, Scrollable } from '~/components';
 import { GroupApi, GroupInfoApi, VaultApi } from '~/apis';
 
 enum Step {
@@ -386,7 +388,12 @@ export const Join = observer(() => {
         rel="noopener"
         href="https://rumsystem.net/"
       >
-        <SiteLogo />
+        <img
+          className="fixed top-12 left-12 flex-none w-8 h-auto"
+          src={RumLogo}
+          srcSet={`${RumLogo2x} 2x, ${RumLogo3x} 3x,`}
+          alt=""
+        />
       </a>
       <div className="fixed top-12 right-16 flex items-center flex-none">
         {false && (

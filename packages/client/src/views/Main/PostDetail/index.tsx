@@ -433,10 +433,10 @@ export const PostDetail = observer((props: { className?: string }) => {
                   className="text-gray-9c py-1"
                   color="inherit"
                   variant="text"
-                  onClick={action(() => { state.replyTo.open = false; })}
+                  onClick={action(() => { state.replyTo.content = ''; })}
                   disabled={state.commentPosting}
                 >
-                  关闭回复框
+                  清除文本
                 </Button>
                 <LoadingButton
                   className=" py-1"
