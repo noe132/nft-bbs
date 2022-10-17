@@ -18,6 +18,7 @@ import PasteIcon from 'boxicons/svg/regular/bx-paste.svg?fill-icon';
 import bgImg1x from '~/assets/images/rum_barrel_bg.jpg';
 import bgImg2x from '~/assets/images/rum_barrel_bg@2x.jpg';
 import bgImg3x from '~/assets/images/rum_barrel_bg@3x.jpg';
+import rumsystemLogo from '~/assets/icons/rumsystem.svg';
 import RumLogo from '~/assets/icons/logo.png';
 import RumLogo2x from '~/assets/icons/logo@2x.png';
 import RumLogo3x from '~/assets/icons/logo@3x.png';
@@ -702,7 +703,7 @@ export const Join = observer(() => {
         </div>
       </div>
       <div className="flex items-center px-10 h-12 bg-white">
-        <img src={logoImg} alt="" />
+        <img src={rumsystemLogo} alt="" />
         <span className="px-2">·</span>
         <div className="flex flex-center gap-x-12 text-14">
           {[

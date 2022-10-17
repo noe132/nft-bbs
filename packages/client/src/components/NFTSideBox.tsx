@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import classNames from 'classnames';
 import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import { ClickAwayListener, IconButton, Popover, Tooltip } from '@mui/material';
+import { ClickAwayListener, IconButton, Tooltip } from '@mui/material';
 
 import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
