@@ -50,16 +50,16 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
     }
     const existedGroupSeed = await GroupSeed.has(seedUrl);
     if (existedGroupSeed) {
-      await GroupSeed.add({
-        groupId,
-        seedUrl,
-      });
-    } else {
       return {
         status: 0,
         msg: `group ${groupId} already joined`,
       };
     }
+
+    await GroupSeed.add({
+      groupId,
+      seedUrl,
+    });
 
     if (!existedGroupStatus) {
       await GroupStatus.add({

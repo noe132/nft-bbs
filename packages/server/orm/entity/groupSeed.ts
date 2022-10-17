@@ -17,7 +17,11 @@ export class GroupSeed {
   }
 
   public static async has(seedUrl: string, manager?: EntityManager) {
-    return !!await (manager || AppDataSource.manager).countBy(GroupSeed, { seedUrl });
+    return !!await GroupSeed.count(seedUrl, manager);
+  }
+
+  public static async count(seedUrl: string, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).countBy(GroupSeed, { seedUrl });
   }
 
   public static async add(params: EntityConstructorParams<GroupSeed>, manager?: EntityManager) {
