@@ -3,7 +3,6 @@ import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import type { Comment } from 'nft-bbs-server';
-import { CounterName } from 'nft-bbs-types';
 import { Button, Tooltip } from '@mui/material';
 import { ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 
@@ -11,7 +10,7 @@ import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { UserAvatar } from '~/components';
-import { nodeService, snackbarService } from '~/service';
+import { imageZoomService, nodeService, snackbarService } from '~/service';
 import { showTrxDetail } from '~/modals';
 import { ago, runLoading } from '~/utils';
 import { commentContext } from './context';
@@ -46,6 +45,9 @@ export const CommentItem = observer((props: CommentItemProps) => {
     get commentStat() {
       return nodeService.comment.getStat(this.comment);
     },
+    get synced() {
+      return !nodeService.state.comment.cache.get(state.comment.groupId)?.has(state.comment.trxId);
+    },
   }));
 
   const boxRef = useRef<HTMLDivElement>(null);
@@ -55,7 +57,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
     context.state.highlightedComments.delete(props.comment.trxId);
   };
 
-  const handleUpdateCommentCounter = (type: CounterName.commentLike | CounterName.commentDislike) => {
+  const handleToggleCommentCounter = () => {
     if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
@@ -63,14 +65,12 @@ export const CommentItem = observer((props: CommentItemProps) => {
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
-      () => nodeService.counter.update({
-        type: 'comment',
-        item: state.comment,
-        counterName: type,
-      }),
+      () => nodeService.counter.updateComment(
+        state.comment,
+        state.commentStat.liked ? 'Dislike' : 'Like',
+      ),
     );
   };
-
 
   const highlighted = context.state.highlightedComments.has(state.comment.trxId);
   return (
@@ -117,9 +117,9 @@ export const CommentItem = observer((props: CommentItemProps) => {
 
             <button
               className="text-12 text-white/35"
-              onClick={() => state.comment.storage === 'chain' && showTrxDetail(state.comment.trxId)}
+              onClick={() => state.synced && showTrxDetail(state.comment.trxId)}
             >
-              {state.comment.storage === 'cache' ? '同步中' : '已同步'}
+              {state.synced ? '已同步' : '同步中'}
             </button>
           </div>
         </div>
@@ -134,7 +134,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
               给TA买一杯
             </Button>
           )}
-          {state.comment.storage === 'chain' && (
+          {state.synced && (
             <Tooltip title={nodeService.state.postPermissionTip}>
               <Button
                 className={classNames(
@@ -144,7 +144,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
                 )}
                 variant="text"
                 size="small"
-                onClick={() => handleUpdateCommentCounter(CounterName.commentLike)}
+                onClick={() => handleToggleCommentCounter()}
               >
                 {!state.commentStat.likeCount && (
                   <ThumbUpOffAlt className="mr-2 text-18" />
@@ -176,6 +176,19 @@ export const CommentItem = observer((props: CommentItemProps) => {
       <div className="text-white text-14 mt-2">
         {state.comment.content}
       </div>
+      {!!state.comment.extra?.images && (
+        <div className="flex gap-4 mt-4">
+          {state.comment.extra.images.map((v) => (
+            <img
+              className="w-16 h-16 rounded-lg"
+              src={`data:${v.mineType};base64,${v.content}`}
+              alt=""
+              key={v.name}
+              onClick={(e) => imageZoomService.openImage(e.currentTarget)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 });

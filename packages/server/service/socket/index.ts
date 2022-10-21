@@ -1,8 +1,9 @@
 import { FastifyInstance } from 'fastify';
 import { either } from 'fp-ts';
 import { string, type, TypeOf } from 'io-ts';
+import { DislikeType, LikeType } from 'nft-bbs-types';
 import { Server, Socket } from 'socket.io';
-import { Notification, Post, UniqueCounter } from '~/orm';
+import { Notification, Post, Comment, Profile } from '~/orm';
 
 let socketIo: Server | null = null;
 
@@ -13,21 +14,18 @@ const socketMap = {
 };
 
 export interface SocketIOEventMap {
+  post: { trxId: string }
+  comment: { trxId: string }
   notification: Notification
-  trx: {
+  counter: {
     trxId: string
-    type: 'post' | 'comment' | 'profile' | 'groupInfo'
+    type: LikeType['type'] | DislikeType['type']
+    objectType: 'comment' | 'post'
+    objectId: string
   }
-  uniqueCounter: {
-    uniqueCounter: UniqueCounter
-  }
-  postEdit: {
-    post: Post
-    updatedTrxId: string
-  }
+  profile: Profile
   postDelete: {
-    post: Post
-    deletedTrxId: string
+    trxId: string
   }
 }
 

@@ -1,15 +1,12 @@
-import { either, json, function as fp } from 'fp-ts';
 import { keyBy } from 'lodash';
-import { CounterName, postTrxContent, TrxStorage } from 'nft-bbs-types';
-import { IContent } from 'quorum-light-node-sdk-nodejs';
 import {
-  Brackets, Column, Entity, EntityManager,
+  Brackets, Column, DeleteDateColumn, Entity, EntityManager,
   FindOptionsWhere, Index, PrimaryGeneratedColumn,
 } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
 import { Profile } from './profile';
-import { UniqueCounter } from './uniqueCounter';
+import { StackedCounter } from './stackedCounter';
 
 @Entity({ name: 'posts' })
 export class Post {
@@ -34,9 +31,6 @@ export class Post {
   @Column({ nullable: false })
   public userAddress!: string;
 
-  @Column({ type: 'varchar', nullable: false })
-  public storage!: TrxStorage;
-
   @Index()
   @Column({
     type: 'timestamp',
@@ -57,8 +51,13 @@ export class Post {
   @Column({ type: 'int', nullable: false })
   public dislikeCount!: number;
 
-  @Column({ type: 'int', nullable: false })
-  public hotCount!: number;
+  @DeleteDateColumn({
+    transformer: {
+      from: (v: Date | null) => v?.getTime() ?? null,
+      to: (v: number | null) => v && new Date(v),
+    },
+  })
+  public deletedDate?: number | null;
 
   public extra?: {
     liked: boolean
@@ -66,16 +65,7 @@ export class Post {
     userProfile: Profile
   };
 
-  public static parseTrxContent(item: IContent) {
-    return fp.pipe(
-      json.parse(item.Data.content),
-      either.map((v) => postTrxContent.decode(v)),
-      either.flattenW,
-      either.getOrElseW(() => null),
-    );
-  }
-
-  public static create(params: EntityConstructorParams<Post, 'id' | 'extra'>) {
+  private static create(params: EntityConstructorParams<Post, 'id' | 'extra'>) {
     const item = new Post();
     Object.assign(item, params);
     return item;
@@ -83,19 +73,11 @@ export class Post {
 
   public static async add(params: EntityConstructorParams<Post, 'id' | 'extra'>, manager?: EntityManager) {
     const post = Post.create(params);
-    await (manager || AppDataSource.manager).save(post);
+    return (manager || AppDataSource.manager).save(post);
   }
 
   public static async save(post: Post, manager?: EntityManager) {
     await (manager || AppDataSource.manager).save(post);
-  }
-
-  public static update(
-    where: FindOptionsWhere<Post>,
-    params: Partial<EntityConstructorParams<Post, 'id' | 'extra'>>,
-    manager?: EntityManager,
-  ) {
-    return (manager || AppDataSource.manager).update(Post, where, params);
   }
 
   public static get(where: { groupId: string, trxId: string }, manager?: EntityManager) {
@@ -115,7 +97,7 @@ export class Post {
   }
 
   public static delete(where: { groupId: string, trxId: string }, manager?: EntityManager) {
-    return (manager || AppDataSource.manager).delete(Post, where);
+    return (manager || AppDataSource.manager).softDelete(Post, where);
   }
 
   public static list(params: {
@@ -160,18 +142,18 @@ export class Post {
 
   public static async appendExtra(items: Post, options?: { viewer?: string }): Promise<Post>;
   public static async appendExtra(items: Array<Post>, options?: { viewer?: string }): Promise<Array<Post>>;
-  public static async appendExtra(_items: Post | Array<Post>, options?: { viewer?: string }) {
+  public static async appendExtra(_items: Post | Array<Post>, options: { groupId: string, viewer?: string }) {
     const items = Array.isArray(_items) ? _items : [_items];
     if (!items.length) { return items; }
     const [likedMap, dislikedMap] = options?.viewer
       ? await Promise.all([
-        UniqueCounter.getCounterMap({
-          counterName: CounterName.postLike,
+        StackedCounter.getCounterMap({
+          type: 'Like',
           userAddress: options.viewer,
           items,
         }),
-        UniqueCounter.getCounterMap({
-          counterName: CounterName.postDislike,
+        StackedCounter.getCounterMap({
+          type: 'Dislike',
           userAddress: options.viewer,
           items,
         }),

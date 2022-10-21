@@ -67,7 +67,7 @@ export class Notification {
     fromProfile: Profile
   };
 
-  public static create(params: EntityConstructorParams<Notification, 'id' | 'extra'>) {
+  private static create(params: EntityConstructorParams<Notification, 'id' | 'extra'>) {
     const item = new Notification();
     Object.assign(item, params);
     return item;
@@ -84,10 +84,6 @@ export class Notification {
   ) {
     const notifications = items.map((v) => Notification.create(v));
     return (manager || AppDataSource.manager).save(Notification, notifications);
-  }
-
-  public static async save(item: Notification) {
-    return AppDataSource.manager.save(Notification, item);
   }
 
   public static async markAsRead(ids: Array<number>) {
@@ -116,16 +112,6 @@ export class Notification {
 
   public static async count(query: FindOptionsWhere<Notification>) {
     return AppDataSource.manager.countBy(Notification, query);
-  }
-
-  public static async deleteWith(where: { groupId: string, trxId: string }, manager?: EntityManager) {
-    const notifications = await (manager || AppDataSource.manager).findBy(Notification, [
-      { groupId: where.groupId, objectId: where.trxId },
-      { groupId: where.groupId, actionObjectId: where.trxId },
-    ]);
-    if (!notifications.length) { return null; }
-    const deleteResult = await (manager || AppDataSource.manager).delete(Notification, notifications);
-    return deleteResult;
   }
 
   public static async appendExtra(items: Notification, manager?: EntityManager): Promise<Notification>;

@@ -1,3 +1,6 @@
 import { config } from 'dotenv';
+import { join } from 'path';
 
-config();
+config({
+  path: join(process.cwd(), '.env'),
+});

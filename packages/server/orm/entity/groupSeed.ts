@@ -10,7 +10,7 @@ export class GroupSeed {
   @Column({ nullable: false, default: '' })
   public groupId!: string;
 
-  public static create(params: EntityConstructorParams<GroupSeed>) {
+  private static create(params: EntityConstructorParams<GroupSeed>) {
     const item = new GroupSeed();
     Object.assign(item, params);
     return item;
@@ -33,9 +33,5 @@ export class GroupSeed {
     return (manager || AppDataSource.manager).find(GroupSeed, {
       where: { groupId },
     });
-  }
-
-  public static async list(manager?: EntityManager) {
-    return (manager || AppDataSource.manager).find(GroupSeed);
   }
 }

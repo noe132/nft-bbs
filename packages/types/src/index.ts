@@ -1,100 +1,128 @@
-import { intersection, number, partial, string, type, TypeOf } from 'io-ts';
-import { enumType } from './enum';
+import { either, function as fp } from 'fp-ts';
+import { array, Errors, intersection, literal, partial, string, tuple, Type, type, TypeOf, union, unknown } from 'io-ts';
+import { excess } from './excessType';
 
 export * from './enum';
+export * from './excessType';
 
-export const nftbbsAppKeyName = 'group_nftbbs';
+export const nftbbsAppKeyName = 'group_post';
 
-export enum TrxStorage {
-  cache = 'cache',
-  chain = 'chain',
-}
-
-export enum TrxStatus {
-  replaced = 'replaced',
-  normal = 'normal',
-  deleted = 'deleted',
-}
-
-export enum TrxType {
-  post = 'post',
-  comment = 'comment',
-  profile = 'profile',
-  counter = 'counter',
-  discounter = 'discounter',
-  image = 'image',
-  groupInfo = 'group_info',
-}
-
-export enum CounterName {
-  postLike = 'postLike',
-  postDislike = 'postDislike',
-  commentLike = 'commentLike',
-  commentDislike = 'commentDislike',
-}
-
-export const postTrxContent = intersection([
-  type({
-    type: enumType<TrxType.post>(TrxType, 'TrxType'),
-    title: string,
-    content: string,
-  }),
-  partial({
-    updatedTrxId: string,
-    deletedTrxId: string,
-  }),
-]);
-export type IPostTrxContent = TypeOf<typeof postTrxContent>;
-
-export const commentTrxContent = intersection([
-  type({
-    type: enumType<TrxType.comment>(TrxType, 'TrxType'),
-    content: string,
-    objectId: string,
-    threadId: string,
-    replyId: string,
-  }),
-  partial({
-    updatedTrxId: string,
-    deletedTrxId: string,
-  }),
-]);
-export type ICommentTrxContent = TypeOf<typeof commentTrxContent>;
-
-export const counterTrxContent = type({
-  type: enumType<TrxType.counter>(TrxType, 'TrxType'),
-  name: enumType<CounterName>(CounterName, 'CounterName'),
-  value: number,
-  objectId: string,
-});
-export type ICounterTrxContent = TypeOf<typeof counterTrxContent>;
-
-export const groupInfoTrxContent = type({
-  type: enumType<TrxType.groupInfo>(TrxType, 'TrxType'),
-  avatar: string,
-  desc: string,
-});
-export type IGroupInfoTrxContent = TypeOf<typeof groupInfoTrxContent>;
-
-export const imageTrxContent = type({
-  type: enumType<TrxType.image>(TrxType, 'TrxType'),
-  mineType: string,
+const postBaseType = type({
+  type: literal('Note'),
   content: string,
-});
-export type IImageTrxContent = TypeOf<typeof imageTrxContent>;
-
-export const profileTrxContent = type({
-  type: enumType<TrxType.profile>(TrxType, 'TrxType'),
   name: string,
-  avatar: string,
-  intro: string,
 });
-export type IProfileTrxContent = TypeOf<typeof profileTrxContent>;
 
-export const uniqueCounter = type({
-  type: enumType<TrxType.counter>(TrxType, 'TrxType'),
-  name: enumType<CounterName>(CounterName, 'CounterName'),
-  objectId: string,
-  userAddress: string,
+const postExcludedType = union([
+  type({
+    inreplyto: unknown,
+  }),
+  type({
+    attributedTo: unknown,
+  }),
+]);
+
+export const postType = new Type<PostType>(
+  'post type',
+  (u): u is PostType => postBaseType.is(u) && !postExcludedType.is(u),
+  (u, c) => fp.pipe(
+    postBaseType.validate(u, c),
+    either.chain(() => fp.pipe(
+      postExcludedType.validate(u, c),
+      either.match(
+        () => either.right(u),
+        () => either.left([{
+          value: u,
+          context: c,
+          message: 'item has unwanted properties',
+        }] as Errors),
+      ),
+    )),
+    either.chain((u) => {
+      if ((u as PostType).content === 'OBJECT_STATUS_DELETED') {
+        return either.left([{
+          value: u,
+          context: c,
+          message: 'post delete type',
+        }] as Errors);
+      }
+      return either.right(u);
+    }),
+    either.map((v) => v as PostType),
+  ),
+  fp.identity,
+);
+
+export const commentType = excess(intersection([
+  type({
+    type: literal('Note'),
+    content: string,
+    inreplyto: type({
+      trxid: string,
+    }),
+  }),
+  partial({
+    image: array(type({
+      name: string,
+      mediaType: string,
+      content: string,
+    })),
+  }),
+]));
+
+export const likeType = excess(type({
+  type: literal('Like'),
+  id: string,
+}));
+
+export const dislikeType = excess(type({
+  type: literal('Dislike'),
+  id: string,
+}));
+
+export const imageType = excess(type({
+  type: literal('Note'),
+  attributedTo: tuple([
+    type({
+      type: literal('Note'),
+    }),
+  ]),
+  content: string,
+  name: string,
+  image: array(intersection([
+    type({
+      mediaType: string,
+      content: string,
+    }),
+    partial({
+      name: string,
+    }),
+  ])),
+}));
+
+export const profileType = excess(intersection([
+  type({
+    name: string,
+  }),
+  partial({
+    image: type({
+      mediaType: string,
+      content: string,
+    }),
+    wallet: unknown,
+  }),
+]));
+
+export const postDeleteType = type({
+  type: literal('Note'),
+  id: string,
+  content: literal('OBJECT_STATUS_DELETED'),
 });
-export type IUniqueCounter = TypeOf<typeof uniqueCounter>;
+
+export type PostType = TypeOf<typeof postBaseType>;
+export type CommentType = TypeOf<typeof commentType>;
+export type LikeType = TypeOf<typeof likeType>;
+export type DislikeType = TypeOf<typeof dislikeType>;
+export type ImageType = TypeOf<typeof imageType>;
+export type ProfileType = TypeOf<typeof profileType>;
+export type PostDeleteType = TypeOf<typeof postDeleteType>;

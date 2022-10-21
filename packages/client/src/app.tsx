@@ -5,6 +5,7 @@ import { ThemeRoot } from './utils/theme';
 import { initService, ServiceViews } from './service';
 import { ViewRoot } from './views';
 import { ModalViews } from './modals/helper/ModalViews';
+import { partial } from 'lodash-es';
 
 const App = observer(() => {
   React.useEffect(() => initService(), []);

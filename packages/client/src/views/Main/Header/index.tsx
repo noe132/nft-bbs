@@ -102,7 +102,7 @@ export const Header = observer((props: { className?: string }) => {
     editProfile({
       avatar: state.profile?.avatar ?? '',
       name: state.profile?.name ?? '',
-      intro: state.profile?.intro ?? '',
+      // intro: state.profile?.intro ?? '',
     });
   });
 

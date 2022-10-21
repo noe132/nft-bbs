@@ -1,6 +1,3 @@
-import { either, json, function as fp } from 'fp-ts';
-import { profileTrxContent } from 'nft-bbs-types';
-import { IContent } from 'quorum-light-node-sdk-nodejs';
 import { Column, Entity, Index, FindOptionsWhere, PrimaryGeneratedColumn, EntityManager } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -28,9 +25,6 @@ export class Profile {
   @Column({ nullable: false, default: '' })
   public avatar!: string;
 
-  @Column({ nullable: false, default: '' })
-  public intro!: string;
-
   @Index()
   @Column({
     type: 'timestamp',
@@ -40,17 +34,9 @@ export class Profile {
       to: (v: number) => new Date(v),
     },
   })
+  public timestamp!: number;
 
-  public static parseTrxContent(item: IContent) {
-    return fp.pipe(
-      json.parse(item.Data.content),
-      either.map((v) => profileTrxContent.decode(v)),
-      either.flattenW,
-      either.getOrElseW(() => null),
-    );
-  }
-
-  public static create(params: EntityConstructorParams<Profile, 'id'>) {
+  private static create(params: EntityConstructorParams<Profile, 'id'>) {
     const item = new Profile();
     Object.assign(item, params);
     return item;
@@ -80,7 +66,7 @@ export class Profile {
       userAddress: params.userAddress,
       name: '',
       avatar: '',
-      intro: '',
+      timestamp: Date.now(),
     };
   }
 }

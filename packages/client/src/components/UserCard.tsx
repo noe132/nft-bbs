@@ -71,9 +71,6 @@ export const UserCard = observer((props: Props) => {
           <ChevronRight className="text-link-soft text-26 -mr-2" />
         )}
       </div>
-      <div className="text-gray-9c text-14 mt-3">
-        {state.profile?.intro}
-      </div>
       <div className="border-t border-white/45 mt-4 w-full" />
       <div className="mt-4 text-white text-14">
         {!!state.fistPostTime && `加入于 ${format(state.fistPostTime, 'yyyy-MM')}`}

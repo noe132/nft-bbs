@@ -10,7 +10,6 @@ export const AppDataSource = new DataSource({
   username: process.env.db_user ?? 'nft-bbs',
   password: process.env.db_password ?? '2578644fdccf4e6c9648ac0d2661bb5b',
   database: process.env.db_database ?? 'postgres',
-  // migration only
   synchronize: false,
   logging: false,
   migrationsRun: true,

@@ -1,6 +1,3 @@
-import { either, json, function as fp } from 'fp-ts';
-import { groupInfoTrxContent } from 'nft-bbs-types';
-import { IContent } from 'quorum-light-node-sdk-nodejs';
 import { Column, Entity, EntityManager, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -35,16 +32,7 @@ export class GroupInfo {
   })
   public timestamp!: number;
 
-  public static parseTrxContent(item: IContent) {
-    return fp.pipe(
-      json.parse(item.Data.content),
-      either.map((v) => groupInfoTrxContent.decode(v)),
-      either.flattenW,
-      either.getOrElseW(() => null),
-    );
-  }
-
-  public static create(params: EntityConstructorParams<GroupInfo, 'id'>) {
+  private static create(params: EntityConstructorParams<GroupInfo, 'id'>) {
     const item = new GroupInfo();
     Object.assign(item, params);
     return item;

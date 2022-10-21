@@ -13,7 +13,7 @@ import { getLoggerWrite, patchLogger } from './utils';
 
 export type {
   Comment, GroupInfo, ImageFile,
-  Notification, Post, Profile, UniqueCounter,
+  Notification, Post, Profile,
 } from '~/orm/entity';
 
 export type { SocketIOEventMap, AuthenticateData } from '~/service/socket';
@@ -30,7 +30,7 @@ const main = async () => {
 
   const fastify = Fastify({
     logger: {
-      level: 'info',
+      level: process.env.NODE_ENV === 'development' ? 'warn' : 'info',
       base: undefined,
       stream: {
         write: getLoggerWrite(appLogFile),
@@ -74,6 +74,8 @@ const main = async () => {
   initService(fastify);
 
   await fastify.listen({ host: '::', port }).then(() => {
+    // eslint-disable-next-line no-console
+    console.log(`app listen on port ${port}.`);
     fastify.log.info(`app listen on port ${port}.`);
   });
 };

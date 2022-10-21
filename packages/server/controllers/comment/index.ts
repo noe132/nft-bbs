@@ -37,7 +37,7 @@ export const commentController: Parameters<FastifyRegister>[0] = (fastify, _opts
 
     let comments = await Comment.list({
       groupId: params.groupId,
-      objectId: query.objectId,
+      postId: query.objectId,
       limit: Math.min(parseIntFromString(query.limit, 10), 100),
       offset: parseIntFromString(query.offset, 0),
     });

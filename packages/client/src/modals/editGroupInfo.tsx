@@ -6,13 +6,12 @@ import { Close } from '@mui/icons-material';
 import { Button, Dialog, FormControl, FormHelperText, IconButton, InputLabel, OutlinedInput } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
-import { blobToDataUrl, compressImage, createPromise, runLoading, ThemeLight } from '~/utils';
-import { nodeService, snackbarService } from '~/service';
+import { blobToDataUrl, compressImage, createPromise, ThemeLight } from '~/utils';
+import { nodeService } from '~/service';
 import { GroupAvatar } from '~/components/GroupAvatar';
 
 import { modalViewState } from './helper/modalViewState';
 import { editImage } from './editImage';
-
 
 export const editGroupInfo = action(() => {
   const p = createPromise();
@@ -79,26 +78,26 @@ export const EditGroupInfoView = observer((props: Props) => {
   };
 
   const handleSubmit = () => {
-    if (state.loading) { return; }
-    runLoading(
-      (l) => { state.loading = l; },
-      async () => {
-        await nodeService.group.editInfo({
-          avatar: state.avatar,
-          desc: state.desc,
-        });
-        snackbarService.show('修改成功，同步完成后更新');
-        props.onClose?.();
-      },
-    );
+    // if (state.loading) { return; }
+    // runLoading(
+    //   (l) => { state.loading = l; },
+    //   async () => {
+    //     await nodeService.group.editInfo({
+    //       avatar: state.avatar,
+    //       desc: state.desc,
+    //     });
+    //     snackbarService.show('修改成功，同步完成后更新');
+    //     props.onClose?.();
+    //   },
+    // );
   };
 
   const loadGroupInfo = async () => {
-    await nodeService.group.updateInfo();
-    runInAction(() => {
-      state.avatar = nodeService.state.groupInfo.avatar;
-      state.desc = nodeService.state.groupInfo.desc;
-    });
+    // await nodeService.group.updateInfo();
+    // runInAction(() => {
+    //   state.avatar = nodeService.state.groupInfo.avatar;
+    //   state.desc = nodeService.state.groupInfo.desc;
+    // });
   };
 
   useEffect(() => {

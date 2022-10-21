@@ -95,6 +95,7 @@ export const Join = observer(() => {
         GroupInfoApi.get(seed.group_id).then(action((v) => {
           state.groupInfo = v;
         }));
+        configService.loadConfig();
         runInAction(() => {
           state.seed = seed;
           state.step = Step.PrepareJoinGroup;
@@ -465,10 +466,10 @@ export const Join = observer(() => {
                           <button
                             className="bg-white/20 hover:bg-white/30 rounded-full px-4 py-2"
                             key={v.groupId}
-                            onClick={() => {
+                            onClick={action(() => {
                               state.seedUrl = v.seedUrl;
                               handleNextStep();
-                            }}
+                            })}
                           >
                             {v.groupName}
                           </button>

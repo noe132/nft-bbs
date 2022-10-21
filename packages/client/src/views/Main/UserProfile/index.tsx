@@ -7,7 +7,6 @@ import { observer } from 'mobx-react-lite';
 import RemoveMarkdown from 'remove-markdown';
 import { format } from 'date-fns';
 import type { Post } from 'nft-bbs-server';
-import { CounterName } from 'nft-bbs-types';
 import { Button, CircularProgress, ClickAwayListener, IconButton, Popover, Tooltip } from '@mui/material';
 import { Close, ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 
@@ -82,7 +81,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     }));
   };
 
-  const handleUpdatePostCounter = (post: Post, type: CounterName.postLike | CounterName.postDislike) => {
+  const handleUpdatePostCounter = (post: Post, type: 'Like' | 'Dislike') => {
     if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
@@ -90,11 +89,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
-      () => nodeService.counter.update({
-        type: 'post',
-        item: post,
-        counterName: type,
-      }),
+      () => nodeService.counter.updatePost(post, type),
     );
   };
 
@@ -211,7 +206,7 @@ export const UserProfile = observer((props: { className?: string }) => {
               onClick={() => state.profile && editProfile({
                 name: state.profile.name,
                 avatar: state.profile.avatar,
-                intro: state.profile.intro,
+                // intro: state.profile.intro,
               })}
             >
               <EditIcon className="text-18 -mt-px mr-1" />
@@ -232,11 +227,11 @@ export const UserProfile = observer((props: { className?: string }) => {
                   {state.profile.name || state.profile.userAddress.slice(0, 10)}
                 </div>
               </div>
-              {!!state.profile.intro && (
+              {/* {!!state.profile.intro && (
                 <div className="text-14 text-gray-9c truncate-4">
                   {state.profile.intro}
                 </div>
-              )}
+              )} */}
             </div>
             {!state.selfProfile && (
               <div className="flex flex-center flex-none">
@@ -304,7 +299,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                         )}
                         variant="text"
                         size="small"
-                        onClick={() => handleUpdatePostCounter(v, CounterName.postLike)}
+                        onClick={() => handleUpdatePostCounter(v, 'Like')}
                       >
                         {!stat.likeCount && (
                           <ThumbUpOffAlt className="mr-2 text-18" />
@@ -322,7 +317,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                         )}
                         variant="text"
                         size="small"
-                        onClick={() => handleUpdatePostCounter(v, CounterName.postDislike)}
+                        onClick={() => handleUpdatePostCounter(v, 'Dislike')}
                       >
                         {!stat.dislikeCount && (
                           <ThumbDownOffAlt className="mr-2 text-18" />

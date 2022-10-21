@@ -124,13 +124,19 @@ export const EditProfileView = observer((props: Props) => {
     }
     if (state.introLength > 200) { return; }
     if (!state.name || state.loading) { return; }
+    const match = /data:(.+?);base64,(.+)/.exec(state.avatar);
+    const avatar = match
+      ? {
+        mediaType: match[1],
+        content: match[2],
+      }
+      : undefined;
     await runLoading(
       (l) => { state.loading = l; },
       async () => {
         await nodeService.profile.submit({
           name: state.name,
-          avatar: state.avatar,
-          intro: state.intro,
+          avatar,
         });
         snackbarService.show('修改成功');
         props.onConfirm();

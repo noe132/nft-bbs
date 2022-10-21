@@ -1,4 +1,5 @@
-import { IContent } from 'quorum-light-node-sdk-nodejs';
+import { ImageType } from 'nft-bbs-types';
+import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 import { ImageFile } from '~/orm';
 import { send } from '~/service/socket';
@@ -9,16 +10,19 @@ export const handleImage = async (
   transactionManager: EntityManager,
   _queueSocket: typeof send,
 ) => {
-  const trxContent = ImageFile.parseTrxContent(item);
-  if (!trxContent) {
-    pollingLog.info(`imageFile ${item.TrxId} failed to validate trxContent`, item.Data.content);
-    return;
-  }
+  const data = item.Data as ImageType;
+  const userAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey);
+  const groupId = item.GroupId;
+  const trxId = item.TrxId;
+  const timestamp = parseQuorumTimestamp(item.TimeStamp);
 
-  await ImageFile.add({
-    ...trxContent,
-    groupId: item.GroupId,
-    trxId: item.TrxId,
-    timestamp: parseQuorumTimestamp(item.TimeStamp),
-  }, transactionManager);
+  await Promise.all(data.image.map((v) => ImageFile.add({
+    name: v.name || '',
+    content: v.content,
+    mineType: v.mediaType,
+    groupId,
+    trxId,
+    userAddress,
+    timestamp,
+  }, transactionManager)));
 };

@@ -1,11 +1,8 @@
-import { either, json, function as fp } from 'fp-ts';
-import { imageTrxContent } from 'nft-bbs-types';
-import { IContent } from 'quorum-light-node-sdk-nodejs';
-import { Column, Entity, EntityManager, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
 
-@Entity({ name: 'image' })
+@Entity({ name: 'imagefile' })
 export class ImageFile {
   @PrimaryGeneratedColumn()
   public id?: number;
@@ -13,6 +10,10 @@ export class ImageFile {
   @Index()
   @Column({ nullable: false })
   public trxId!: string;
+
+  @Index()
+  @Column({ nullable: false })
+  public name!: string;
 
   @Index()
   @Column({ nullable: false })
@@ -24,6 +25,9 @@ export class ImageFile {
   @Column({ nullable: false })
   public content!: string;
 
+  @Column({ nullable: false })
+  public userAddress!: string;
+
   @Column({
     type: 'timestamp',
     nullable: false,
@@ -34,17 +38,7 @@ export class ImageFile {
   })
   public timestamp!: number;
 
-
-  public static parseTrxContent(item: IContent) {
-    return fp.pipe(
-      json.parse(item.Data.content),
-      either.map((v) => imageTrxContent.decode(v)),
-      either.flattenW,
-      either.getOrElseW(() => null),
-    );
-  }
-
-  public static create(params: EntityConstructorParams<ImageFile, 'id'>) {
+  private static create(params: EntityConstructorParams<ImageFile, 'id'>) {
     const item = new ImageFile();
     Object.assign(item, params);
     return item;
@@ -55,9 +49,16 @@ export class ImageFile {
     return (manager || AppDataSource.manager).save(ImageFile, item);
   }
 
-  public static async get(groupId: string, trxId: string) {
-    return AppDataSource.manager.findOne(ImageFile, {
+  public static async get(groupId: string, trxId: string, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).findOne(ImageFile, {
       where: { groupId, trxId },
+      order: { id: 'desc' },
+    });
+  }
+
+  public static async list(where: FindOptionsWhere<ImageFile> | Array<FindOptionsWhere<ImageFile>>, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).find(ImageFile, {
+      where,
       order: { id: 'desc' },
     });
   }

@@ -1,14 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { stringifyUrl } from 'query-string';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import { Button, IconButton, Tooltip } from '@mui/material';
 import { Share, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 import type { Post } from 'nft-bbs-server';
-import { CounterName } from 'nft-bbs-types';
-import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 import TrashIcon from 'boxicons/svg/regular/bx-trash.svg?fill-icon';
 
 import { ago, renderPostMarkdown, runLoading, setClipboard } from '~/utils';
@@ -21,24 +18,23 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   const navigate = useNavigate();
   const state = useLocalObservable(() => ({
     likeLoading: false,
-    images: new Map<string, string>(),
     get content() {
       const groupId = props.post.groupId;
       const matches = Array.from(this.postStat.content.matchAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g));
-      this.images = new Map<string, string>(
+      const images = new Map<string, string>(
         matches.map((_sub, _g1, g2) => [g2 as any as string, '']),
       );
       matches.forEach((match) => {
         const [_sub, _g1, trxId] = match;
         if (nodeService.state.post.imageCache.has(trxId)) {
-          this.images.set(trxId, nodeService.state.post.imageCache.get(trxId)!);
+          images.set(trxId, nodeService.state.post.imageCache.get(trxId)!);
           return;
         }
         const url = ImageApi.getImageUrl(groupId, trxId);
-        this.images.set(trxId, url);
+        images.set(trxId, url);
       });
       const content = this.postStat.content.replaceAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g, (_sub, g1, trxId) => {
-        const imgUrl = this.images.get(trxId);
+        const imgUrl = images.get(trxId);
         return `${g1}(${imgUrl})`;
       });
       return renderPostMarkdown(content);
@@ -54,6 +50,9 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
     get isPostAuthor() {
       return keyService.state.address === props.post.userAddress;
     },
+    get synced() {
+      return !nodeService.state.post.newPostCache.has(props.post.trxId);
+    },
   }));
 
   const handlePostClick = (e: React.MouseEvent) => {
@@ -62,7 +61,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
     }
   };
 
-  const handleUpdatePostCounter = (type: CounterName.postLike | CounterName.postDislike) => {
+  const handleUpdatePostCounter = (type: 'Like' | 'Dislike') => {
     if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
@@ -70,24 +69,20 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
-      () => nodeService.counter.update({
-        type: 'post',
-        item: props.post,
-        counterName: type,
-      }),
+      () => nodeService.counter.updatePost(props.post, type),
     );
   };
 
-  const handleEditPost = () => {
-    if (nodeService.state.postPermissionTip) {
-      snackbarService.show(nodeService.state.postPermissionTip);
-      return;
-    }
-    navigate(stringifyUrl({
-      url: '/newpost',
-      query: { edit: props.post.trxId },
-    }));
-  };
+  // const handleEditPost = () => {
+  //   if (nodeService.state.postPermissionTip) {
+  //     snackbarService.show(nodeService.state.postPermissionTip);
+  //     return;
+  //   }
+  //   navigate(stringifyUrl({
+  //     url: '/newpost',
+  //     query: { edit: props.post.trxId },
+  //   }));
+  // };
 
   const handleDeletePost = async () => {
     if (nodeService.state.postPermissionTip) {
@@ -128,14 +123,14 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         </div>
         {state.isPostAuthor && (
           <div className="flex flex-center gap-x-2 flex-none -mr-2">
-            <Tooltip title="编辑帖子">
+            {/* <Tooltip title="编辑帖子">
               <IconButton
                 className="text-white/70 hover:text-rum-orange"
                 onClick={handleEditPost}
               >
                 <EditIcon className="text-20" />
               </IconButton>
-            </Tooltip>
+            </Tooltip> */}
             <Tooltip title="删除帖子">
               <IconButton
                 className="text-white/70 hover:text-red-400"
@@ -166,9 +161,9 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         </Tooltip>
         <button
           className="text-white/35 text-12"
-          onClick={() => props.post.storage === 'chain' && showTrxDetail(props.post.trxId)}
+          onClick={() => state.synced && showTrxDetail(props.post.trxId)}
         >
-          {props.post.storage === 'cache' ? '同步中' : '已同步'}
+          {state.synced ? '已同步' : '同步中'}
         </button>
       </div>
 
@@ -190,7 +185,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
               state.postStat.liked && 'text-rum-orange',
             )}
             variant="text"
-            onClick={() => handleUpdatePostCounter(CounterName.postLike)}
+            onClick={() => handleUpdatePostCounter('Like')}
           >
             {!state.postStat.likeCount && (
               <ThumbUpOffAlt className="mr-2 text-22" />
@@ -207,7 +202,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
               state.postStat.disliked && 'text-rum-orange',
             )}
             variant="text"
-            onClick={() => handleUpdatePostCounter(CounterName.postDislike)}
+            onClick={() => handleUpdatePostCounter('Dislike')}
           >
             {!state.postStat.dislikeCount && (
               <ThumbDownOffAlt className="mr-2 text-22" />

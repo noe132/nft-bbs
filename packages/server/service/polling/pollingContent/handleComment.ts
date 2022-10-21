@@ -1,181 +1,134 @@
-import { TrxStorage } from 'nft-bbs-types';
+import { CommentType } from 'nft-bbs-types';
 import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { EntityManager } from 'typeorm';
-import { Post, Comment, Notification, UniqueCounter } from '~/orm';
+
+import { Post, Comment, Notification, ImageFile } from '~/orm';
 import { send } from '~/service/socket';
 import { parseQuorumTimestamp } from '~/utils';
 
-export const handleComment = async (
-  item: IContent,
-  transactionManager: EntityManager,
-  queueSocket: typeof send,
-) => {
+
+export const handleComment = async (item: IContent, transactionManager: EntityManager, queueSocket: typeof send) => {
+  const data = item.Data as CommentType;
+  const userAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey);
   const groupId = item.GroupId;
-  const trxContent = Comment.parseTrxContent(item);
-  if (!trxContent) {
-    pollingLog.info(`$1 ${item.TrxId} failed to validate trxContent`, item.Data.content);
-    return;
-  }
-  const comment: Comment = {
-    ...trxContent,
-    userAddress: QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey),
-    groupId,
-    trxId: item.TrxId,
-    storage: TrxStorage.chain,
-    commentCount: 0,
-    dislikeCount: 0,
-    hotCount: 0,
-    likeCount: 0,
-    timestamp: parseQuorumTimestamp(item.TimeStamp),
-  };
+  const trxId = item.TrxId;
+  const timestamp = parseQuorumTimestamp(item.TimeStamp);
 
-  if (trxContent.updatedTrxId) {
-    const updatedComment = await Comment.get(
-      { groupId, trxId: trxContent.updatedTrxId },
-      transactionManager,
-    );
-    if (!updatedComment) { return; }
-    if (comment.userAddress !== updatedComment.userAddress) {
-      pollingLog.warn(`post ${comment.trxId} no permission update comment`);
-    }
-    updatedComment.content = comment.content;
-    await Comment.save(updatedComment, transactionManager);
-    return;
+  const parentComment = await Comment.get({ groupId, trxId: data.inreplyto.trxid }, transactionManager);
+  const postId = parentComment?.postId ?? data.inreplyto.trxid;
+  const threadId = parentComment?.threadId || parentComment?.trxId || '';
+  const replyId = parentComment?.threadId
+    ? data.inreplyto.trxid
+    : '';
+
+  if (trxId === '4901e676-3a29-4506-8a89-9f20d6dd4471') {
+    console.log(data);
   }
 
-  if (trxContent.deletedTrxId) {
-    const deletedComment = await Comment.get(
-      { groupId, trxId: trxContent.deletedTrxId },
-      transactionManager,
-    );
-    if (!deletedComment) { return; }
-    if (comment.userAddress !== deletedComment.userAddress) {
-      pollingLog.warn(`post ${comment.trxId} no permission delete comment`);
-    }
-
-    await Promise.all([
-      Comment.delete({ groupId, trxId: deletedComment.trxId }, transactionManager),
-      Notification.deleteWith({ groupId, trxId: deletedComment.trxId }, transactionManager),
-      UniqueCounter.deleteWith({ groupId, trxId: deletedComment.trxId }, transactionManager),
-    ]);
-
-    const post = await Post.get(
-      { groupId, trxId: deletedComment.objectId },
-      transactionManager,
-    );
-    if (post) {
-      post.commentCount = await Comment.count({
+  const [comment, post, threadComment, replyComment] = await Promise.all([
+    Comment.add({
+      trxId,
+      groupId,
+      content: data.content,
+      postId,
+      threadId,
+      replyId,
+      userAddress,
+      timestamp,
+      commentCount: 0,
+      likeCount: 0,
+      dislikeCount: 0,
+    }, transactionManager),
+    Post.get({ groupId, trxId: postId }, transactionManager),
+    !threadId ? null : Comment.get({ groupId, trxId: threadId }, transactionManager),
+    !replyId ? null : Comment.get({ groupId, trxId: replyId }, transactionManager),
+    ...data.image
+      ? data.image.map((img) => ImageFile.add({
         groupId,
-        objectId: deletedComment.objectId,
-      }, transactionManager);
-      await Post.update(
-        { trxId: post.trxId, groupId },
-        post,
-        transactionManager,
-      );
-    }
-    if (deletedComment.threadId) {
-      const comment = await Comment.get(
-        { groupId, trxId: deletedComment.threadId },
-        transactionManager,
-      );
-      if (comment) {
-        comment.commentCount = await Comment.count({
-          groupId,
-          threadId: deletedComment.threadId,
-        }, transactionManager);
-        await Comment.save(comment, transactionManager);
-      }
-    }
-    return;
-  }
+        trxId,
+        content: img.content,
+        mineType: img.mediaType,
+        name: img.name,
+        timestamp,
+        userAddress,
+      }, transactionManager))
+      : [],
+  ]);
 
-  await Comment.add(comment, transactionManager);
   queueSocket({
-    broadcast: true,
-    event: 'trx',
     groupId,
-    data: { trxId: comment.trxId, type: 'comment' },
+    broadcast: true,
+    event: 'comment',
+    data: { trxId },
   });
 
-  const commentAuthorAddress = comment.userAddress;
-  const post = await Post.get(
-    { groupId, trxId: comment.objectId },
-    transactionManager,
-  );
-  const parentReplyComment = comment.replyId
-    ? await Comment.get({ groupId, trxId: comment.replyId }, transactionManager)
-    : null;
-  const parentThreadComment = comment.threadId
-    ? await Comment.get({ groupId, trxId: comment.threadId }, transactionManager)
-    : null;
-
-  if (post) {
-    post.commentCount = await Comment.count({
-      groupId,
-      objectId: post.trxId,
-    }, transactionManager);
-    await Post.save(post, transactionManager);
+  if (!post) {
+    pollingLog.warn({
+      message: `no post ${postId} found for comment ${trxId}`,
+      data: item.Data,
+    });
+    return;
   }
+
+  post.commentCount += 1;
+  if (threadComment) {
+    threadComment.commentCount += 1;
+  }
+
+  await Promise.all([
+    Post.save(post, transactionManager),
+    threadComment && Comment.save(threadComment, transactionManager),
+  ]);
 
   const notifications: Array<Notification> = [];
 
-  // notification reply to post
-  const replyToPost = !comment.replyId
-    && !comment.threadId
-    && post
-    && post.userAddress !== commentAuthorAddress;
-  if (replyToPost) {
+  const replyToPost = postId === data.inreplyto.trxid;
+  if (replyToPost && post.userAddress !== userAddress) {
     notifications.push({
       groupId,
       status: 'unread',
       type: 'comment',
-      objectId: post.trxId,
+      objectId: postId,
       objectType: 'post',
       actionObjectId: comment.trxId,
       actionObjectType: 'comment',
       to: post.userAddress,
-      from: commentAuthorAddress,
-      timestamp: parseQuorumTimestamp(item.TimeStamp),
+      from: userAddress,
+      timestamp,
     });
   }
 
-  // notification reply to replyId comment
-  const replyToReplyId = parentReplyComment
-    && parentReplyComment.userAddress !== commentAuthorAddress;
-  if (replyToReplyId) {
+  if (threadComment && threadComment.userAddress !== userAddress) {
     notifications.push({
       groupId,
       status: 'unread',
       type: 'comment',
-      objectId: parentReplyComment.trxId,
+      objectId: threadComment.trxId,
       objectType: 'comment',
       actionObjectId: comment.trxId,
       actionObjectType: 'comment',
-      to: parentReplyComment.userAddress,
-      from: commentAuthorAddress,
-      timestamp: parseQuorumTimestamp(item.TimeStamp),
+      to: threadComment.userAddress,
+      from: userAddress,
+      timestamp,
     });
   }
 
-  // notification to threadId comment
-  const replyToThread = parentThreadComment
-   && parentThreadComment.userAddress !== commentAuthorAddress
-   && parentThreadComment.userAddress !== parentReplyComment?.userAddress;
-  if (replyToThread) {
-    parentThreadComment.commentCount += 1;
-    await Comment.save(parentThreadComment, transactionManager);
+  if (
+    replyComment
+    && replyComment.userAddress !== threadComment?.userAddress
+     && replyComment.userAddress !== userAddress
+  ) {
     notifications.push({
       groupId,
       status: 'unread',
       type: 'comment',
-      objectId: parentThreadComment.trxId,
+      objectId: replyComment.trxId,
       objectType: 'comment',
       actionObjectId: comment.trxId,
       actionObjectType: 'comment',
-      to: parentThreadComment.userAddress,
-      from: commentAuthorAddress,
-      timestamp: parseQuorumTimestamp(item.TimeStamp),
+      to: replyComment.userAddress,
+      from: userAddress,
+      timestamp,
     });
   }
 

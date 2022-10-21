@@ -7,7 +7,6 @@ import { observer } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
 import type { Post } from 'nft-bbs-server';
-import { CounterName } from 'nft-bbs-types';
 import { ExpandMore, Refresh, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 import { Button, CircularProgress, Tooltip } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
@@ -97,7 +96,7 @@ export const PostList = observer((props: { className?: string }) => {
     navigate(url);
   };
 
-  const handleUpdatePostCounter = (post: Post, type: CounterName.postLike | CounterName.postDislike) => {
+  const handleUpdatePostCounter = (post: Post, type: 'Like' | 'Dislike') => {
     if (nodeService.state.postPermissionTip) {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
@@ -105,11 +104,7 @@ export const PostList = observer((props: { className?: string }) => {
     if (state.likeLoadingMap.get(post.trxId)) { return; }
     runLoading(
       (l) => { state.likeLoadingMap.set(post.trxId, l); },
-      () => nodeService.counter.update({
-        type: 'post',
-        item: post,
-        counterName: type,
-      }),
+      () => nodeService.counter.updatePost(post, type),
     );
   };
 
@@ -204,7 +199,7 @@ export const PostList = observer((props: { className?: string }) => {
                         )}
                         variant="text"
                         size="small"
-                        onClick={() => handleUpdatePostCounter(v, CounterName.postLike)}
+                        onClick={() => handleUpdatePostCounter(v, 'Like')}
                       >
                         {!stat.likeCount && (
                           <ThumbUpOffAlt className="mr-2 text-18" />
@@ -224,7 +219,7 @@ export const PostList = observer((props: { className?: string }) => {
                         )}
                         variant="text"
                         size="small"
-                        onClick={() => handleUpdatePostCounter(v, CounterName.postDislike)}
+                        onClick={() => handleUpdatePostCounter(v, 'Dislike')}
                       >
                         {!stat.dislikeCount && (
                           <ThumbDownOffAlt className="mr-2 text-18" />
@@ -250,9 +245,9 @@ export const PostList = observer((props: { className?: string }) => {
                   <div className="flex flex-center gap-x-4">
                     <button
                       className="text-link-soft/50 text-12"
-                      onClick={() => v.storage === 'chain' && showTrxDetail(v.trxId)}
+                      onClick={() => !nodeService.state.post.newPostCache.has(v.trxId) && showTrxDetail(v.trxId)}
                     >
-                      {v.storage === 'cache' ? '同步中' : '已同步'}
+                      {nodeService.state.post.newPostCache.has(v.trxId) ? '同步中' : '已同步'}
                     </button>
                     <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
                       <div className="text-12 text-link-soft">

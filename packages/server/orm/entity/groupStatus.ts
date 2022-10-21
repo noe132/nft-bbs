@@ -13,14 +13,10 @@ export class GroupStatus {
   @Column({ nullable: false, default: '' })
   public seedUrl!: string;
 
-  public static create(params: EntityConstructorParams<GroupStatus>) {
+  private static create(params: EntityConstructorParams<GroupStatus>) {
     const item = new GroupStatus();
     Object.assign(item, params);
     return item;
-  }
-
-  public static async has(groupId: string, manager?: EntityManager) {
-    return (manager || AppDataSource.manager).countBy(GroupStatus, { groupId });
   }
 
   public static async add(params: EntityConstructorParams<GroupStatus>, manager?: EntityManager) {

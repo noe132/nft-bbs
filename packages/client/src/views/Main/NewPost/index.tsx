@@ -1,5 +1,5 @@
 import { createRef, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
@@ -23,7 +23,7 @@ import { makeHeading, makeLink, toggleBlock, toggleLine } from './helper';
 import './index.css';
 
 export const NewPost = observer((props: { className?: string, onChange?: (v: string) => unknown }) => {
-  const [searchParams] = useSearchParams();
+  // const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const state = useLocalObservable(() => ({
     editor: null as null | CodeMirror.Editor,
@@ -48,10 +48,11 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       return !!this.title.trim() && this.titleLength <= 100 && !!this.postContent.trim();
     },
     get postToEdit() {
-      const trxId = searchParams.get('edit');
-      return trxId
-        ? nodeService.state.post.map.get(trxId)
-        : null;
+      return null;
+      // const trxId = searchParams.get('edit');
+      // return trxId
+      //   ? nodeService.state.post.map.get(trxId)
+      //   : null;
     },
   }));
   const codeMirrorBox = createRef<HTMLDivElement>();
@@ -105,11 +106,11 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
           return `${g1}(${SCHEMA_PREFIX}${img?.trxId})`;
         });
 
-        if (state.postToEdit) {
-          await nodeService.post.edit(state.postToEdit, state.title.trim(), postContent);
-        } else {
-          await nodeService.post.create(state.title.trim(), postContent);
-        }
+        // if (state.postToEdit) {
+        //   await nodeService.post.edit(state.postToEdit, state.title.trim(), postContent);
+        // } else {
+        // }
+        await nodeService.post.create(state.title.trim(), postContent);
         runInAction(() => {
           images.forEach((v) => {
             const url = URL.createObjectURL(v.img);
@@ -123,7 +124,8 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
   };
 
   useEffect(() => {
-    const content = state.postToEdit?.content ?? '';
+    // const content = state.postToEdit?.content ?? '';
+    const content = '';
     runInAction(() => {
       state.postContent = content;
     });
@@ -148,12 +150,12 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
     });
     runInAction(() => {
       state.editor = editor;
-      state.title = state.postToEdit?.title ?? '';
+      // state.title = state.postToEdit?.title ?? '';
+      state.title = '';
     });
     editor.on('focus', action(() => { state.focused = true; }));
     editor.on('blur', action(() => { state.focused = false; }));
     editor.on('change', action((e) => {
-      // TODO: cached edit result
       state.postContent = e.getValue();
     }));
 
