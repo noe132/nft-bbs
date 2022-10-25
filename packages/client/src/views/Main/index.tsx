@@ -16,6 +16,7 @@ import { PostDetail } from './PostDetail';
 import { NewPost } from './NewPost';
 import { UserProfile } from './UserProfile';
 import { NotificationPage } from './NotificationPage';
+import { routeUrlPatterns } from '~/utils/urlPatterns';
 
 export const Main = observer(() => {
   const routeLocation = useLocation();
@@ -66,11 +67,11 @@ export const Main = observer(() => {
         onScroll={handleScroll}
       >
         <Routes>
-          <Route path="/" element={<PostList key={routeLocation.key} />} />
-          <Route path="/post/:groupId/:trxId" element={<PostDetail key={routeLocation.key} />} />
-          <Route path="/newpost" element={<NewPost key={routeLocation.key} />} />
-          <Route path="/userprofile/:groupId/:userAddress" element={<UserProfile key={routeLocation.key} />} />
-          <Route path="/notification" element={<NotificationPage key={routeLocation.key} />} />
+          <Route path={routeUrlPatterns.postlist} element={<PostList key={routeLocation.key} />} />
+          <Route path={routeUrlPatterns.postdetail} element={<PostDetail key={routeLocation.key} />} />
+          <Route path={routeUrlPatterns.newpost} element={<NewPost key={routeLocation.key} />} />
+          <Route path={routeUrlPatterns.userprofile} element={<UserProfile key={routeLocation.key} />} />
+          <Route path={routeUrlPatterns.notification} element={<NotificationPage key={routeLocation.key} />} />
         </Routes>
       </Scrollable>
     </div>

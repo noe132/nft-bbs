@@ -76,7 +76,7 @@ export const UserProfile = observer((props: { className?: string }) => {
 
   const handleOpenPost = (post: Post, locateComment: true | undefined = undefined) => {
     navigate(stringifyUrl({
-      url: `/post/${post.groupId}/${post.trxId}`,
+      url: `/${post.groupId}/post/${post.trxId}`,
       query: { locateComment },
     }));
   };

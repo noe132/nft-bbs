@@ -3,6 +3,7 @@ import { ethers, utils } from 'ethers';
 import { taskEither, either, function as fp } from 'fp-ts';
 import { Base64 } from 'js-base64';
 import { VaultApi } from '~/apis';
+import { getLoginState, setLoginState } from '~/utils';
 
 export interface KeystoreData {
   type: 'keystore'
@@ -27,6 +28,9 @@ const state = observable({
       return this.keys.address;
     }
     return this.keys?.appUser.eth_address ?? '';
+  },
+  get logined() {
+    return !!this.address;
   },
 });
 
@@ -117,6 +121,34 @@ const getTrxCreateParam = () => {
   throw new Error('not logined');
 };
 
+const tryAutoLogin = async () => {
+  const loginState = getLoginState();
+
+  if (loginState && loginState.autoLogin === 'mixin' && loginState.mixinJWT) {
+    const result = await VaultApi.getOrCreateAppUser(loginState.mixinJWT);
+    if (either.isRight(result)) {
+      const { jwt, user, appUser } = result.right;
+      keyService.mixinLogin(jwt, user, appUser);
+    } else {
+      setLoginState({
+        mixinJWT: '',
+        autoLogin: null,
+      });
+    }
+  }
+
+  if (loginState && loginState.autoLogin === 'keystore') {
+    const loginResult = await keyService.login(loginState.keystore, loginState.password);
+    if (either.isLeft(loginResult)) {
+      setLoginState({
+        keystore: '',
+        password: '',
+        autoLogin: null,
+      });
+    }
+  }
+};
+
 export const keyService = {
   state,
 
@@ -127,4 +159,5 @@ export const keyService = {
   logout,
   validate,
   getTrxCreateParam,
+  tryAutoLogin,
 };

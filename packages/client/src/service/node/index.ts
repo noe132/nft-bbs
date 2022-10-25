@@ -6,19 +6,22 @@ import { v4 } from 'uuid';
 import type { Post, Comment, Profile, Notification } from 'nft-bbs-server';
 import { CommentType, DislikeType, ImageType, LikeType, PostDeleteType, PostType, ProfileType } from 'nft-bbs-types';
 
-import { getLoginState, runLoading, setLoginState } from '~/utils';
-import { CommentApi, GroupApi, NotificationApi, PostApi, ProfileApi, VaultApi } from '~/apis';
+import { getLoginState, runLoading } from '~/utils';
+import { CommentApi, GroupApi, NotificationApi, PostApi, ProfileApi } from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
 import { nftService } from '~/service/nft';
 import { pageStateMap } from '~/utils/pageState';
 import type { createPostlistState } from '~/views/Main/PostList';
+import { routeUrlPatterns } from '~/utils/urlPatterns';
+import { routerService } from '../router';
 
 const state = observable({
   allowMixinLogin: false,
   showJoin: false,
   showMain: false,
   groupId: '',
+  groups: [] as Array<GroupApi.GroupItem>,
   group: null as null | QuorumLightNodeSDK.IGroup,
   get groupOwnerAddress() {
     return nodeService.state.group?.ownerPubKey
@@ -599,63 +602,36 @@ const counter = {
 };
 
 const group = {
-  join: (seedUrl: string) => {
-    QuorumLightNodeSDK.cache.Group.clear();
-    QuorumLightNodeSDK.cache.Group.add(seedUrl);
+  join: (seedUrl: string) => either.tryCatch(
+    () => {
+      QuorumLightNodeSDK.cache.Group.clear();
+      QuorumLightNodeSDK.cache.Group.add(seedUrl);
 
+      runInAction(() => {
+        state.group = QuorumLightNodeSDK.cache.Group.list()[0];
+        state.groupId = state.group.groupId;
+      });
+
+      GroupApi.join(seedUrl);
+      if (keyService.state.address) {
+        profile.get({ userAddress: keyService.state.address });
+        notification.getUnreadCount();
+      }
+    },
+    (e) => e as Error,
+  ),
+  loadGroups: async () => {
+    const groups = await GroupApi.get();
     runInAction(() => {
-      state.group = QuorumLightNodeSDK.cache.Group.list()[0];
-      state.groupId = state.group.groupId;
+      if (groups) {
+        state.groups = groups;
+      }
     });
-
-    GroupApi.join(seedUrl);
-    if (keyService.state.address) {
-      profile.get({ userAddress: keyService.state.address });
-      notification.getUnreadCount();
-    }
   },
-  savedLoginCheck: async (groupId?: string) => {
+  tryAutoJoin: () => {
     const loginState = getLoginState();
-    let logined = false;
-
-    if (loginState && loginState.autoLogin === 'mixin' && loginState.mixinJWT) {
-      const result = await VaultApi.getOrCreateAppUser(loginState.mixinJWT);
-      if (either.isRight(result)) {
-        const { jwt, user, appUser } = result.right;
-        keyService.mixinLogin(jwt, user, appUser);
-        logined = true;
-      } else {
-        setLoginState({
-          mixinJWT: '',
-          autoLogin: null,
-        });
-      }
-    }
-
-    if (loginState && loginState.autoLogin === 'keystore') {
-      const loginResult = await keyService.login(loginState.keystore, loginState.password);
-      if (either.isLeft(loginResult)) {
-        setLoginState({
-          keystore: '',
-          password: '',
-          autoLogin: null,
-        });
-        return;
-      }
-      logined = true;
-    }
-
-    if (loginState.seedUrl && logined) {
-      try {
-        const seedUrlGroup = QuorumLightNodeSDK.utils.restoreSeedFromUrl(loginState.seedUrl);
-        if (!groupId || seedUrlGroup.group_id === groupId) {
-          group.join(loginState.seedUrl);
-        }
-      } catch (e) {
-        console.error(e);
-        loginState.seedUrl = '';
-        setLoginState(loginState);
-      }
+    if (loginState.seedUrl && loginState.autoLogin) {
+      group.join(loginState.seedUrl);
     }
   },
 };
@@ -729,36 +705,64 @@ const init = () => {
     },
   );
   const initCheck = async () => {
-    const postdetailMatch = matchPath('/post/:groupId/:trxId', location.pathname);
-    const userprofileMatch = matchPath('/userprofile/:groupId/:userAddress', location.pathname);
-    const groupId = postdetailMatch?.params.groupId ?? userprofileMatch?.params.groupId ?? '';
+    const toJoin = action(() => {
+      state.showJoin = true;
+      state.showMain = false;
+    });
+    const toMain = action(() => {
+      state.showJoin = false;
+      state.showMain = true;
+    });
+    const pathname = window.location.pathname;
 
-    await group.savedLoginCheck(groupId);
-    const detailPageCheck = () => {
-      if (!postdetailMatch || !userprofileMatch) { return; }
-      if (!state.groupId) {
-        runInAction(() => {
-          state.groupId = groupId;
-        });
+    await keyService.tryAutoLogin();
+
+    if (pathname === '/') {
+      group.tryAutoJoin();
+      if (state.group) {
+        routerService.navigate(`/${state.groupId}`);
+        toMain();
+      } else {
+        toJoin();
       }
-      if (postdetailMatch && postdetailMatch.params.trxId) {
-        return true;
-      }
-      if (userprofileMatch && userprofileMatch.params.userAddress) {
-        return true;
-      }
-    };
-    if (detailPageCheck() || state.group) {
-      runInAction(() => {
-        state.showJoin = false;
-        state.showMain = true;
-      });
-    } else {
-      runInAction(() => {
-        state.showJoin = true;
-        state.showMain = false;
-      });
+      return;
     }
+
+    const urlMatchMap = {
+      postlist: matchPath(routeUrlPatterns.postlist, pathname),
+      postdetail: matchPath(routeUrlPatterns.postdetail, pathname),
+      newpost: matchPath(routeUrlPatterns.newpost, pathname),
+      userprofile: matchPath(routeUrlPatterns.userprofile, pathname),
+      notification: matchPath(routeUrlPatterns.notification, pathname),
+    };
+    const urlMatches = Object.values(urlMatchMap);
+    const nonMatch = urlMatches.every((v) => !v);
+    if (nonMatch) {
+      window.location.href = '/';
+      return;
+    }
+    // TODO: check whether anounymous mode is allowed
+    const anonymousModeAllowed = true;
+    if (!keyService.state.logined && !anonymousModeAllowed) {
+      toJoin();
+      return;
+    }
+    await group.loadGroups();
+    const groupId = urlMatches.find((v) => v?.params?.groupId)?.params.groupId;
+    const groupItem = state.groups.find((v) => v.groupId === groupId);
+    if (!groupItem) {
+      window.location.href = '/';
+      return;
+    }
+
+    group.join(groupItem.seedUrl);
+
+    if (!state.group) {
+      window.location.href = '/';
+      return;
+    }
+
+    toMain();
   };
   initCheck();
 

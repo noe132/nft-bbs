@@ -27,7 +27,7 @@ export const GroupSideBox = observer((props: Props) => {
       snackbarService.show(nodeService.state.postPermissionTip);
       return;
     }
-    navigate('/newpost');
+    navigate(`/${nodeService.state.groupId}/newpost`);
   };
 
   return (

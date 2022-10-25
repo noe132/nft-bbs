@@ -118,7 +118,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
           });
         });
         snackbarService.show(state.postToEdit ? '编辑成功' : '发布成功');
-        navigate('/');
+        navigate(`/${nodeService.state.groupId}`);
       },
     );
   };

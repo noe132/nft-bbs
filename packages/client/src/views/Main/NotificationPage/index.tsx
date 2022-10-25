@@ -34,7 +34,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
     const post = await nodeService.post.get(v.objectId);
     if (!post) { return; }
     navigate(stringifyUrl({
-      url: `/post/${post.groupId}/${post.trxId}`,
+      url: `/${post.groupId}/post/${post.trxId}`,
       query: { commentTrx: v.actionObjectId },
     }));
   };
@@ -125,11 +125,11 @@ export const NotificationPage = observer((props: { className?: string }) => {
                       <UserAvatar
                         className="cursor-pointer"
                         profile={fromProfile}
-                        onClick={() => navigate(`/userprofile/${fromProfile.groupId}/${fromProfile.userAddress}`)}
+                        onClick={() => navigate(`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`)}
                       />
                       <button
                         className=""
-                        onClick={() => navigate(`/userprofile/${fromProfile.groupId}/${fromProfile.userAddress}`)}
+                        onClick={() => navigate(`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`)}
                       >
                         <span className="text-rum-orange text-16 mr-3">
                           {fromProfileName}

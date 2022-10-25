@@ -5,6 +5,7 @@ import { DialogContainer } from './dialog/DialogContainer';
 import { nftService } from './nft';
 import { configService } from './config';
 import { nodeService } from './node';
+import { RouterHooksView } from './router/RouterHooksView';
 
 export * from './config';
 export * from './dialog';
@@ -14,6 +15,7 @@ export * from './lang';
 export * from './nft';
 export * from './node';
 export * from './snackbar';
+export * from './router';
 
 export const initService = () => {
   const disposes = [
@@ -32,4 +34,5 @@ export const ServiceViews = () => (<>
   <ImageZoomView />
   <SnackbarContainer />
   <DialogContainer />
+  <RouterHooksView />
 </>);

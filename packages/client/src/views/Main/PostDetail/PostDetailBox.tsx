@@ -96,7 +96,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
     });
     if (result === 'confirm') {
       nodeService.post.delete(props.post);
-      navigate('/');
+      navigate(`/${nodeService.state.groupId}`);
       dialogService.open({
         title: '删除成功',
         content: '帖子将会在数据同步后删除。',
@@ -146,11 +146,11 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         <UserAvatar
           className="cursor-pointer"
           profile={state.profile}
-          onClick={() => state.profile && navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`)}
+          onClick={() => state.profile && navigate(`/${state.profile.groupId}/userprofile/${state.profile.userAddress}`)}
         />
         <div
           className="text-14 text-rum-orange cursor-pointer"
-          onClick={() => state.profile && navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`)}
+          onClick={() => state.profile && navigate(`/${state.profile.groupId}/userprofile/${state.profile.userAddress}`)}
         >
           {state.profile?.name || state.profile?.userAddress.slice(0, 10)}
         </div>

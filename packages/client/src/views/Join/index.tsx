@@ -31,6 +31,7 @@ import {
 } from '~/service';
 import { GroupAvatar, Scrollable } from '~/components';
 import { GroupApi, GroupInfoApi, VaultApi } from '~/apis';
+import { useNavigate } from 'react-router-dom';
 
 enum Step {
   InputSeedUrl = 1,
@@ -71,6 +72,7 @@ export const Join = observer(() => {
       return !!this.password && !!this.keystore;
     },
   }));
+  const navigate = useNavigate();
 
   const languageButton = useRef<HTMLButtonElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -145,6 +147,7 @@ export const Join = observer(() => {
       password: '123',
       seedUrl: state.computedSeedUrl,
     });
+    navigate(`/${nodeService.state.groupId}`);
   };
 
   const handleLoginBySaved = async (type: 'keystore' | 'mixin') => {
@@ -162,6 +165,7 @@ export const Join = observer(() => {
         nodeService.state.showJoin = false;
         nodeService.state.showMain = true;
       });
+      navigate(`/${nodeService.state.groupId}`);
     }
 
     if (type === 'keystore' && state.savedLoginState.keystoreCanLogin) {
@@ -177,6 +181,7 @@ export const Join = observer(() => {
         nodeService.state.showJoin = false;
         nodeService.state.showMain = true;
       });
+      navigate(`/${nodeService.state.groupId}`);
     }
   };
 
@@ -261,6 +266,7 @@ export const Join = observer(() => {
       nodeService.state.showJoin = false;
       nodeService.state.showMain = true;
     });
+    navigate(`/${nodeService.state.groupId}`);
   };
 
   const handleShowKeystoreDialog = action(() => {
@@ -288,6 +294,7 @@ export const Join = observer(() => {
       nodeService.state.showJoin = false;
       nodeService.state.showMain = true;
     });
+    navigate(`/${nodeService.state.groupId}`);
   };
 
   const handleCreateNewWallet = () => {

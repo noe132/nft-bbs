@@ -40,7 +40,7 @@ export const UserCard = observer((props: Props) => {
       return;
     }
     if (state.profile) {
-      navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`);
+      navigate(`/${state.profile.groupId}/userprofile/${state.profile.userAddress}`);
     }
   };
 

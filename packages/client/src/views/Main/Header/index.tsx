@@ -112,9 +112,9 @@ export const Header = observer((props: { className?: string }) => {
       return;
     }
     if (!state.profile) {
-      navigate(`/userprofile/${nodeService.state.groupId}/${keyService.state.address}`);
+      navigate(`/${nodeService.state.groupId}/userprofile/${keyService.state.address}`);
     } else {
-      navigate(`/userprofile/${state.profile.groupId}/${state.profile.userAddress}`);
+      navigate(`/${state.profile.groupId}/userprofile/${state.profile.userAddress}`);
     }
   });
 
@@ -200,7 +200,7 @@ export const Header = observer((props: { className?: string }) => {
     if (routeLocation.pathname === '/') {
       postlistState?.loadPosts();
     } else {
-      navigate('/');
+      navigate(`/${nodeService.state.groupId}`);
     }
   };
 

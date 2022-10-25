@@ -90,7 +90,7 @@ export const PostList = observer((props: { className?: string }) => {
 
   const handleOpenPost = (post: Post, locateComment: true | undefined = undefined) => {
     const url = stringifyUrl({
-      url: `/post/${post.groupId}/${post.trxId}`,
+      url: `/${post.groupId}/post/${post.trxId}`,
       query: { locateComment },
     });
     navigate(url);
@@ -177,7 +177,7 @@ export const PostList = observer((props: { className?: string }) => {
                   </Link>
                   <button
                     className="flex flex-center flex-none text-white/50 text-14 max-w-[200px]"
-                    onClick={() => profile && navigate(`/userprofile/${profile.groupId}/${profile.userAddress}`)}
+                    onClick={() => profile && navigate(`${profile.groupId}/userprofile/${profile.userAddress}`)}
                   >
                     <UserAvatar className="mr-2 flex-none" profile={profile} size={24} />
                     <div className="truncate">

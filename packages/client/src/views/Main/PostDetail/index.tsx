@@ -256,7 +256,7 @@ export const PostDetail = observer((props: { className?: string }) => {
           <Button
             className="mt-4 text-white"
             variant="outlined"
-            onClick={() => navigate('/')}
+            onClick={() => navigate(`/${nodeService.state.groupId}`)}
           >
             返回首页
           </Button>
