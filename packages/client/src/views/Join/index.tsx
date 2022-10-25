@@ -41,7 +41,6 @@ enum Step {
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
-    groups: [] as Array<GroupApi.GroupItem>,
     seedUrl: '',
     keystorePopup: false,
     mixinLogin: false,
@@ -126,6 +125,11 @@ export const Join = observer(() => {
     try {
       nodeService.group.join(state.computedSeedUrl);
       setLoginState({ seedUrl: state.computedSeedUrl });
+      runInAction(() => {
+        nodeService.state.showJoin = false;
+        nodeService.state.showMain = true;
+      });
+      navigate(`/${nodeService.state.groupId}`);
       return true;
     } catch (e: any) {
       snackbarService.error(e.message);
@@ -135,19 +139,13 @@ export const Join = observer(() => {
 
   const handleLoginByRandom = async () => {
     const loginedKeystore = await keyService.loginRandom('123');
-    if (!joinGroup()) { return; }
-    runInAction(() => {
-      nodeService.state.showJoin = false;
-      nodeService.state.showMain = true;
-    });
-
     setLoginState({
       autoLogin: 'keystore',
       keystore: loginedKeystore.keystore,
       password: '123',
       seedUrl: state.computedSeedUrl,
     });
-    navigate(`/${nodeService.state.groupId}`);
+    joinGroup();
   };
 
   const handleLoginBySaved = async (type: 'keystore' | 'mixin') => {
@@ -159,13 +157,8 @@ export const Join = observer(() => {
       }
       const { jwt, user, appUser } = result.right;
       keyService.mixinLogin(jwt, user, appUser);
-      if (!joinGroup()) { return; }
       setLoginState({ autoLogin: 'mixin' });
-      runInAction(() => {
-        nodeService.state.showJoin = false;
-        nodeService.state.showMain = true;
-      });
-      navigate(`/${nodeService.state.groupId}`);
+      joinGroup();
     }
 
     if (type === 'keystore' && state.savedLoginState.keystoreCanLogin) {
@@ -175,13 +168,8 @@ export const Join = observer(() => {
         snackbarService.error('登录失败');
         return;
       }
-      if (!joinGroup()) { return; }
       setLoginState({ autoLogin: 'keystore' });
-      runInAction(() => {
-        nodeService.state.showJoin = false;
-        nodeService.state.showMain = true;
-      });
-      navigate(`/${nodeService.state.groupId}`);
+      joinGroup();
     }
   };
 
@@ -260,13 +248,7 @@ export const Join = observer(() => {
       seedUrl: state.computedSeedUrl,
     });
     keyService.mixinLogin(jwt, user, appUser);
-    if (!joinGroup()) { return; }
-    runInAction(() => {
-      state.mixinLogin = false;
-      nodeService.state.showJoin = false;
-      nodeService.state.showMain = true;
-    });
-    navigate(`/${nodeService.state.groupId}`);
+    joinGroup();
   };
 
   const handleShowKeystoreDialog = action(() => {
@@ -289,12 +271,11 @@ export const Join = observer(() => {
       seedUrl: state.computedSeedUrl,
       password: state.rememberPassword ? state.password : '',
     });
-    if (!joinGroup()) { return; }
-    runInAction(() => {
-      nodeService.state.showJoin = false;
-      nodeService.state.showMain = true;
-    });
-    navigate(`/${nodeService.state.groupId}`);
+    joinGroup();
+  };
+
+  const handleAnonymous = () => {
+    joinGroup();
   };
 
   const handleCreateNewWallet = () => {
@@ -358,18 +339,9 @@ export const Join = observer(() => {
     }
   };
 
-  const loadGroups = async () => {
-    const groups = await GroupApi.get();
-    runInAction(() => {
-      if (groups) {
-        state.groups = groups;
-      }
-    });
-  };
-
   useEffect(() => {
     validateLoginState();
-    loadGroups();
+    nodeService.group.loadGroups();
     const handleMessage = (e: MessageEvent<{ name: string, search: string }>) => {
       const data = e.data;
       if (typeof data !== 'object') { return; }
@@ -463,13 +435,13 @@ export const Join = observer(() => {
                 <div className="text-white text-18">
                   加入 Port 种子网络
                 </div>
-                {!!state.groups.length && !configService.state.seedUrl && (
+                {!!nodeService.state.groups.length && !configService.state.seedUrl && (
                   <div className="flex-col items-center mt-8 -mb-4 text-white gap-y-4">
                     <div className="text-white/80">可加入的种子网络</div>
                     <Scrollable className="max-h-[200px]" light size="large">
                       <div className="flex flex-wrap justify-center gap-4 px-4">
                         {/* {Array(20).fill(state.groups).flatMap((v) => v).map((v, i) => ( */}
-                        {state.groups.map((v) => (
+                        {nodeService.state.groups.map((v) => (
                           <button
                             className="bg-white/20 hover:bg-white/30 rounded-full px-4 py-2"
                             key={v.groupId}
@@ -703,6 +675,16 @@ export const Join = observer(() => {
                         输入 keystore
                       </Button>
                     </Tooltip>
+                  )}
+                  {configService.state.anonymousLogin && (
+                    <Button
+                      className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
+                      color="inherit"
+                      variant="outlined"
+                      onClick={handleAnonymous}
+                    >
+                      游客模式
+                    </Button>
                   )}
                 </div>
               </div>

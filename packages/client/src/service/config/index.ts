@@ -7,6 +7,7 @@ const state = observable({
   configLoaded: false,
   mixinLogin: false,
   keystoreLogin: false,
+  anonymousLogin: false,
   checkNFT: false,
   seedUrl: '',
 });
@@ -21,9 +22,10 @@ export const loadConfig = fp.pipe(
       ConfigApi.getConfig,
       taskEither.map((v) => {
         runInAction(() => {
-          const { checkNFT, mixinLogin, seedUrl, keystoreLogin } = v;
+          const { checkNFT, mixinLogin, seedUrl, keystoreLogin, anonymousLogin } = v;
           state.mixinLogin = mixinLogin;
           state.keystoreLogin = keystoreLogin;
+          state.anonymousLogin = anonymousLogin;
           state.checkNFT = checkNFT;
           state.seedUrl = seedUrl;
           state.configLoaded = true;

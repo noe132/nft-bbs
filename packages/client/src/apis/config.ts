@@ -6,6 +6,7 @@ import { API_BASE_URL } from './common';
 export interface SiteConfig {
   mixinLogin: boolean
   keystoreLogin: boolean
+  anonymousLogin: boolean
   checkNFT: boolean
   seedUrl: string
 }
