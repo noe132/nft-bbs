@@ -4,10 +4,14 @@ WORKDIR /app
 
 COPY package.json ./
 COPY yarn.lock ./
+COPY packages/types/package.json ./packages/types/
+COPY packages/server/package.json ./packages/server/
+
+RUN yarn install --prod --pure-lockfile
+
 COPY packages/types ./packages/types/
 COPY packages/server ./packages/server/
 
-RUN yarn install --prod --pure-lockfile
 
 WORKDIR /app/packages/server
 
