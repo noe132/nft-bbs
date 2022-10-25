@@ -30,7 +30,7 @@ import {
   langService, nodeService, snackbarService,
 } from '~/service';
 import { GroupAvatar, Scrollable } from '~/components';
-import { GroupApi, GroupInfoApi, VaultApi } from '~/apis';
+import { GroupInfoApi, VaultApi } from '~/apis';
 import { useNavigate } from 'react-router-dom';
 
 enum Step {
