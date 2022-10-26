@@ -7,7 +7,7 @@ import type { Post, Comment, Profile, Notification } from 'nft-bbs-server';
 import { CommentType, DislikeType, ImageType, LikeType, PostDeleteType, PostType, ProfileType } from 'nft-bbs-types';
 
 import { getLoginState, runLoading, sleep } from '~/utils';
-import { CommentApi, GroupApi, NotificationApi, PostApi, ProfileApi } from '~/apis';
+import { CommentApi, GroupApi, NotificationApi, PostApi, ProfileApi, TrxApi } from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
 import { nftService } from '~/service/nft';
@@ -87,6 +87,40 @@ const state = observable({
   },
 });
 
+const trx = {
+  create: async (object: any, type: '_Object' | 'Person' = '_Object') => {
+    const group = QuorumLightNodeSDK.cache.Group.list()[0];
+    const groupId = group.groupId;
+    let res;
+    if (window.location.protocol === 'https:') {
+      const signedTrx = await QuorumLightNodeSDK.utils.signTrx({
+        type,
+        groupId,
+        data: object,
+        aesKey: group!.cipherKey,
+        ...keyService.getTrxCreateParam(),
+      });
+      res = await TrxApi.create(groupId, signedTrx.TrxItem);
+    } else {
+      res = type === '_Object'
+        ? await QuorumLightNodeSDK.chain.Trx.create({
+          groupId,
+          object,
+          aesKey: group.cipherKey,
+          ...keyService.getTrxCreateParam(),
+        })
+        : await QuorumLightNodeSDK.chain.Trx.createPerson({
+          groupId,
+          person: object,
+          aesKey: group.cipherKey,
+          ...keyService.getTrxCreateParam(),
+        });
+    }
+
+    return res;
+  },
+};
+
 const profile = {
   get: async (params: { userAddress: string } | { trxId: string }) => {
     let profileItem = 'userAddress' in params
@@ -139,26 +173,23 @@ const profile = {
         name: params.name,
         image: params.avatar,
       };
-      const res = await QuorumLightNodeSDK.chain.Trx.createPerson({
-        groupId: group.groupId,
-        person,
-        aesKey: group.cipherKey,
-        ...keyService.getTrxCreateParam(),
-      });
-      const profileItem: Profile = {
-        groupId: group.groupId,
-        trxId: res.trx_id,
-        userAddress: keyService.state.address,
-        avatar: params.avatar
-          ? `data:${params.avatar.mediaType};base64,${params.avatar.content}`
-          : '',
-        name: params.name,
-        timestamp: Date.now(),
-      };
-      runInAction(() => {
-        profile.save(profileItem);
-        state.profile.cache.set(keyService.state.address, profileItem);
-      });
+      const res = await trx.create(person, 'Person');
+      if (res) {
+        const profileItem: Profile = {
+          groupId: group.groupId,
+          trxId: res.trx_id,
+          userAddress: keyService.state.address,
+          avatar: params.avatar
+            ? `data:${params.avatar.mediaType};base64,${params.avatar.content}`
+            : '',
+          name: params.name,
+          timestamp: Date.now(),
+        };
+        runInAction(() => {
+          profile.save(profileItem);
+          state.profile.cache.set(keyService.state.address, profileItem);
+        });
+      }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error(err);
@@ -224,34 +255,31 @@ const post = {
       name: title,
       content,
     };
-    const group = QuorumLightNodeSDK.cache.Group.list()[0];
-    const groupId = group.groupId;
-    const res = await QuorumLightNodeSDK.chain.Trx.create({
-      groupId,
-      object,
-      aesKey: group.cipherKey,
-      ...keyService.getTrxCreateParam(),
-    });
-    const post: Post = {
-      trxId: res.trx_id,
-      title,
-      content,
-      userAddress: keyService.state.address,
-      groupId,
-      timestamp: Date.now(),
-      commentCount: 0,
-      likeCount: 0,
-      dislikeCount: 0,
-      extra: {
-        disliked: false,
-        liked: false,
-        userProfile: { ...state.myProfile },
-      },
-    };
-    runInAction(() => {
-      state.post.newPostCache.add(post.trxId);
-      state.post.map.set(post.trxId, post);
-    });
+
+    const res = await trx.create(object);
+
+    if (res) {
+      const post: Post = {
+        trxId: res.trx_id,
+        title,
+        content,
+        userAddress: keyService.state.address,
+        groupId: state.groupId,
+        timestamp: Date.now(),
+        commentCount: 0,
+        likeCount: 0,
+        dislikeCount: 0,
+        extra: {
+          disliked: false,
+          liked: false,
+          userProfile: { ...state.myProfile },
+        },
+      };
+      runInAction(() => {
+        state.post.newPostCache.add(post.trxId);
+        state.post.map.set(post.trxId, post);
+      });
+    }
   },
 
   delete: async (post: Post) => {
@@ -260,14 +288,7 @@ const post = {
       id: post.trxId,
       content: 'OBJECT_STATUS_DELETED',
     };
-    const group = QuorumLightNodeSDK.cache.Group.list()[0];
-    const groupId = group.groupId;
-    await QuorumLightNodeSDK.chain.Trx.create({
-      groupId,
-      object,
-      aesKey: group.cipherKey,
-      ...keyService.getTrxCreateParam(),
-    });
+    await trx.create(object);
   },
 
   get: async (trxId: string, viewer?: string) => {
@@ -306,8 +327,6 @@ const post = {
   },
 
   postImage: async (imgBlob: Blob, mineType: string) => {
-    const group = state.group!;
-
     const content = await new Promise<string>((rs) => {
       const reader = new FileReader();
       reader.readAsDataURL(imgBlob);
@@ -329,16 +348,12 @@ const post = {
         name: v4(),
       }],
     };
-    const res = await QuorumLightNodeSDK.chain.Trx.create({
-      groupId: group.groupId,
-      object,
-      aesKey: group.cipherKey,
-      ...keyService.getTrxCreateParam(),
-    });
-
-    runInAction(() => {
-      state.post.imageCache.set(res.trx_id, URL.createObjectURL(imgBlob));
-    });
+    const res = await trx.create(object);
+    if (res) {
+      runInAction(() => {
+        state.post.imageCache.set(res.trx_id, URL.createObjectURL(imgBlob));
+      });
+    }
 
     return res;
   },
@@ -400,36 +415,34 @@ const comment = {
       inreplyto: { trxid: params.replyId || params.threadId || params.objectId },
     };
     const group = QuorumLightNodeSDK.cache.Group.list()[0];
-    const res = await QuorumLightNodeSDK.chain.Trx.create({
-      groupId: group.groupId,
-      object,
-      aesKey: group.cipherKey,
-      ...keyService.getTrxCreateParam(),
-    });
-    const comment: Comment = {
-      content: params.content,
-      postId: params.objectId,
-      threadId: params.threadId,
-      replyId: params.replyId,
-      userAddress: keyService.state.address,
-      groupId: group.groupId,
-      trxId: res.trx_id,
-      commentCount: 0,
-      likeCount: 0,
-      dislikeCount: 0,
-      timestamp: Date.now(),
-    };
+    const res = await trx.create(object);
+    if (res) {
+      const comment: Comment = {
+        content: params.content,
+        postId: params.objectId,
+        threadId: params.threadId,
+        replyId: params.replyId,
+        userAddress: keyService.state.address,
+        groupId: group.groupId,
+        trxId: res.trx_id,
+        commentCount: 0,
+        likeCount: 0,
+        dislikeCount: 0,
+        timestamp: Date.now(),
+      };
 
-    runInAction(() => {
-      state.comment.map.set(comment.trxId, comment);
-      if (!state.comment.cache.has(params.objectId)) {
-        state.comment.cache.set(params.objectId, new Set());
-      }
-      const postSet = state.comment.cache.get(params.objectId)!;
-      postSet.add(comment.trxId);
-    });
+      runInAction(() => {
+        state.comment.map.set(comment.trxId, comment);
+        if (!state.comment.cache.has(params.objectId)) {
+          state.comment.cache.set(params.objectId, new Set());
+        }
+        const postSet = state.comment.cache.get(params.objectId)!;
+        postSet.add(comment.trxId);
+      });
+      return comment;
+    }
 
-    return comment;
+    return null;
   },
   get: async (trxId: string) => {
     const item = await CommentApi.get({
@@ -548,20 +561,17 @@ const counter = {
         id: trxId,
         type,
       };
-      const res = await QuorumLightNodeSDK.chain.Trx.create({
-        groupId: group.groupId,
-        object,
-        aesKey: group.cipherKey,
-        ...keyService.getTrxCreateParam(),
-      });
+      const res = await trx.create(object);
 
       const map = type === 'Like'
         ? state.counter.postLike
         : state.counter.postDislike;
 
-      runInAction(() => {
-        map.set(item.trxId, res.trx_id);
-      });
+      if (res) {
+        runInAction(() => {
+          map.set(item.trxId, res.trx_id);
+        });
+      }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error(err);
@@ -580,21 +590,18 @@ const counter = {
         id: trxId,
         type,
       };
-      const res = await QuorumLightNodeSDK.chain.Trx.create({
-        groupId: group.groupId,
-        object,
-        aesKey: group.cipherKey,
-        ...keyService.getTrxCreateParam(),
-      });
-      runInAction(() => {
-        if (!state.counter.comment.has(item.trxId)) {
-          state.counter.comment.set(item.trxId, []);
-        }
-        state.counter.comment.get(item.trxId)!.push({
-          ...object,
-          trxId: res.trx_id,
+      const res = await trx.create(object);
+      if (res) {
+        runInAction(() => {
+          if (!state.counter.comment.has(item.trxId)) {
+            state.counter.comment.set(item.trxId, []);
+          }
+          state.counter.comment.get(item.trxId)!.push({
+            ...object,
+            trxId: res.trx_id,
+          });
         });
-      });
+      }
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error(err);

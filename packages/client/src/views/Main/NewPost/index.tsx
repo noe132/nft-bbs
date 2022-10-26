@@ -97,6 +97,10 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       async () => {
         for (const img of images) {
           const res = await nodeService.post.postImage(img.img, img.mimeType);
+          if (!res) {
+            snackbarService.error('帖子发布失败。（图片上传失败）');
+            return;
+          }
           img.trxId = res.trx_id;
         }
 

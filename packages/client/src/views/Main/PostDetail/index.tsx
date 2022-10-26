@@ -174,18 +174,18 @@ export const PostDetail = observer((props: { className?: string }) => {
           },
       }),
     );
-    runInAction(() => {
-      state.commentTrxIds.push(comment.trxId);
-      if (type === 'direct') {
-        state.commentInput = '';
-      } else {
-        state.replyTo.content = '';
-        state.replyTo.open = false;
-      }
-    });
-    runInAction(() => {
+    if (comment) {
+      runInAction(() => {
+        state.commentTrxIds.push(comment.trxId);
+        if (type === 'direct') {
+          state.commentInput = '';
+        } else {
+          state.replyTo.content = '';
+          state.replyTo.open = false;
+        }
+      });
       state.commentContextState.newCommentTrxId = comment.trxId;
-    });
+    }
   };
 
   const loadComments = async () => {
