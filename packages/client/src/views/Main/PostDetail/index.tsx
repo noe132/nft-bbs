@@ -34,7 +34,7 @@ export const PostDetail = observer((props: { className?: string }) => {
   const [searchParams] = useSearchParams();
   const state = usePageState('postdetail', routeLocation.key, () => ({
     inited: false,
-    postLoading: true,
+    postLoading: false,
     commentTrxIds: [] as Array<string>,
     replyTo: {
       open: false,
