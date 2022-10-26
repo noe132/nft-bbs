@@ -312,7 +312,11 @@ export const Join = observer(() => {
     const loginState = getLoginState();
     runInAction(() => {
       state.seedUrl = loginState.seedUrl;
+      handleNextStep();
     });
+    if (loginState.jumpToLogin && state.seedUrl) {
+      setLoginState({ jumpToLogin: false });
+    }
 
     if (loginState && loginState.mixinJWT) {
       const result = await VaultApi.getOrCreateAppUser(loginState.mixinJWT);

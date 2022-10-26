@@ -186,13 +186,13 @@ export const Header = observer((props: { className?: string }) => {
     }
   });
 
-  const handleBackToLogin = action(() => {
+  const handleBackToLogin = action((jumpToLogin = false) => {
     if (routeLocation.pathname !== '/') {
       navigate('/', { replace: true });
     }
     state.userDropdown = false;
     state.menu = false;
-    setLoginState({ autoLogin: null });
+    setLoginState({ autoLogin: null, jumpToLogin });
     window.location.reload();
   });
 
@@ -336,7 +336,7 @@ export const Header = observer((props: { className?: string }) => {
             <Button
               className="rounded-full py-px px-5 text-16"
               color="rum"
-              onClick={handleBackToLogin}
+              onClick={() => handleBackToLogin(true)}
             >
               登录
             </Button>
@@ -411,7 +411,7 @@ export const Header = observer((props: { className?: string }) => {
           <Button
             className="rounded-none w-full border-solid border-t border-black/10 mt-6 h-12 font-normal text-14"
             variant="text"
-            onClick={handleBackToLogin}
+            onClick={() => handleBackToLogin(true)}
           >
             退出登录
           </Button>
@@ -459,7 +459,7 @@ export const Header = observer((props: { className?: string }) => {
           // process.env.NODE_ENV === 'development' && { text: '使用新号', onClick: () => handleChangeAccount('new') },
           {
             text: '退出',
-            onClick: handleBackToLogin,
+            onClick: () => handleBackToLogin(false),
             icon: <Logout className="text-22 text-amber-500/90" />,
           },
         ] as const).filter(<T extends unknown>(v: T | false): v is T => !!v).map((v, i) => (

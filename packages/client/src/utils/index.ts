@@ -111,7 +111,9 @@ export interface LoginState {
   keystore: string
   password: string
   autoLogin: null | 'keystore' | 'mixin'
+  jumpToLogin: boolean
 }
+
 export const getLoginState = () => {
   const loginState: LoginState = store('login_state') || {
     seedUrl: '',
