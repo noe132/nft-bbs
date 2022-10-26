@@ -34,7 +34,7 @@ export const PostDetail = observer((props: { className?: string }) => {
   const [searchParams] = useSearchParams();
   const state = usePageState('postdetail', routeLocation.key, () => ({
     inited: false,
-    postLoading: false,
+    postLoading: true,
     commentTrxIds: [] as Array<string>,
     replyTo: {
       open: false,
@@ -247,7 +247,7 @@ export const PostDetail = observer((props: { className?: string }) => {
     onReply: handleReply,
   }), []);
 
-  if (!state.post) {
+  if (!state.post && !state.postLoading) {
     return (
       <div className="flex justify-center">
         <div className="flex-col items-start w-[800px] bg-black/80 text-white p-8">
@@ -277,6 +277,12 @@ export const PostDetail = observer((props: { className?: string }) => {
           <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
         </div>
         <BackButton className="fixed top-[60px] mt-6 -ml-5 -translate-x-full" />
+
+        {!!state.postLoading && (
+          <div className="flex flex-center py-20 bg-black/80">
+            <CircularProgress />
+          </div>
+        )}
 
         {!!state.post && (
           <PostDetailBox post={state.post} />
