@@ -5,7 +5,7 @@ import { Button, IconButton, Tooltip } from '@mui/material';
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
 import { editGroupInfo } from '~/modals/editGroupInfo';
-import { keyService, nodeService, snackbarService } from '~/service';
+import { keyService, nftService, nodeService, snackbarService } from '~/service';
 
 import { GroupAvatar } from './GroupAvatar';
 
@@ -23,8 +23,8 @@ export const GroupSideBox = observer((props: Props) => {
   }));
 
   const handleNewPost = () => {
-    if (nodeService.state.postPermissionTip) {
-      snackbarService.show(nodeService.state.postPermissionTip);
+    if (nftService.state.postPermissionTip) {
+      snackbarService.show(nftService.state.postPermissionTip);
       return;
     }
     navigate(`/${nodeService.state.groupId}/newpost`);
@@ -59,11 +59,11 @@ export const GroupSideBox = observer((props: Props) => {
       )}
       {props.showNewPost && (
         <div className="flex flex-center mt-8">
-          <Tooltip title={nodeService.state.postPermissionTip}>
+          <Tooltip title={nftService.state.postPermissionTip}>
             <Button
               className="rounded-full text-16 px-5 py-[7px]"
               variant="outlined"
-              color={nodeService.state.postPermissionTip ? 'dark-blue' : 'rum'}
+              color={nftService.state.postPermissionTip ? 'dark-blue' : 'rum'}
               onClick={handleNewPost}
             >
               <EditIcon className="text-22 mr-3 mb-px" />

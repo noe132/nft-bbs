@@ -12,7 +12,7 @@ package-lock.json
 /packages/*/esm
 /packages/server/logs
 
-/packages/server/config.ts
+/packages/server/config.yml
 /packages/server/localStorage
 
 # misc

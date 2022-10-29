@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { parse } from 'query-string';
@@ -25,13 +26,9 @@ import RumLogo3x from '~/assets/icons/logo@3x.png';
 import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
 import { chooseImgByPixelRatio, getLoginState, runLoading, setLoginState, ThemeLight } from '~/utils';
-import {
-  AllLanguages, configService, dialogService, keyService, langName,
-  langService, nodeService, snackbarService,
-} from '~/service';
+import { AllLanguages, dialogService, keyService, langName, langService, nodeService, snackbarService } from '~/service';
 import { GroupAvatar, Scrollable } from '~/components';
 import { GroupInfoApi, VaultApi } from '~/apis';
-import { useNavigate } from 'react-router-dom';
 
 enum Step {
   InputSeedUrl = 1,
@@ -64,8 +61,9 @@ export const Join = observer(() => {
         profile: Profile
       },
     },
+    config: nodeService.config.get('default'),
     get computedSeedUrl() {
-      return configService.state.seedUrl || state.seedUrl;
+      return nodeService.state.config.seedUrl || state.seedUrl;
     },
     get canLogin() {
       return !!this.password && !!this.keystore;
@@ -95,8 +93,8 @@ export const Join = observer(() => {
         }
         GroupInfoApi.get(seed.group_id).then(action((v) => {
           state.groupInfo = v;
+          state.config = nodeService.config.get(seed.group_id);
         }));
-        configService.loadConfig();
         runInAction(() => {
           state.seed = seed;
           state.step = Step.PrepareJoinGroup;
@@ -439,7 +437,7 @@ export const Join = observer(() => {
                 <div className="text-white text-18">
                   加入 Port 种子网络
                 </div>
-                {!!nodeService.state.groups.length && !configService.state.seedUrl && (
+                {!!nodeService.state.groups.length && !!nodeService.state.config.seedUrl && (
                   <div className="flex-col items-center mt-8 -mb-4 text-white gap-y-4">
                     <div className="text-white/80">可加入的种子网络</div>
                     <Scrollable className="max-h-[200px]" light size="large">
@@ -461,7 +459,7 @@ export const Join = observer(() => {
                     </Scrollable>
                   </div>
                 )}
-                {!configService.state.seedUrl && (
+                {!nodeService.state.config.seedUrl && (
                   <OutlinedInput
                     className="text-white w-[440px] mt-12 pl-2"
                     value={state.seedUrl}
@@ -480,10 +478,10 @@ export const Join = observer(() => {
                     placeholder="输入种子文本 Rum://"
                   />
                 )}
-                {!!configService.state.seedUrl && (
+                {!!nodeService.state.config.seedUrl && (
                   <OutlinedInput
                     className="text-white w-[440px] mt-12 pl-2"
-                    value={configService.state.seedUrl}
+                    value={nodeService.state.config.seedUrl}
                     disabled
                     placeholder="输入种子文本 Rum://"
                   />
@@ -591,7 +589,7 @@ export const Join = observer(() => {
                 </div>
 
                 <div className="flex-col items-stertch mt-4 gap-y-4 min-w-[200px]">
-                  {!!state.savedLoginState.keystoreCanLogin && configService.state.keystoreLogin && (
+                  {!!state.savedLoginState.keystoreCanLogin && state.config.keystore && (
                     <div className="relative flex items-center gap-x-2">
                       <Tooltip title="用上次登录使用的keystore登录" placement="right">
                         <Button
@@ -619,7 +617,7 @@ export const Join = observer(() => {
                     </div>
                   )}
 
-                  {!!state.savedLoginState.mixinCanLogin && configService.state.mixinLogin && (
+                  {!!state.savedLoginState.mixinCanLogin && state.config.mixin && (
                     <div className="relative flex items-center gap-x-2">
                       <Tooltip title="用上次登录使用的 mixin账号登录" placement="right">
                         <Button
@@ -644,7 +642,7 @@ export const Join = observer(() => {
                       </Tooltip>
                     </div>
                   )}
-                  {configService.state.mixinLogin && (
+                  {state.config.mixin && (
                     <Tooltip title="使用 Mixin 账号登录" placement="right">
                       <Button
                         className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
@@ -656,7 +654,7 @@ export const Join = observer(() => {
                       </Button>
                     </Tooltip>
                   )}
-                  {configService.state.keystoreLogin && (
+                  {state.config.keystore && (
                     <Tooltip title="用保存的账号登录 或 创建一个随机账号" placement="right">
                       <Button
                         className="text-rum-orange rounded-full text-16 px-8 py-2"
@@ -668,7 +666,7 @@ export const Join = observer(() => {
                       </Button>
                     </Tooltip>
                   )}
-                  {configService.state.keystoreLogin && (
+                  {state.config.keystore && (
                     <Tooltip title="输入 keystore 和 密码" placement="right">
                       <Button
                         className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
@@ -680,7 +678,7 @@ export const Join = observer(() => {
                       </Button>
                     </Tooltip>
                   )}
-                  {configService.state.anonymousLogin && (
+                  {state.config.anonymous && (
                     <Button
                       className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
                       color="inherit"

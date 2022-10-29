@@ -7,7 +7,7 @@ import { Dialog, FormControl, FormHelperText, IconButton, InputLabel, OutlinedIn
 import { LoadingButton } from '@mui/lab';
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import { blobToDataUrl, createPromise, runLoading, ThemeLight } from '~/utils';
-import { nodeService, snackbarService } from '~/service';
+import { nftService, nodeService, snackbarService } from '~/service';
 import { UserAvatar } from '~/components';
 
 import { modalViewState } from './helper/modalViewState';
@@ -118,8 +118,8 @@ export const EditProfileView = observer((props: Props) => {
   };
 
   const handleSubmitProfile = async () => {
-    if (nodeService.state.postPermissionTip) {
-      snackbarService.show(nodeService.state.postPermissionTip);
+    if (nftService.state.postPermissionTip) {
+      snackbarService.show(nftService.state.postPermissionTip);
       return;
     }
     if (state.introLength > 200) { return; }

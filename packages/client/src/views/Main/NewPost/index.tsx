@@ -15,7 +15,7 @@ import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
 import { compressImage, renderPostMarkdown, runLoading, SCHEMA_PREFIX } from '~/utils';
 import { BackButton, UserAvatar, GroupSideBox, NFTSideBox } from '~/components';
-import { nodeService, snackbarService } from '~/service';
+import { nftService, nodeService, snackbarService } from '~/service';
 import { selectImage } from '~/modals';
 
 import { makeHeading, makeLink, toggleBlock, toggleLine } from './helper';
@@ -82,8 +82,8 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
   });
 
   const handlePost = async () => {
-    if (nodeService.state.postPermissionTip) {
-      snackbarService.show(nodeService.state.postPermissionTip);
+    if (nftService.state.postPermissionTip) {
+      snackbarService.show(nftService.state.postPermissionTip);
       return;
     }
     const allImages = state.postContent.matchAll(/!\[.*?\]\((blob:.+?)\)/g);
@@ -295,7 +295,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
             !state.preview && 'flex',
           )}
         >
-          <Tooltip title={nodeService.state.postPermissionTip}>
+          <Tooltip title={nftService.state.postPermissionTip}>
             <div>
               <LoadingButton
                 className="rounded-full text-16 py-2 px-6"

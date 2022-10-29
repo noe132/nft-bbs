@@ -139,8 +139,8 @@ export const PostDetail = observer((props: { className?: string }) => {
   });
 
   const handlePostComment = async (type: 'direct' | 'reply') => {
-    if (nodeService.state.postPermissionTip) {
-      snackbarService.show(nodeService.state.postPermissionTip);
+    if (nftService.state.postPermissionTip) {
+      snackbarService.show(nftService.state.postPermissionTip);
       return;
     }
     const post = state.post;
@@ -292,24 +292,24 @@ export const PostDetail = observer((props: { className?: string }) => {
           <div className="flex flex-1 h-[40px] items-stretch">
             <InputBase
               className="bg-white flex-1 rounded-l text-black px-4 text-14"
-              placeholder={nodeService.state.postPermissionTip ? '无权限发布内容' : '在这里写下你的评论…'}
+              placeholder={nftService.state.postPermissionTip ? '无权限发布内容' : '在这里写下你的评论…'}
               value={state.commentInput}
               onChange={action((e) => { state.commentInput = e.target.value; })}
-              disabled={!!nodeService.state.postPermissionTip}
+              disabled={!!nftService.state.postPermissionTip}
               onKeyDown={(e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                   handlePostComment('direct');
                 }
               }}
             />
-            <Tooltip title={nodeService.state.postPermissionTip}>
+            <Tooltip title={nftService.state.postPermissionTip}>
               <div className="flex self-stretch">
                 <LoadingButton
                   className="rounded-l-none"
                   color="rum"
                   variant="contained"
                   onClick={() => handlePostComment('direct')}
-                  disabled={!!nodeService.state.postPermissionTip}
+                  disabled={!!nftService.state.postPermissionTip}
                   loading={state.commentPosting}
                 >
                   发布评论

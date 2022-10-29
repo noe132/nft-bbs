@@ -8,7 +8,7 @@ import bgImg1x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash.jpg';
 import bgImg2x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@2x.jpg';
 import bgImg3x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@3x.jpg';
 import { Scrollable } from '~/components';
-import { chooseImgByPixelRatio, usePageState } from '~/utils';
+import { chooseImgByPixelRatio, usePageState, routeUrlPatterns } from '~/utils';
 
 import { Header } from './Header';
 import { PostList } from './PostList';
@@ -16,7 +16,7 @@ import { PostDetail } from './PostDetail';
 import { NewPost } from './NewPost';
 import { UserProfile } from './UserProfile';
 import { NotificationPage } from './NotificationPage';
-import { routeUrlPatterns } from '~/utils/urlPatterns';
+import { RedirectToPostList } from './RedirectToPostList';
 
 export const Main = observer(() => {
   const routeLocation = useLocation();
@@ -67,6 +67,7 @@ export const Main = observer(() => {
         onScroll={handleScroll}
       >
         <Routes>
+          <Route path="/" element={<RedirectToPostList key={routeLocation.key} />} />
           <Route path={routeUrlPatterns.postlist} element={<PostList key={routeLocation.key} />} />
           <Route path={routeUrlPatterns.postdetail} element={<PostDetail key={routeLocation.key} />} />
           <Route path={routeUrlPatterns.newpost} element={<NewPost key={routeLocation.key} />} />

@@ -9,7 +9,7 @@ import type { Post } from 'nft-bbs-server';
 import TrashIcon from 'boxicons/svg/regular/bx-trash.svg?fill-icon';
 
 import { ago, renderPostMarkdown, runLoading, setClipboard } from '~/utils';
-import { imageZoomService, nodeService, snackbarService, keyService, dialogService } from '~/service';
+import { imageZoomService, nodeService, snackbarService, keyService, dialogService, nftService } from '~/service';
 import { UserAvatar, PostImageZoomButton } from '~/components';
 import { ImageApi } from '~/apis';
 import { showTrxDetail } from '~/modals';
@@ -62,8 +62,8 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const handleUpdatePostCounter = (type: 'Like' | 'Dislike') => {
-    if (nodeService.state.postPermissionTip) {
-      snackbarService.show(nodeService.state.postPermissionTip);
+    if (nftService.state.postPermissionTip) {
+      snackbarService.show(nftService.state.postPermissionTip);
       return;
     }
     if (state.likeLoading) { return; }
@@ -74,8 +74,8 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   // const handleEditPost = () => {
-  //   if (nodeService.state.postPermissionTip) {
-  //     snackbarService.show(nodeService.state.postPermissionTip);
+  //   if (nftService.state.postPermissionTip) {
+  //     snackbarService.show(nftService.state.postPermissionTip);
   //     return;
   //   }
   //   navigate(stringifyUrl({
@@ -85,8 +85,8 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   // };
 
   const handleDeletePost = async () => {
-    if (nodeService.state.postPermissionTip) {
-      snackbarService.show(nodeService.state.postPermissionTip);
+    if (nftService.state.postPermissionTip) {
+      snackbarService.show(nftService.state.postPermissionTip);
       return;
     }
     const result = await dialogService.open({

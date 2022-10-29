@@ -7,9 +7,8 @@ import { ClickAwayListener, IconButton, Tooltip } from '@mui/material';
 import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
 
-import { MVMApi } from '~/apis';
 import { ThemeLight } from '~/utils';
-import { configService, keyService, nftService } from '~/service';
+import { nftService, nodeService } from '~/service';
 import { NFTIcon } from './NFTIcon';
 
 interface Props {
@@ -18,19 +17,14 @@ interface Props {
 
 export const NFTSideBox = observer((props: Props) => {
   const state = useLocalObservable(() => ({
-    selectedNFT: null as null | MVMApi.NFTsResponse['data'][0],
-
-    get hasNFT() {
-      return nftService.state.hasNFT;
-    },
-    get nfts() {
-      const address = keyService.state.address;
-      return nftService.state.nftMap.get(address) ?? [];
+    selectedNFT: null as null | number,
+    get contractAddress() {
+      return nodeService.config.get().nft ?? '';
     },
   }));
   const nftBox = useRef<HTMLDivElement>(null);
 
-  if (!configService.state.checkNFT) {
+  if (!nodeService.state.config.currentGroup.nft) {
     return null;
   }
 
@@ -45,21 +39,21 @@ export const NFTSideBox = observer((props: Props) => {
       {!state.selectedNFT && (
         <div className="flex-col flex-center relative bg-white/60 py-2">
           <div className="flex flex-wrap gap-5 w-full mx-3 max-w-[140px] justify-center justify-items-center">
-            {!state.nfts.length && (
+            {!nftService.state.tokenIds.length && (
               <Tooltip title={<ExpandIcon className="text-20 -mx-1" />}>
                 <span>
                   <NFTIcon color="dark" size={60} lock />
                 </span>
               </Tooltip>
             )}
-            {state.nfts.map((v) => (
-              <Tooltip title={<ExpandIcon className="text-20 -mx-1" />} key={v.tokenId}>
+            {nftService.state.tokenIds.map((v) => (
+              <Tooltip title={<ExpandIcon className="text-20 -mx-1" />} key={v}>
                 <span>
                   <NFTIcon
                     color="dark"
                     size={60}
                     onClick={action(() => { state.selectedNFT = v; })}
-                    tokenId={v.tokenId}
+                    tokenId={v}
                   />
                 </span>
               </Tooltip>
@@ -82,22 +76,22 @@ export const NFTSideBox = observer((props: Props) => {
               </IconButton>
 
               <div className="flex flex-wrap flex-center gap-4 mt-8">
-                {!state.nfts.length && (
+                {!nftService.state.tokenIds.length && (
                   <NFTIcon color="light" size={96} lock />
                 )}
-                {state.nfts.map((v) => (
+                {nftService.state.tokenIds.map((v) => (
                   <NFTIcon
                     highlight={v === state.selectedNFT}
-                    key={v.tokenId}
+                    key={v}
                     color="light"
                     size={96}
-                    tokenId={v.tokenId}
+                    tokenId={v}
                     onClick={action(() => { state.selectedNFT = v; })}
                   />
                 ))}
               </div>
 
-              {!state.selectedNFT && !state.hasNFT && (
+              {!state.selectedNFT && !nftService.state.hasNFT && (
                 <div className="text-gray-9c text-center text-12 mt-4">
                   当前没有持有任何 NFT
                 </div>
@@ -107,24 +101,24 @@ export const NFTSideBox = observer((props: Props) => {
                 <div className="text-gray-9c text-center text-12 mt-4 w-52 leading-relaxed">
                   <div className="flex justify-between">
                     <div>Contract Address</div>
-                    <Tooltip title={state.selectedNFT.asset} disableInteractive>
+                    <Tooltip title={state.contractAddress} disableInteractive>
                       <a
-                        href={`https://explorer.rumsystem.net/token/${state.selectedNFT.asset}/`}
+                        href={`https://explorer.rumsystem.net/token/${state.contractAddress}/`}
                         target="_blank"
                         rel="noopenner"
                       >
-                        {state.selectedNFT.asset.slice(0, 6)}...{state.selectedNFT.asset.slice(-4)}
+                        {state.contractAddress.slice(0, 6)}...{state.contractAddress.slice(-4)}
                       </a>
                     </Tooltip>
                   </div>
                   <div className="flex justify-between">
                     <div>Token ID</div>
                     <a
-                      href={state.selectedNFT.uri}
+                      href={`https://explorer.rumsystem.net/token/${state.contractAddress}/instance/${state.selectedNFT}`}
                       target="_blank"
                       rel="noopenner"
                     >
-                      {state.selectedNFT.tokenId}
+                      {state.selectedNFT}
                     </a>
                   </div>
                   <div className="flex justify-between">

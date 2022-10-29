@@ -1,21 +1,18 @@
 import { matchPath } from 'react-router-dom';
 import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
-import { action, observable, reaction, runInAction, when } from 'mobx';
-import { either, function as fp } from 'fp-ts';
+import { action, observable, reaction, runInAction } from 'mobx';
+import { either, function as fp, taskEither } from 'fp-ts';
 import { v4 } from 'uuid';
 import type { Post, Comment, Profile, Notification } from 'nft-bbs-server';
 import { CommentType, DislikeType, ImageType, LikeType, PostDeleteType, PostType, ProfileType } from 'nft-bbs-types';
 
-import { getLoginState, runLoading, sleep } from '~/utils';
-import { CommentApi, GroupApi, NotificationApi, PostApi, ProfileApi, TrxApi } from '~/apis';
+import { getLoginState, runLoading, sleep, routeUrlPatterns } from '~/utils';
+import { CommentApi, ConfigApi, GroupApi, NotificationApi, PostApi, ProfileApi, TrxApi } from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
-import { nftService } from '~/service/nft';
+import { routerService } from '~/service/router';
 import { pageStateMap } from '~/utils/pageState';
 import type { createPostlistState } from '~/views/Main/PostList';
-import { routeUrlPatterns } from '~/utils/urlPatterns';
-import { routerService } from '../router';
-import { configService } from '../config';
 
 const state = observable({
   allowMixinLogin: false,
@@ -32,10 +29,19 @@ const state = observable({
       )
       : '';
   },
-  get postPermissionTip() {
-    if (!this.logined) { return '请先登录'; }
-    if (!nftService.state.hasPermission) { return '无权限发布内容'; }
-    return '';
+
+  config: {
+    loaded: false,
+    group: {} as ConfigApi.SiteConfig['group'],
+    groupId: '',
+    get currentGroup() {
+      return state.config.group[state.groupId] ?? state.config.group.default ?? {
+        anonymous: false,
+        keystore: false,
+        mixin: false,
+      };
+    },
+    seedUrl: '',
   },
 
   post: {
@@ -644,6 +650,34 @@ const group = {
   },
 };
 
+const config = {
+  load: fp.pipe(
+    taskEither.fromIO(() => state.config.loaded),
+    taskEither.chainW((loaded) => {
+      if (loaded) { return taskEither.of(null); }
+      return fp.pipe(
+        ConfigApi.getConfig,
+        taskEither.map((v) => {
+          runInAction(() => {
+            state.config.group = v.group;
+            state.config.seedUrl = v.fixedSeed ?? '';
+            state.config.loaded = true;
+          });
+          return null;
+        }),
+      );
+    }),
+  ),
+  get: (groupId?: string) => {
+    const theGroupId = groupId || state.groupId;
+    return state.config.group[theGroupId] ?? state.config.group.default ?? {
+      anonymous: false,
+      keystore: false,
+      mixin: false,
+    };
+  },
+};
+
 const socketEventHandler: Partial<SocketEventListeners> = {
   notification: action((v) => {
     state.notification.unreadCount += 1;
@@ -723,7 +757,7 @@ const init = () => {
     });
     const pathname = window.location.pathname;
 
-    await when(() => configService.state.inited);
+    await config.load();
     await keyService.tryAutoLogin();
     await sleep(1000);
 
@@ -751,15 +785,16 @@ const init = () => {
       window.location.href = '/';
       return;
     }
-    if (!keyService.state.logined && !configService.state.anonymousLogin) {
-      toJoin();
-      return;
-    }
     await group.loadGroups();
     const groupId = urlMatches.find((v) => v?.params?.groupId)?.params.groupId;
     const groupItem = state.groups.find((v) => v.groupId === groupId);
     if (!groupItem) {
       window.location.href = '/';
+      return;
+    }
+
+    if (groupId && !keyService.state.logined && !state.config.group[groupId].anonymous) {
+      toJoin();
       return;
     }
 
@@ -790,4 +825,5 @@ export const nodeService = {
   notification,
   counter,
   group,
+  config,
 };

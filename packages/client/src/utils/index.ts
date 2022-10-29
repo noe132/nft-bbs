@@ -8,6 +8,7 @@ export * from './markdown';
 export * from './pageState';
 export * from './setClipboard';
 export * from './theme';
+export * from './urlPatterns';
 export * from './useScreenSize';
 
 export const isMobile = () => window.innerWidth < 960;

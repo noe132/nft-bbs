@@ -14,9 +14,8 @@ import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-i
 import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
-import { MVMApi } from '~/apis';
 import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon } from '~/components';
-import { configService, imageZoomService, keyService, nftService, nodeService, snackbarService } from '~/service';
+import { imageZoomService, keyService, nftService, nodeService, snackbarService } from '~/service';
 import { ago, runLoading, ThemeLight, usePageState } from '~/utils';
 import { editProfile } from '~/modals';
 
@@ -41,16 +40,19 @@ export const UserProfile = observer((props: { className?: string }) => {
     nftTradeTooltip: false,
     ntfPopup: {
       open: false,
-      nft: null as null | MVMApi.NFTsResponse['data'][0],
+      nft: null as null | number,
     },
 
     get nfts() {
       return routeParams.userAddress
-        ? nftService.state.nftMap.get(routeParams.userAddress) ?? []
+        ? nftService.state.tokenIdMap.get(routeParams.userAddress) ?? []
         : [];
     },
     get hasNFT() {
       return !!this.nfts.length;
+    },
+    get contractAddress() {
+      return nodeService.config.get().nft ?? '';
     },
     get profile() {
       return routeParams.userAddress
@@ -82,8 +84,8 @@ export const UserProfile = observer((props: { className?: string }) => {
   };
 
   const handleUpdatePostCounter = (post: Post, type: 'Like' | 'Dislike') => {
-    if (nodeService.state.postPermissionTip) {
-      snackbarService.show(nodeService.state.postPermissionTip);
+    if (nftService.state.postPermissionTip) {
+      snackbarService.show(nftService.state.postPermissionTip);
       return;
     }
     if (state.likeLoading) { return; }
@@ -123,7 +125,7 @@ export const UserProfile = observer((props: { className?: string }) => {
   const loadNFT = () => {
     const userAddress = state.profile?.userAddress;
     if (!userAddress) { return; }
-    nftService.loadNFT(userAddress);
+    nftService.getNFT(userAddress);
   };
 
   const loadProfile = () => {
@@ -377,14 +379,14 @@ export const UserProfile = observer((props: { className?: string }) => {
       </div>
 
       <div className="w-[280px]">
-        {!configService.state.checkNFT && (
+        {!nodeService.state.config.currentGroup.nft && (
           <UserCard
             className="mt-6"
             profile={state.profile}
             disableClickAction
           />
         )}
-        {configService.state.checkNFT && (
+        {!!nodeService.state.config.currentGroup.nft && (
           <div
             className={classNames(
               'flex-col relative py-5 px-5 mt-6 rounded',
@@ -414,10 +416,10 @@ export const UserProfile = observer((props: { className?: string }) => {
               )}
               {state.nfts.map((v) => (
                 <NFTIcon
-                  key={v.tokenId}
+                  key={v}
                   size={96}
                   color={state.selfProfile ? 'light' : 'dark'}
-                  tokenId={v.tokenId}
+                  tokenId={v}
                   onClick={action(() => { state.ntfPopup = { open: true, nft: v }; })}
                 />
               ))}
@@ -478,34 +480,34 @@ export const UserProfile = observer((props: { className?: string }) => {
           {state.ntfPopup.nft && (<>
             <div className="flex-col gap-y-4 mt-6">
               <NFTIcon
-                key={state.ntfPopup.nft.tokenId}
+                key={state.ntfPopup.nft}
                 size={96}
                 color={state.selfProfile ? 'light' : 'dark'}
-                tokenId={state.ntfPopup.nft.tokenId}
+                tokenId={state.ntfPopup.nft}
               />
             </div>
 
             <div className="text-gray-9c text-center text-12 mt-4 w-52 leading-relaxed">
               <div className="flex justify-between">
                 <div>Contract Address</div>
-                <Tooltip title={state.ntfPopup.nft.asset} disableInteractive>
+                <Tooltip title={state.contractAddress} disableInteractive>
                   <a
-                    href={`https://explorer.rumsystem.net/token/${state.ntfPopup.nft.asset}/`}
+                    href={`https://explorer.rumsystem.net/token/${state.contractAddress}/`}
                     target="_blank"
                     rel="noopenner"
                   >
-                    {state.ntfPopup.nft.asset.slice(0, 6)}...{state.ntfPopup.nft.asset.slice(-4)}
+                    {state.contractAddress.slice(0, 6)}...{state.contractAddress.slice(-4)}
                   </a>
                 </Tooltip>
               </div>
               <div className="flex justify-between">
                 <div>Token ID</div>
                 <a
-                  href={state.ntfPopup.nft.uri}
+                  href={`https://explorer.rumsystem.net/token/${state.contractAddress}/instance/${state.ntfPopup.nft}`}
                   target="_blank"
                   rel="noopenner"
                 >
-                  {state.ntfPopup.nft.tokenId}
+                  {state.ntfPopup.nft}
                 </a>
               </div>
               <div className="flex justify-between">

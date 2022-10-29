@@ -14,7 +14,7 @@ import { LoadingButton } from '@mui/lab';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 
 import { ScrollToTopButton, GroupSideBox, NFTSideBox, UserAvatar } from '~/components';
-import { keyService, nodeService, snackbarService } from '~/service';
+import { keyService, nftService, nodeService, snackbarService } from '~/service';
 import { ago, notNullFilter, runLoading, usePageState } from '~/utils';
 import { showTrxDetail } from '~/modals';
 
@@ -97,8 +97,8 @@ export const PostList = observer((props: { className?: string }) => {
   };
 
   const handleUpdatePostCounter = (post: Post, type: 'Like' | 'Dislike') => {
-    if (nodeService.state.postPermissionTip) {
-      snackbarService.show(nodeService.state.postPermissionTip);
+    if (nftService.state.postPermissionTip) {
+      snackbarService.show(nftService.state.postPermissionTip);
       return;
     }
     if (state.likeLoadingMap.get(post.trxId)) { return; }

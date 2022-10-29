@@ -10,7 +10,7 @@ interface Props {
   onClick?: (e: React.MouseEvent) => unknown
   size?: number
   highlight?: boolean
-  tokenId?: string
+  tokenId?: number
   tokenIdClassName?: string
 }
 

@@ -75,4 +75,4 @@ export const parseQuorumTimestamp = (timestamp: string) => {
   return time;
 };
 
-export const notNullFilter = <T>(v: T | undefined | null): v is T => !!v;
+export const notNullFilter = <T>(v: T | undefined | null): v is T => v !== undefined && v !== null;

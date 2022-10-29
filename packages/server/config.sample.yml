@@ -1,0 +1,12 @@
+db:
+  host: 127.0.0.1
+  port: 5432
+  database: nft-bbs
+  user: postgres
+  password: '123456'
+  dialect: postgres
+group:
+  default:
+    mixin: true
+    keystore: true
+    anonymous: true

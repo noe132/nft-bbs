@@ -26,6 +26,7 @@
       "fp-ts": "^2.12.2",
       "http-errors": "^2.0.0",
       "io-ts": "^2.2.19",
+      "js-yaml": "^4.1.0",
       "lodash": "^4.17.21",
       "lru-cache": "^7.14.0",
       "module-alias": "^2.2.2",
@@ -40,6 +41,7 @@
    },
    "devDependencies": {
       "@types/http-errors": "^1.8.2",
+      "@types/js-yaml": "^4.0.5",
       "@types/lodash": "^4.14.186",
       "@types/module-alias": "^2.0.1",
       "@types/node": "^18.8.5",

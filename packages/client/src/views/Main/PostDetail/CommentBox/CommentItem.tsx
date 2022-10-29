@@ -10,7 +10,7 @@ import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { UserAvatar } from '~/components';
-import { imageZoomService, nodeService, snackbarService } from '~/service';
+import { imageZoomService, nftService, nodeService, snackbarService } from '~/service';
 import { showTrxDetail } from '~/modals';
 import { ago, runLoading } from '~/utils';
 import { commentContext } from './context';
@@ -58,8 +58,8 @@ export const CommentItem = observer((props: CommentItemProps) => {
   };
 
   const handleToggleCommentCounter = () => {
-    if (nodeService.state.postPermissionTip) {
-      snackbarService.show(nodeService.state.postPermissionTip);
+    if (nftService.state.postPermissionTip) {
+      snackbarService.show(nftService.state.postPermissionTip);
       return;
     }
     if (state.likeLoading) { return; }
@@ -135,7 +135,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
             </Button>
           )}
           {state.synced && (
-            <Tooltip title={nodeService.state.postPermissionTip}>
+            <Tooltip title={nftService.state.postPermissionTip}>
               <Button
                 className={classNames(
                   'min-w-0 px-2 text-14',
@@ -157,7 +157,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
             </Tooltip>
           )}
           {nodeService.state.logined && (
-            <Tooltip title={nodeService.state.postPermissionTip}>
+            <Tooltip title={nftService.state.postPermissionTip}>
               <Button
                 className="text-link-soft text-14 font-normal"
                 variant="text"
