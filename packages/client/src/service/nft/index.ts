@@ -8,10 +8,12 @@ import { nodeService } from '~/service/node';
 import { notNullFilter } from '~/utils';
 
 const state = observable({
-  hasNFT: false,
   tokenIds: [] as Array<number>,
   tokenIdMap: new Map<string, Array<number>>(),
 
+  get hasNFT() {
+    return !!this.tokenIds.length;
+  },
   get hasPermission() {
     const config = nodeService.config.get();
     if (!config.nft) {
@@ -29,9 +31,6 @@ const state = observable({
 const checkNFTPermission = async (mixinUserId: string) => {
   const res = await MVMApi.mixinAuth(mixinUserId);
   const hasNFT = either.isRight(res);
-  runInAction(() => {
-    state.hasNFT = hasNFT;
-  });
   return hasNFT;
 };
 
@@ -44,7 +43,6 @@ const getNFT = async (userAddress: string) => {
   const balance = tx.toNumber();
   if (!balance) {
     runInAction(() => {
-      state.hasNFT = false;
       state.tokenIds = [];
     });
     return [];
@@ -79,7 +77,6 @@ export const init = () => {
       () => [nodeService.state.groupId, nodeService.state.config.loaded, keyService.state.address],
       async (items) => {
         if (items.some((v) => !v)) {
-          state.hasNFT = false;
           state.tokenIds = [];
         }
         const config = nodeService.state.config.currentGroup;
