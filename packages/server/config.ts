@@ -27,7 +27,7 @@ const configType = intersection([
   }),
 ]);
 
-const file = readFileSync(join(__dirname, 'config.yml')).toString();
+const file = readFileSync(join(process.cwd(), 'config.yml')).toString();
 export const config = load(file) as TypeOf<typeof configType>;
 
 const decodeResult = configType.decode(config);
