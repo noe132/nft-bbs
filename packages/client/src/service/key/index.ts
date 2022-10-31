@@ -64,13 +64,15 @@ const logout = action(() => {
   state.keys = null;
 });
 
-const login = async (keystore: string, password: string) => fp.pipe(
-  await validate(keystore, password),
-  either.map((v) => {
+const login = (keystore: string, password: string, address?: string, privateKey?: string) => fp.pipe(
+  address && privateKey
+    ? taskEither.of({ keystore, password, address, privateKey })
+    : () => validate(keystore, password),
+  taskEither.map((v) => {
     useKeystore(v);
     return v;
   }),
-);
+)();
 
 const mixinLogin = action((jwt: string, user: VaultApi.VaultUser, appUser: VaultApi.VaultAppUser) => {
   state.keys = {

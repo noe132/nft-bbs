@@ -26,7 +26,7 @@ import RumLogo3x from '~/assets/icons/logo@3x.png';
 import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
 import { chooseImgByPixelRatio, getLoginState, runLoading, setLoginState, ThemeLight } from '~/utils';
-import { AllLanguages, dialogService, keyService, langName, langService, nodeService, snackbarService } from '~/service';
+import { AllLanguages, dialogService, keyService, KeystoreData, langName, langService, nodeService, snackbarService } from '~/service';
 import { GroupAvatar, Scrollable } from '~/components';
 import { GroupInfoApi, VaultApi } from '~/apis';
 
@@ -53,12 +53,26 @@ export const Join = observer(() => {
     crpytoKey: null as CryptoKey | null,
     keyInHex: '',
 
+    keystoreLoginLoading: false,
     savedLoginState: {
-      mixinCanLogin: false as false | { jwt: string, appUser: VaultApi.VaultAppUser, user: VaultApi.VaultUser },
-      keystoreCanLogin: false as false | {
-        keystore: string
-        password: string
-        profile: Profile
+      mixin: {
+        show: false,
+        loading: false,
+        loadingPromise: Promise.resolve(),
+        data: null as null | {
+          jwt: string
+          appUser: VaultApi.VaultAppUser
+          user: VaultApi.VaultUser
+        },
+      },
+      keystore: {
+        show: false,
+        loading: false,
+        loadingPromise: Promise.resolve(),
+        data: null as null | {
+          user: Omit<KeystoreData, 'type'>
+          profile: Profile
+        },
       },
     },
     config: nodeService.config.get('default'),
@@ -147,8 +161,8 @@ export const Join = observer(() => {
   };
 
   const handleLoginBySaved = async (type: 'keystore' | 'mixin') => {
-    if (type === 'mixin' && state.savedLoginState.mixinCanLogin) {
-      const result = await VaultApi.getOrCreateAppUser(state.savedLoginState.mixinCanLogin.jwt);
+    if (type === 'mixin' && state.savedLoginState.mixin && state.savedLoginState.mixin.data?.jwt) {
+      const result = await VaultApi.getOrCreateAppUser(state.savedLoginState.mixin.data.jwt);
       if (either.isLeft(result)) {
         snackbarService.error('登录失败');
         return;
@@ -159,9 +173,9 @@ export const Join = observer(() => {
       joinGroup();
     }
 
-    if (type === 'keystore' && state.savedLoginState.keystoreCanLogin) {
-      const { keystore, password } = state.savedLoginState.keystoreCanLogin;
-      const loginResult = await keyService.login(keystore, password);
+    if (type === 'keystore' && state.savedLoginState.keystore.data) {
+      const { keystore, password, address, privateKey } = state.savedLoginState.keystore.data.user;
+      const loginResult = await keyService.login(keystore, password, address, privateKey);
       if (either.isLeft(loginResult)) {
         snackbarService.error('登录失败');
         return;
@@ -179,7 +193,7 @@ export const Join = observer(() => {
     if (confirm === 'cancel') { return; }
     if (type === 'mixin') {
       runInAction(() => {
-        state.savedLoginState.mixinCanLogin = false;
+        state.savedLoginState.mixin.data = null;
       });
       setLoginState({
         mixinJWT: '',
@@ -188,7 +202,7 @@ export const Join = observer(() => {
 
     if (type === 'keystore') {
       runInAction(() => {
-        state.savedLoginState.keystoreCanLogin = false;
+        state.savedLoginState.keystore.data = null;
       });
       setLoginState({
         keystore: '',
@@ -257,19 +271,25 @@ export const Join = observer(() => {
     state.rememberPassword = state.canLogin;
   });
 
-  const handleLoginConfirm = async () => {
-    const result = await keyService.login(state.keystore, state.password);
-    if (either.isLeft(result)) {
-      snackbarService.error('keystore或密码错误');
-      return;
-    }
-    setLoginState({
-      autoLogin: state.rememberPassword ? 'keystore' : null,
-      keystore: state.keystore,
-      seedUrl: state.computedSeedUrl,
-      password: state.rememberPassword ? state.password : '',
-    });
-    joinGroup();
+  const handleLoginConfirm = () => {
+    if (state.keystoreLoginLoading) { return; }
+    runLoading(
+      (l) => { state.keystoreLoginLoading = l; },
+      async () => {
+        const result = await keyService.login(state.keystore, state.password);
+        if (either.isLeft(result)) {
+          snackbarService.error('keystore或密码错误');
+          return;
+        }
+        setLoginState({
+          autoLogin: state.rememberPassword ? 'keystore' : null,
+          keystore: state.keystore,
+          seedUrl: state.computedSeedUrl,
+          password: state.rememberPassword ? state.password : '',
+        });
+        joinGroup();
+      },
+    );
   };
 
   const handleAnonymous = () => {
@@ -306,7 +326,7 @@ export const Join = observer(() => {
     });
   };
 
-  const validateLoginState = async () => {
+  const validateLoginState = () => {
     const loginState = getLoginState();
     runInAction(() => {
       state.seedUrl = loginState.seedUrl;
@@ -317,27 +337,44 @@ export const Join = observer(() => {
     }
 
     if (loginState && loginState.mixinJWT) {
-      const result = await VaultApi.getOrCreateAppUser(loginState.mixinJWT);
-      if (either.isRight(result)) {
-        runInAction(() => {
-          state.savedLoginState.mixinCanLogin = result.right;
-        });
-      }
+      const validateMixin = async () => {
+        runInAction(() => { state.savedLoginState.mixin.show = true; });
+        const result = await VaultApi.getOrCreateAppUser(loginState.mixinJWT);
+        if (either.isRight(result)) {
+          runInAction(() => {
+            state.savedLoginState.mixin.data = result.right;
+          });
+        }
+      };
+      runInAction(() => {
+        state.savedLoginState.mixin.loadingPromise = runLoading(
+          (l) => { state.savedLoginState.mixin.loading = l; },
+          validateMixin,
+        );
+      });
     }
 
     if (loginState && loginState.keystore && loginState.password) {
-      const loginResult = await keyService.validate(loginState.keystore, loginState.password);
-      if (either.isRight(loginResult)) {
-        runInAction(() => {
-          state.savedLoginState.keystoreCanLogin = {
-            keystore: loginState.keystore,
-            password: loginState.password,
-            profile: nodeService.profile.getFallbackProfile({
-              userAddress: loginResult.right.address,
-            }),
-          };
-        });
-      }
+      const validateKeystore = async () => {
+        runInAction(() => { state.savedLoginState.keystore.show = true; });
+        const loginResult = await keyService.validate(loginState.keystore, loginState.password);
+        if (either.isRight(loginResult)) {
+          runInAction(() => {
+            state.savedLoginState.keystore.data = {
+              user: loginResult.right,
+              profile: nodeService.profile.getFallbackProfile({
+                userAddress: loginResult.right.address,
+              }),
+            };
+          });
+        }
+      };
+      runInAction(() => {
+        state.savedLoginState.keystore.loadingPromise = runLoading(
+          (l) => { state.savedLoginState.keystore.loading = l; },
+          validateKeystore,
+        );
+      });
     }
   };
 
@@ -589,20 +626,25 @@ export const Join = observer(() => {
                 </div>
 
                 <div className="flex-col items-stertch mt-4 gap-y-4 min-w-[200px]">
-                  {!!state.savedLoginState.keystoreCanLogin && state.config.keystore && (
+                  {state.config.keystore && state.savedLoginState.keystore.show && (
                     <div className="relative flex items-center gap-x-2">
                       <Tooltip title="用上次登录使用的keystore登录" placement="right">
                         <Button
                           className="text-link-soft rounded-full text-14 px-8 py-2 normal-case flex-1 max-w-[350px]"
                           color="inherit"
                           variant="outlined"
+                          disabled={state.savedLoginState.keystore.loading}
                           onClick={() => handleLoginBySaved('keystore')}
                         >
                           <span className="truncate">
                             上次使用的 keystore 登录{' '}
-                            ({state.savedLoginState.keystoreCanLogin.profile.name
-                          || state.savedLoginState.keystoreCanLogin.profile.userAddress.slice(0, 10)})
+                            {state.savedLoginState.keystore.data ? '(' : ''}
+                            {state.savedLoginState.keystore.data?.profile.userAddress.slice(0, 10)}
+                            {state.savedLoginState.keystore.data ? ')' : ''}
                           </span>
+                          {state.savedLoginState.keystore.loading && (
+                            <CircularProgress className="ml-2 flex-none text-white/70" size={16} thickness={5} />
+                          )}
                         </Button>
                       </Tooltip>
                       <Tooltip title="清除保存的keystore" placement="right">
@@ -617,18 +659,25 @@ export const Join = observer(() => {
                     </div>
                   )}
 
-                  {!!state.savedLoginState.mixinCanLogin && state.config.mixin && (
+                  {state.config.mixin && state.savedLoginState.mixin.show && (
                     <div className="relative flex items-center gap-x-2">
                       <Tooltip title="用上次登录使用的 mixin账号登录" placement="right">
                         <Button
                           className="text-link-soft rounded-full text-14 px-8 py-2 normal-case flex-1 max-w-[350px]"
                           color="inherit"
                           variant="outlined"
+                          disabled={state.savedLoginState.mixin.loading}
                           onClick={() => handleLoginBySaved('mixin')}
                         >
                           <span className="truncate">
-                            上次使用的 mixin 账号登录 ({state.savedLoginState.mixinCanLogin.user.display_name})
+                            上次使用的 mixin 账号登录{' '}
+                            {state.savedLoginState.mixin.data ? '(' : ''}
+                            {state.savedLoginState.mixin.data?.user.display_name}
+                            {state.savedLoginState.mixin.data ? ')' : ''}
                           </span>
+                          {state.savedLoginState.mixin.loading && (
+                            <CircularProgress className="ml-2 flex-none text-white/70" size={16} thickness={5} />
+                          )}
                         </Button>
                       </Tooltip>
                       <Tooltip title="清除保存的 mixin 账号" placement="right">
@@ -719,13 +768,14 @@ export const Join = observer(() => {
     <ThemeLight>
       <Dialog
         open={state.keystorePopup}
-        onClose={action(() => { state.keystorePopup = false; })}
+        onClose={action(() => { if (!state.keystoreLoginLoading) { state.keystorePopup = false; } })}
       >
         {true && (
           <div className="flex-col relative text-black w-[400px]">
             <IconButton
               className="absolute top-2 right-2"
-              onClick={action(() => { state.keystorePopup = false; })}
+              onClick={action(() => { if (!state.keystoreLoginLoading) { state.keystorePopup = false; } })}
+              disabled={state.keystoreLoginLoading}
             >
               <Close />
             </IconButton>
@@ -744,6 +794,7 @@ export const Join = observer(() => {
                     rows={5}
                     value={state.keystore}
                     onChange={action((e) => { state.keystore = e.target.value; })}
+                    disabled={state.keystoreLoginLoading}
                   />
                 </FormControl>
                 <FormControl size="small">
@@ -754,6 +805,7 @@ export const Join = observer(() => {
                     type={state.passwordVisibility ? 'text' : 'password'}
                     value={state.password}
                     onChange={action((e) => { state.password = e.target.value; })}
+                    disabled={state.keystoreLoginLoading}
                     endAdornment={(
                       <IconButton
                         className="-mr-2"
@@ -773,6 +825,7 @@ export const Join = observer(() => {
                     <Checkbox
                       checked={state.rememberPassword}
                       onChange={action((_, v) => { state.rememberPassword = v; })}
+                      disabled={state.keystoreLoginLoading}
                     />
                   )}
                 />
@@ -784,18 +837,20 @@ export const Join = observer(() => {
                   variant="outlined"
                   onClick={handleCreateNewWallet}
                   loading={state.createWalletLoading}
+                  disabled={state.keystoreLoginLoading}
                 >
                   创建新钱包
                 </LoadingButton>
-                <Button
+                <LoadingButton
                   className="rounded-full text-16 px-10 py-2"
                   color="link"
                   variant="outlined"
                   onClick={handleLoginConfirm}
                   disabled={!state.canLogin}
+                  loading={state.keystoreLoginLoading}
                 >
                   确定
-                </Button>
+                </LoadingButton>
               </div>
             </div>
           </div>
