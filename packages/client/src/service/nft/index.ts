@@ -5,12 +5,19 @@ import { keyService } from '~/service/key';
 import { BigNumber, ethers } from 'ethers';
 import { NFT_CONTRACT } from './contract';
 import { nodeService } from '~/service/node';
-import { notNullFilter } from '~/utils';
+import { notNullFilter, runLoading } from '~/utils';
+
+interface TokenIdMapItem {
+  ids: Array<number>
+  loading: boolean
+  promise: Promise<Array<number>>
+}
 
 const state = observable({
-  tokenIds: [] as Array<number>,
-  tokenIdMap: new Map<string, Array<number>>(),
-
+  tokenIdMap: new Map<string, TokenIdMapItem>(),
+  get tokenIds() {
+    return this.tokenIdMap.get(keyService.state.address)?.ids ?? [];
+  },
   get hasNFT() {
     return !!this.tokenIds.length;
   },
@@ -34,41 +41,67 @@ const checkNFTPermission = async (mixinUserId: string) => {
   return hasNFT;
 };
 
-const getNFT = async (userAddress: string) => {
+const getNFT = (userAddress: string) => {
   const contractAddress = nodeService.config.get().nft;
   if (!contractAddress) { return []; }
-  const provider = new ethers.providers.JsonRpcProvider('https://eth-rpc.rumsystem.net/');
-  const contractWithSigner = new ethers.Contract(contractAddress, NFT_CONTRACT, provider);
-  const tx: BigNumber = await contractWithSigner.balanceOf(userAddress);
-  const balance = tx.toNumber();
-  if (!balance) {
+  if (!state.tokenIdMap.has(userAddress)) {
     runInAction(() => {
-      state.tokenIds = [];
+      state.tokenIdMap.set(userAddress, {
+        ids: [],
+        loading: false,
+        promise: Promise.resolve([]),
+      });
     });
-    return [];
   }
+  const item = state.tokenIdMap.get(userAddress)!;
+  if (item.loading) { return item.promise; }
 
-  const taskResults = await Promise.all(
-    Array(balance).fill(0).map((_, i) => taskEither.tryCatch(
-      async () => {
-        const tx: BigNumber = await contractWithSigner.tokenOfOwnerByIndex(userAddress, i);
-        const tx2: BigNumber = await contractWithSigner.tokenByIndex(tx);
-        const tokenId = tx2.toNumber();
-        return tokenId;
-      },
-      (e) => e as Error,
-    )()),
+  const promise = runLoading(
+    (l) => { item.loading = l; },
+    async () => {
+      const provider = new ethers.providers.JsonRpcProvider('https://eth-rpc.rumsystem.net/');
+      const contractWithSigner = new ethers.Contract(contractAddress, NFT_CONTRACT, provider);
+      const tx: BigNumber = await contractWithSigner.balanceOf(userAddress);
+      const balance = tx.toNumber();
+      if (!balance) {
+        runInAction(() => {
+          const item = state.tokenIdMap.get(userAddress);
+          if (item) {
+            item.ids = [];
+          }
+        });
+        return [];
+      }
+
+      const taskResults = await Promise.all(
+        Array(balance).fill(0).map((_, i) => taskEither.tryCatch(
+          async () => {
+            const tx: BigNumber = await contractWithSigner.tokenOfOwnerByIndex(userAddress, i);
+            const tx2: BigNumber = await contractWithSigner.tokenByIndex(tx);
+            const tokenId = tx2.toNumber();
+            return tokenId;
+          },
+          (e) => e as Error,
+        )()),
+      );
+
+      const tokenIds = taskResults
+        .map((v) => (either.isLeft(v) ? null : v.right))
+        .filter(notNullFilter);
+
+      runInAction(() => {
+        item.ids = [...tokenIds];
+      });
+
+      return tokenIds;
+    },
   );
 
-  const tokenIds = taskResults
-    .map((v) => (either.isLeft(v) ? null : v.right))
-    .filter(notNullFilter);
-
   runInAction(() => {
-    state.tokenIdMap.set(userAddress, [...tokenIds]);
+    item.promise = promise;
   });
 
-  return tokenIds;
+  return promise;
 };
 
 export const init = () => {
@@ -79,16 +112,13 @@ export const init = () => {
     ),
     reaction(
       () => [nodeService.state.groupId, nodeService.state.config.loaded, keyService.state.address],
-      async (items) => {
+      (items) => {
         if (items.some((v) => !v)) {
-          state.tokenIds = [];
+          state.tokenIdMap.delete(keyService.state.address);
         }
         const config = nodeService.state.config.currentGroup;
         if (config.nft) {
-          const tokenIds = await getNFT(keyService.state.address);
-          runInAction(() => {
-            state.tokenIds = tokenIds;
-          });
+          getNFT(keyService.state.address);
         }
       },
     ),

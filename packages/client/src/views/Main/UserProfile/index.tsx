@@ -45,8 +45,13 @@ export const UserProfile = observer((props: { className?: string }) => {
 
     get nfts() {
       return routeParams.userAddress
-        ? nftService.state.tokenIdMap.get(routeParams.userAddress) ?? []
+        ? nftService.state.tokenIdMap.get(routeParams.userAddress)?.ids ?? []
         : [];
+    },
+    get nftLoading() {
+      return routeParams.userAddress
+        ? !!nftService.state.tokenIdMap.get(routeParams.userAddress)?.loading ?? false
+        : false;
     },
     get hasNFT() {
       return !!this.nfts.length;
@@ -407,14 +412,19 @@ export const UserProfile = observer((props: { className?: string }) => {
             </div>
 
             <div className="flex flex-center flex-wrap gap-4 mt-4">
-              {!state.nfts.length && (
+              {state.nftLoading && (
+                <div className="flex flex-center w-24 h-24">
+                  <CircularProgress className={classNames(state.selfProfile ? 'text-black/30' : 'text-white/70')} />
+                </div>
+              )}
+              {!state.nftLoading && !state.nfts.length && (
                 <NFTIcon
                   size={96}
                   color={state.selfProfile ? 'light' : 'dark'}
                   lock
                 />
               )}
-              {state.nfts.map((v) => (
+              {!state.nftLoading && state.nfts.map((v) => (
                 <NFTIcon
                   key={v}
                   size={96}

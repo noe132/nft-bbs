@@ -44,12 +44,15 @@ export const createLoadingWrapper: CreateLoadingWrapper = (setLoading) => {
   return loadingHof as LoadingHof;
 };
 
-type RunLoading = <T extends UnknownFunction>(s: SetLoading, fn: T) => Promise<ReturnType<T>>;
+type RunLoading = <
+  T extends UnknownFunction,
+  R = ReturnType<T> extends Promise<unknown> ? ReturnType<T> : Promise<ReturnType<T>>,
+>(s: SetLoading, fn: T) => R;
 /**
  * 立即执行异步函数 fn。
  * 执行前调用 setLoading(true)，执行完毕调用 setLoading(false)
  */
-export const runLoading: RunLoading = async (setLoading, fn) => {
+export const runLoading: RunLoading = (async (setLoading: SetLoading, fn: UnknownFunction) => {
   runInAction(() => setLoading(true));
   try {
     const result = await fn();
@@ -57,7 +60,7 @@ export const runLoading: RunLoading = async (setLoading, fn) => {
   } finally {
     runInAction(() => setLoading(false));
   }
-};
+}) as any;
 
 /**
  * 返回原函数，但该函数在连续多次调用时，首次调用未resolve时，返回缓存的 promise

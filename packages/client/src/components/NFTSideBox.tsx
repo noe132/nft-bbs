@@ -2,13 +2,13 @@ import { useRef } from 'react';
 import classNames from 'classnames';
 import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import { ClickAwayListener, IconButton, Tooltip } from '@mui/material';
+import { CircularProgress, ClickAwayListener, IconButton, Tooltip } from '@mui/material';
 
 import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
 
 import { ThemeLight } from '~/utils';
-import { nftService, nodeService } from '~/service';
+import { keyService, nftService, nodeService } from '~/service';
 import { NFTIcon } from './NFTIcon';
 
 interface Props {
@@ -19,12 +19,15 @@ export const NFTSideBox = observer((props: Props) => {
   const state = useLocalObservable(() => ({
     selectedNFT: null as null | number,
     get contractAddress() {
-      return nodeService.config.get().nft ?? '';
+      return nodeService.state.config.currentGroup.nft ?? '';
+    },
+    get loading() {
+      return !!nftService.state.tokenIdMap.get(keyService.state.address)?.loading;
     },
   }));
   const nftBox = useRef<HTMLDivElement>(null);
 
-  if (!nodeService.state.config.currentGroup.nft) {
+  if (!state.contractAddress) {
     return null;
   }
 
@@ -39,14 +42,19 @@ export const NFTSideBox = observer((props: Props) => {
       {!state.selectedNFT && (
         <div className="flex-col flex-center relative bg-white/60 py-2">
           <div className="flex flex-wrap gap-5 w-full mx-3 max-w-[140px] justify-center justify-items-center">
-            {!nftService.state.tokenIds.length && (
+            {state.loading && (
+              <div className="flex flex-center h-15">
+                <CircularProgress className="text-black/50" />
+              </div>
+            )}
+            {!state.loading && !nftService.state.tokenIds.length && (
               <Tooltip title={<ExpandIcon className="text-20 -mx-1" />}>
                 <span>
                   <NFTIcon color="dark" size={60} lock />
                 </span>
               </Tooltip>
             )}
-            {nftService.state.tokenIds.map((v) => (
+            {!state.loading && nftService.state.tokenIds.map((v) => (
               <Tooltip title={<ExpandIcon className="text-20 -mx-1" />} key={v}>
                 <span>
                   <NFTIcon
