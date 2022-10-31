@@ -97,17 +97,17 @@ export class Notification {
     limit: number
     offset: number
   } & Pick<FindOptionsWhere<Notification>, 'groupId' | 'to'>) {
-    return AppDataSource.manager.find(Notification, {
-      where: {
+    return AppDataSource.manager.createQueryBuilder()
+      .select('notification')
+      .from(Notification, 'notification')
+      .where({
         groupId: params.groupId,
         to: params.to,
-      },
-      order: {
-        timestamp: 'desc',
-      },
-      take: params.limit,
-      skip: params.offset,
-    });
+      })
+      .orderBy({ timestamp: 'DESC' })
+      .offset(params.offset)
+      .limit(params.limit)
+      .getMany();
   }
 
   public static async count(query: FindOptionsWhere<Notification>) {

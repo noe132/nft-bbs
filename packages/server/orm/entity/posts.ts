@@ -111,8 +111,8 @@ export class Post {
     const query = AppDataSource.manager
       .createQueryBuilder(Post, 'post')
       .where('post.groupId = :groupId', { groupId: params.groupId })
-      .take(params.limit)
-      .skip(params.offset)
+      .limit(params.limit)
+      .offset(params.offset)
       .orderBy('post.timestamp', params.order);
 
     if (params.userAddress) {

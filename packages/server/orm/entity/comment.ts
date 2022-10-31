@@ -97,14 +97,16 @@ export class Comment {
   }
 
   public static async list(params: { limit: number, offset: number } & Pick<FindOptionsWhere<Comment>, 'groupId' | 'postId'>) {
-    return AppDataSource.manager.find(Comment, {
-      where: {
+    return AppDataSource.manager.createQueryBuilder()
+      .select('comment')
+      .from(Comment, 'comment')
+      .where({
         groupId: params.groupId,
         postId: params.postId,
-      },
-      take: params.limit,
-      skip: params.offset,
-    });
+      })
+      .offset(params.offset)
+      .limit(params.limit)
+      .getMany();
   }
 
   public static async appendExtra(_items: Comment, options?: { viewer?: string }): Promise<Comment>;
