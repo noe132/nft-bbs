@@ -64,6 +64,10 @@ const getNFT = async (userAddress: string) => {
     .map((v) => (either.isLeft(v) ? null : v.right))
     .filter(notNullFilter);
 
+  runInAction(() => {
+    state.tokenIdMap.set(userAddress, [...tokenIds]);
+  });
+
   return tokenIds;
 };
 

@@ -55,7 +55,7 @@ export const NFTIcon = (props: Props) => {
           style={{ fontSize: `${lockSize}px` }}
         />
       )}
-      {props.tokenId && (
+      {props.tokenId !== undefined && (
         <div
           className={classNames(
             'absolute text-white leading-[1] select-none',
