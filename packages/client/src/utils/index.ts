@@ -103,7 +103,7 @@ export const chooseImgByPixelRatio = (params: { x1: string, x2?: string, x3?: st
   return params.x1;
 };
 
-export const notNullFilter = <T>(v: T | undefined | null): v is T => !!v;
+export const notNullFilter = <T>(v: T | undefined | null): v is T => v !== undefined && v !== null;
 
 
 export interface LoginState {
