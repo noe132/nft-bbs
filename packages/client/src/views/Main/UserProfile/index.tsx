@@ -477,7 +477,7 @@ export const UserProfile = observer((props: { className?: string }) => {
             <Close className="text-link text-20" />
           </IconButton>
 
-          {state.ntfPopup.nft && (<>
+          {state.ntfPopup.nft !== null && (<>
             <div className="flex-col gap-y-4 mt-6">
               <NFTIcon
                 key={state.ntfPopup.nft}
