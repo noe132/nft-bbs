@@ -40,7 +40,7 @@ const main = async () => {
 
   (globalThis as any).log = fastify.log;
   (globalThis as any).pollingLog = pino({
-    level: 'info',
+    level: process.env.POLLING_LOG_LEVEL || 'info',
     base: undefined,
   }, {
     write: getLoggerWrite(pollingLogFile),
