@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, Link, matchPath } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
@@ -17,7 +17,7 @@ import {
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
-import { setLoginState, ThemeLight, usePageState } from '~/utils';
+import { routeUrlPatterns, setLoginState, ThemeLight, usePageState } from '~/utils';
 import {
   nodeService, langService, keyService,
   AllLanguages, langName, dialogService,
@@ -46,6 +46,11 @@ export const Header = observer((props: { className?: string }) => {
 
     get profile() {
       return nodeService.state.myProfile;
+    },
+    get notificationLink() {
+      const match = matchPath(routeUrlPatterns.notification, routeLocation.pathname);
+      const groupId = nodeService.state.groupId;
+      return match ? `/${groupId}` : `/${groupId}/notification`;
     },
   }));
 
@@ -313,7 +318,7 @@ export const Header = observer((props: { className?: string }) => {
               </Button>
             )}
             {nodeService.state.logined && (
-              <Link to={routeLocation.pathname === '/notification' ? '/' : '/notification'}>
+              <Link to={state.notificationLink}>
                 <Button
                   className={classNames(
                     'text-white p-0 w-10 h-10 min-w-0',
