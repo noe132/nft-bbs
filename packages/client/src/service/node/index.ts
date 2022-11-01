@@ -759,7 +759,6 @@ const init = () => {
 
     await config.load();
     await keyService.tryAutoLogin();
-    await sleep(1000);
 
     if (pathname === '/') {
       group.tryAutoJoin();

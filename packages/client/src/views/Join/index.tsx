@@ -330,9 +330,9 @@ export const Join = observer(() => {
     const loginState = getLoginState();
     runInAction(() => {
       state.seedUrl = loginState.seedUrl;
-      handleNextStep();
     });
     if (loginState.jumpToLogin && state.seedUrl) {
+      handleNextStep();
       setLoginState({ jumpToLogin: false });
     }
 
@@ -474,7 +474,7 @@ export const Join = observer(() => {
                 <div className="text-white text-18">
                   加入 Port 种子网络
                 </div>
-                {!!nodeService.state.groups.length && !!nodeService.state.config.seedUrl && (
+                {!!nodeService.state.groups.length && !nodeService.state.config.seedUrl && (
                   <div className="flex-col items-center mt-8 -mb-4 text-white gap-y-4">
                     <div className="text-white/80">可加入的种子网络</div>
                     <Scrollable className="max-h-[200px]" light size="large">
