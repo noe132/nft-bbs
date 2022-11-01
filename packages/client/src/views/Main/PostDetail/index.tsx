@@ -5,7 +5,7 @@ import { action, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { Comment, Profile } from 'nft-bbs-server';
-import { Button, CircularProgress, ClickAwayListener, Fade, IconButton, InputBase, Tooltip } from '@mui/material';
+import { Button, CircularProgress, ClickAwayListener, Fade, IconButton, Input, InputBase, TextField, Tooltip } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 
@@ -290,8 +290,28 @@ export const PostDetail = observer((props: { className?: string }) => {
 
         <div className="flex w-full bg-black/80 p-8 mt-5 gap-x-6">
           <div className="flex flex-1 h-[40px] items-stretch">
-            <InputBase
+            {/* <InputBase
               className="bg-white flex-1 rounded-l text-black px-4 text-14"
+              classes={{
+                disabled: 'bg-white/10',
+                input: '!bg-transparent',
+              }}
+              placeholder={nftService.state.postPermissionTip ? '无权限发布内容' : '在这里写下你的评论…'}
+              value={state.commentInput}
+              onChange={action((e) => { state.commentInput = e.target.value; })}
+              disabled={!!nftService.state.postPermissionTip}
+              onKeyDown={(e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                  handlePostComment('direct');
+                }
+              }}
+            /> */}
+            <input
+              className={classNames(
+                'flex-1 rounded-l text-black px-4 text-14 outline-none',
+                !nftService.state.postPermissionTip && 'bg-white',
+                !!nftService.state.postPermissionTip && 'bg-white/20 cursor-not-allowed',
+              )}
               placeholder={nftService.state.postPermissionTip ? '无权限发布内容' : '在这里写下你的评论…'}
               value={state.commentInput}
               onChange={action((e) => { state.commentInput = e.target.value; })}
