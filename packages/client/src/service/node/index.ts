@@ -1,7 +1,7 @@
 import { matchPath } from 'react-router-dom';
 import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import { action, observable, reaction, runInAction } from 'mobx';
-import { either, function as fp, string, taskEither } from 'fp-ts';
+import { either, function as fp, taskEither } from 'fp-ts';
 import { v4 } from 'uuid';
 import type { Post, Comment, Profile, Notification } from 'nft-bbs-server';
 import { CommentType, DislikeType, ImageType, LikeType, PostDeleteType, PostType, ProfileType } from 'nft-bbs-types';
