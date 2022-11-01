@@ -1,13 +1,14 @@
-import { either, taskEither } from 'fp-ts';
+import { either } from 'fp-ts';
 import { action, observable, reaction, runInAction } from 'mobx';
 import { MVMApi } from '~/apis';
 import { keyService } from '~/service/key';
 import { BigNumber, ethers } from 'ethers';
 import { NFT_CONTRACT } from './contract';
 import { nodeService } from '~/service/node';
-import { notNullFilter, runLoading } from '~/utils';
+import { runLoading } from '~/utils';
 
 interface TokenIdMapItem {
+  balance: number
   ids: Array<number>
   loading: boolean
   promise: Promise<Array<number>>
@@ -19,7 +20,7 @@ const state = observable({
     return this.tokenIdMap.get(keyService.state.address)?.ids ?? [];
   },
   get hasNFT() {
-    return !!this.tokenIds.length;
+    return !!this.tokenIdMap.get(keyService.state.address)?.balance;
   },
   get hasPermission() {
     const config = nodeService.config.get();
@@ -35,6 +36,12 @@ const state = observable({
   },
 });
 
+const rpcProvider = new ethers.providers.JsonRpcBatchProvider('https://eth-rpc.rumsystem.net/', {
+  name: 'rum-eth',
+  chainId: 19890609,
+});
+rpcProvider.detectNetwork = ethers.providers.StaticJsonRpcProvider.prototype.detectNetwork;
+
 const checkNFTPermission = async (mixinUserId: string) => {
   const res = await MVMApi.mixinAuth(mixinUserId);
   const hasNFT = either.isRight(res);
@@ -47,6 +54,7 @@ const getNFT = (userAddress: string) => {
   if (!state.tokenIdMap.has(userAddress)) {
     runInAction(() => {
       state.tokenIdMap.set(userAddress, {
+        balance: 0,
         ids: [],
         loading: false,
         promise: Promise.resolve([]),
@@ -59,8 +67,7 @@ const getNFT = (userAddress: string) => {
   const promise = runLoading(
     (l) => { item.loading = l; },
     async () => {
-      const provider = new ethers.providers.JsonRpcProvider('https://eth-rpc.rumsystem.net/');
-      const contractWithSigner = new ethers.Contract(contractAddress, NFT_CONTRACT, provider);
+      const contractWithSigner = new ethers.Contract(contractAddress, NFT_CONTRACT, rpcProvider);
       const tx: BigNumber = await contractWithSigner.balanceOf(userAddress);
       const balance = tx.toNumber();
       if (!balance) {
@@ -72,22 +79,21 @@ const getNFT = (userAddress: string) => {
         });
         return [];
       }
+      runInAction(() => {
+        item.balance = balance;
+      });
 
-      const taskResults = await Promise.all(
-        Array(balance).fill(0).map((_, i) => taskEither.tryCatch(
-          async () => {
-            const tx: BigNumber = await contractWithSigner.tokenOfOwnerByIndex(userAddress, i);
-            const tx2: BigNumber = await contractWithSigner.tokenByIndex(tx);
-            const tokenId = tx2.toNumber();
-            return tokenId;
-          },
-          (e) => e as Error,
-        )()),
+      const tokenIndexs = await Promise.all(
+        Array(balance)
+          .fill(0)
+          .map((_, i) => contractWithSigner.tokenOfOwnerByIndex(userAddress, i) as Promise<BigNumber>),
       );
-
-      const tokenIds = taskResults
-        .map((v) => (either.isLeft(v) ? null : v.right))
-        .filter(notNullFilter);
+      const tokenIds = await Promise.all(
+        tokenIndexs.map(async (v) => {
+          const tx: BigNumber = await contractWithSigner.tokenByIndex(v.toNumber());
+          return tx.toNumber();
+        }),
+      );
 
       runInAction(() => {
         item.ids = [...tokenIds];
