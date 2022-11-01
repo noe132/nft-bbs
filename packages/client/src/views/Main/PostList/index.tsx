@@ -109,6 +109,7 @@ export const PostList = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
+    nodeService.group.setDocumentTitle();
     if (!state.inited) {
       state.loadPosts();
       runInAction(() => {

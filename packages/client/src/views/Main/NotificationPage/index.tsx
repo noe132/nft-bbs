@@ -40,6 +40,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
+    nodeService.group.setDocumentTitle('消息通知');
     const loadNextPage = async () => {
       if (nodeService.state.notification.loading || nodeService.state.notification.done) {
         return;

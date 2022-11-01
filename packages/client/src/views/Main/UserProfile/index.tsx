@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { stringifyUrl } from 'query-string';
 import classNames from 'classnames';
-import { action, runInAction } from 'mobx';
+import { action, reaction, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import RemoveMarkdown from 'remove-markdown';
 import { format } from 'date-fns';
@@ -151,6 +151,11 @@ export const UserProfile = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
+    const dispose = reaction(
+      () => state.profile?.name || state.profile?.userAddress.slice(0, 10),
+      (name) => nodeService.group.setDocumentTitle(name),
+      { fireImmediately: true },
+    );
     if (!state.inited) {
       runInAction(() => {
         state.inited = true;
@@ -180,6 +185,7 @@ export const UserProfile = observer((props: { className?: string }) => {
     }
 
     return () => {
+      dispose();
       io.disconnect();
     };
   }, []);

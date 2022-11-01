@@ -128,6 +128,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
   };
 
   useEffect(() => {
+    nodeService.group.setDocumentTitle('新帖子');
     // const content = state.postToEdit?.content ?? '';
     const content = '';
     runInAction(() => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import classNames from 'classnames';
-import { action, runInAction } from 'mobx';
+import { action, reaction, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { Comment, Profile } from 'nft-bbs-server';
@@ -227,6 +227,11 @@ export const PostDetail = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
+    const dispose = reaction(
+      () => state.post?.title,
+      (title) => nodeService.group.setDocumentTitle(title),
+      { fireImmediately: true },
+    );
     if (!state.inited) {
       const highlightedId = searchParams.get('commentTrx');
       runInAction(() => {
@@ -239,6 +244,7 @@ export const PostDetail = observer((props: { className?: string }) => {
 
       loadData();
     }
+    return dispose;
   }, []);
 
   const commentContextValue = useMemo(() => ({
