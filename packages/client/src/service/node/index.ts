@@ -6,7 +6,7 @@ import { v4 } from 'uuid';
 import type { Post, Comment, Profile, Notification } from 'nft-bbs-server';
 import { CommentType, DislikeType, ImageType, LikeType, PostDeleteType, PostType, ProfileType } from 'nft-bbs-types';
 
-import { getLoginState, runLoading, sleep, routeUrlPatterns } from '~/utils';
+import { getLoginState, runLoading, routeUrlPatterns } from '~/utils';
 import { CommentApi, ConfigApi, GroupApi, NotificationApi, PostApi, ProfileApi, TrxApi } from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
