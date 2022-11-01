@@ -9,6 +9,7 @@ export const createBaseRenderer = (options?: mdit.Options) => {
   const renderer = mdit({
     html: true,
     breaks: true,
+    linkify: true,
     // highlight: (str, lang) => {
     //   if (lang && hljs.getLanguage(lang)) {
     //     try {
