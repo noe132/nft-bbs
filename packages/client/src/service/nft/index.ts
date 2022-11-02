@@ -6,6 +6,7 @@ import { BigNumber, ethers } from 'ethers';
 import { NFT_CONTRACT } from './contract';
 import { nodeService } from '~/service/node';
 import { runLoading } from '~/utils';
+import { snackbarService } from '../snackbar';
 
 interface TokenIdMapItem {
   balance: number
@@ -23,16 +24,12 @@ const state = observable({
     return !!this.tokenIdMap.get(keyService.state.address)?.balance;
   },
   get hasPermission() {
+    if (!nodeService.state.logined) { return false; }
     const config = nodeService.config.get();
     if (!config.nft) {
       return true;
     }
     return this.hasNFT;
-  },
-  get postPermissionTip() {
-    if (!nodeService.state.logined) { return '请先登录'; }
-    if (!this.hasPermission) { return '无权限发布内容'; }
-    return '';
   },
 });
 
@@ -42,7 +39,7 @@ const rpcProvider = new ethers.providers.JsonRpcBatchProvider('https://eth-rpc.r
 });
 rpcProvider.detectNetwork = ethers.providers.StaticJsonRpcProvider.prototype.detectNetwork;
 
-const checkNFTPermission = async (mixinUserId: string) => {
+const mixinAuth = async (mixinUserId: string) => {
   const res = await MVMApi.mixinAuth(mixinUserId);
   const hasNFT = either.isRight(res);
   return hasNFT;
@@ -110,6 +107,30 @@ const getNFT = (userAddress: string) => {
   return promise;
 };
 
+const permissionTip = (type: 'post' | 'comment' | 'counter' | 'profile') => {
+  const map = {
+    post: '您不持有具备发帖权限的 NFT',
+    comment: '您不持有具备评论权限的 NFT',
+    counter: '您没有评论互动权限',
+    profile: '您没有提交个人资料的权限',
+  };
+  if (!nodeService.state.logined) {
+    return '请先登录';
+  }
+  if (!state.hasPermission) {
+    return map[type];
+  }
+  return '';
+};
+
+const hasPermissionAndTip = (type: 'post' | 'comment' | 'counter' | 'profile') => {
+  const tip = permissionTip(type);
+  if (tip) {
+    snackbarService.show(tip);
+  }
+  return !tip;
+};
+
 export const init = () => {
   const disposes = [
     reaction(
@@ -137,6 +158,8 @@ export const nftService = {
   state,
   init,
 
-  checkNFTPermission,
+  mixinAuth,
+  permissionTip,
+  hasPermissionAndTip,
   getNFT,
 };

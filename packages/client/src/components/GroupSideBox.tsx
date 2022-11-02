@@ -23,10 +23,7 @@ export const GroupSideBox = observer((props: Props) => {
   }));
 
   const handleNewPost = () => {
-    if (nftService.state.postPermissionTip) {
-      snackbarService.show(nftService.state.postPermissionTip);
-      return;
-    }
+    if (!nftService.hasPermissionAndTip('post')) { return; }
     navigate(`/${nodeService.state.groupId}/newpost`);
   };
 
@@ -59,11 +56,11 @@ export const GroupSideBox = observer((props: Props) => {
       )}
       {props.showNewPost && (
         <div className="flex flex-center mt-8">
-          <Tooltip title={nftService.state.postPermissionTip}>
+          <Tooltip title={nftService.permissionTip('post')}>
             <Button
               className="rounded-full text-16 px-5 py-[7px]"
               variant="outlined"
-              color={nftService.state.postPermissionTip ? 'dark-blue' : 'rum'}
+              color={nftService.state.hasPermission ? 'rum' : 'dark-blue'}
               onClick={handleNewPost}
             >
               <EditIcon className="text-22 mr-3 mb-px" />

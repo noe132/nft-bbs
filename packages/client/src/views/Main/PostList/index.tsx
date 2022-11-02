@@ -97,10 +97,7 @@ export const PostList = observer((props: { className?: string }) => {
   };
 
   const handleUpdatePostCounter = (post: Post, type: 'Like' | 'Dislike') => {
-    if (nftService.state.postPermissionTip) {
-      snackbarService.show(nftService.state.postPermissionTip);
-      return;
-    }
+    if (!nftService.hasPermissionAndTip('counter')) { return; }
     if (state.likeLoadingMap.get(post.trxId)) { return; }
     runLoading(
       (l) => { state.likeLoadingMap.set(post.trxId, l); },

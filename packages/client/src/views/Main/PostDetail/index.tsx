@@ -124,10 +124,7 @@ export const PostDetail = observer((props: { className?: string }) => {
   });
 
   const handleReply = action((v: Comment) => {
-    if (!nftService.state.hasPermission) {
-      snackbarService.show('无权限发表内容');
-      return;
-    }
+    if (!nftService.hasPermissionAndTip('comment')) { return; }
     state.replyTo = {
       ...state.replyTo,
       comment: v,
@@ -139,10 +136,7 @@ export const PostDetail = observer((props: { className?: string }) => {
   });
 
   const handlePostComment = async (type: 'direct' | 'reply') => {
-    if (nftService.state.postPermissionTip) {
-      snackbarService.show(nftService.state.postPermissionTip);
-      return;
-    }
+    if (!nftService.hasPermissionAndTip('comment')) { return; }
     const post = state.post;
     if (!post || state.commentPosting) { return; }
     const replyTo = state.replyTo.comment;
@@ -296,46 +290,30 @@ export const PostDetail = observer((props: { className?: string }) => {
 
         <div className="flex w-full bg-black/80 p-8 mt-5 gap-x-6">
           <div className="flex flex-1 h-[40px] items-stretch">
-            {/* <InputBase
-              className="bg-white flex-1 rounded-l text-black px-4 text-14"
-              classes={{
-                disabled: 'bg-white/10',
-                input: '!bg-transparent',
-              }}
-              placeholder={nftService.state.postPermissionTip ? '无权限发布内容' : '在这里写下你的评论…'}
-              value={state.commentInput}
-              onChange={action((e) => { state.commentInput = e.target.value; })}
-              disabled={!!nftService.state.postPermissionTip}
-              onKeyDown={(e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                  handlePostComment('direct');
-                }
-              }}
-            /> */}
             <input
               className={classNames(
                 'flex-1 rounded-l text-black px-4 text-14 outline-none',
-                !nftService.state.postPermissionTip && 'bg-white',
-                !!nftService.state.postPermissionTip && 'bg-white/20 cursor-not-allowed',
+                nftService.state.hasPermission && 'bg-white',
+                !nftService.state.hasPermission && 'bg-white/20 cursor-not-allowed',
               )}
-              placeholder={nftService.state.postPermissionTip ? '无权限发布内容' : '在这里写下你的评论…'}
+              placeholder={nftService.permissionTip('comment') || '在这里写下你的评论…'}
               value={state.commentInput}
               onChange={action((e) => { state.commentInput = e.target.value; })}
-              disabled={!!nftService.state.postPermissionTip}
+              disabled={!nftService.state.hasPermission}
               onKeyDown={(e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                   handlePostComment('direct');
                 }
               }}
             />
-            <Tooltip title={nftService.state.postPermissionTip}>
+            <Tooltip title={nftService.permissionTip('comment')}>
               <div className="flex self-stretch">
                 <LoadingButton
                   className="rounded-l-none"
                   color="rum"
                   variant="contained"
                   onClick={() => handlePostComment('direct')}
-                  disabled={!!nftService.state.postPermissionTip}
+                  disabled={!nftService.state.hasPermission}
                   loading={state.commentPosting}
                 >
                   发布评论

@@ -62,10 +62,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   const handleUpdatePostCounter = (type: 'Like' | 'Dislike') => {
-    if (nftService.state.postPermissionTip) {
-      snackbarService.show(nftService.state.postPermissionTip);
-      return;
-    }
+    if (!nftService.hasPermissionAndTip('counter')) { return; }
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
@@ -74,8 +71,8 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   };
 
   // const handleEditPost = () => {
-  //   if (nftService.state.postPermissionTip) {
-  //     snackbarService.show(nftService.state.postPermissionTip);
+  //   if (!nftService.state.hasPermission) {
+  //     snackbarService.show('您没有评论互动权限);
   //     return;
   //   }
   //   navigate(stringifyUrl({
@@ -85,10 +82,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   // };
 
   const handleDeletePost = async () => {
-    if (nftService.state.postPermissionTip) {
-      snackbarService.show(nftService.state.postPermissionTip);
-      return;
-    }
+    if (!nftService.hasPermissionAndTip('post')) { return; }
     const result = await dialogService.open({
       title: '删除帖子',
       content: '确定要删除这个帖子吗？',

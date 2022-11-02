@@ -89,10 +89,7 @@ export const UserProfile = observer((props: { className?: string }) => {
   };
 
   const handleUpdatePostCounter = (post: Post, type: 'Like' | 'Dislike') => {
-    if (nftService.state.postPermissionTip) {
-      snackbarService.show(nftService.state.postPermissionTip);
-      return;
-    }
+    if (!nftService.hasPermissionAndTip('counter')) { return; }
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },

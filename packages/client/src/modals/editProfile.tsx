@@ -118,10 +118,7 @@ export const EditProfileView = observer((props: Props) => {
   };
 
   const handleSubmitProfile = async () => {
-    if (nftService.state.postPermissionTip) {
-      snackbarService.show(nftService.state.postPermissionTip);
-      return;
-    }
+    if (!nftService.hasPermissionAndTip('profile')) { return; }
     if (state.introLength > 200) { return; }
     if (!state.name || state.loading) { return; }
     const match = /data:(.+?);base64,(.+)/.exec(state.avatar);

@@ -58,10 +58,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
   };
 
   const handleToggleCommentCounter = () => {
-    if (nftService.state.postPermissionTip) {
-      snackbarService.show(nftService.state.postPermissionTip);
-      return;
-    }
+    if (!nftService.hasPermissionAndTip('counter')) { return; }
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
@@ -135,10 +132,11 @@ export const CommentItem = observer((props: CommentItemProps) => {
             </Button>
           )}
           {state.synced && (
-            <Tooltip title={nftService.state.postPermissionTip}>
+            <Tooltip title={nftService.permissionTip('counter')}>
               <Button
                 className={classNames(
                   'min-w-0 px-2 text-14',
+                  !nftService.state.hasPermission && '!text-gray-9c',
                   !state.commentStat.liked && 'text-link-soft',
                   state.commentStat.liked && 'text-rum-orange',
                 )}
@@ -157,9 +155,12 @@ export const CommentItem = observer((props: CommentItemProps) => {
             </Tooltip>
           )}
           {nodeService.state.logined && (
-            <Tooltip title={nftService.state.postPermissionTip}>
+            <Tooltip title={nftService.permissionTip('comment')}>
               <Button
-                className="text-link-soft text-14 font-normal"
+                className={classNames(
+                  'text-link-soft text-14 font-normal',
+                  !nftService.state.hasPermission && '!text-gray-9c',
+                )}
                 variant="text"
                 color="inherit"
                 size="small"

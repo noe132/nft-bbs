@@ -82,10 +82,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
   });
 
   const handlePost = async () => {
-    if (nftService.state.postPermissionTip) {
-      snackbarService.show(nftService.state.postPermissionTip);
-      return;
-    }
+    if (!nftService.hasPermissionAndTip('post')) { return; }
     const allImages = state.postContent.matchAll(/!\[.*?\]\((blob:.+?)\)/g);
     const allLinks = Array.from(new Set([...allImages].map((v) => v[1])));
     const images = state.images.filter((v) => allLinks.includes(v.url)).map((v) => ({
@@ -296,7 +293,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
             !state.preview && 'flex',
           )}
         >
-          <Tooltip title={nftService.state.postPermissionTip}>
+          <Tooltip title={nftService.permissionTip('post')}>
             <div>
               <LoadingButton
                 className="rounded-full text-16 py-2 px-6"
