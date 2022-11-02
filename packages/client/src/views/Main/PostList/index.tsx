@@ -14,7 +14,7 @@ import { LoadingButton } from '@mui/lab';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 
 import { ScrollToTopButton, GroupSideBox, NFTSideBox, UserAvatar } from '~/components';
-import { keyService, nftService, nodeService, snackbarService } from '~/service';
+import { keyService, nftService, nodeService } from '~/service';
 import { ago, notNullFilter, runLoading, usePageState } from '~/utils';
 import { showTrxDetail } from '~/modals';
 

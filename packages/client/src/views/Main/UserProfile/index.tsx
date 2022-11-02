@@ -15,7 +15,7 @@ import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon } from '~/components';
-import { imageZoomService, keyService, nftService, nodeService, snackbarService } from '~/service';
+import { imageZoomService, keyService, nftService, nodeService } from '~/service';
 import { ago, runLoading, ThemeLight, usePageState } from '~/utils';
 import { editProfile } from '~/modals';
 

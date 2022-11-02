@@ -5,7 +5,7 @@ import { Button, IconButton, Tooltip } from '@mui/material';
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
 import { editGroupInfo } from '~/modals/editGroupInfo';
-import { keyService, nftService, nodeService, snackbarService } from '~/service';
+import { keyService, nftService, nodeService } from '~/service';
 
 import { GroupAvatar } from './GroupAvatar';
 
