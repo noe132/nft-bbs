@@ -15,7 +15,7 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
     pageSize: 7 as const,
     scrollToComment: '',
 
-    comments: [...props.comments].reverse() as Array<Comment>,
+    comments: [...props.comments].sort((a, b) => a.timestamp - b.timestamp),
     get displayedComments() {
       return state.comments.slice(
         (this.page - 1) * this.pageSize,
@@ -24,10 +24,10 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
     },
 
     get totalPages() {
-      return Math.ceil(props.comments.length / this.pageSize);
+      return Math.ceil(state.comments.length / this.pageSize);
     },
     get needPaging() {
-      return this.pageSize < props.comments.length;
+      return this.pageSize < state.comments.length;
     },
   }));
 
@@ -45,7 +45,7 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
   };
 
   useEffect(action(() => {
-    state.comments = [...props.comments].reverse();
+    state.comments = [...props.comments].sort((a, b) => a.timestamp - b.timestamp);
   }), [props.comments]);
 
   useEffect(action(() => {
@@ -84,7 +84,7 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
     ];
 
     const initCommentTrx = context.state.initCommentTrx;
-    if (initCommentTrx && props.comments.some((v) => v.trxId === initCommentTrx)) {
+    if (initCommentTrx && state.comments.some((v) => v.trxId === initCommentTrx)) {
       handleJumpToReply(initCommentTrx);
       runInAction(() => {
         context.state.initCommentTrx = '';
@@ -105,7 +105,7 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
         />
       ))}
       {state.needPaging && (
-        <div className="flex items-center gap-x-4 mt-2">
+        <div className="flex items-center gap-x-4 mt-2 mb-3">
           <Pagination
             page={state.page}
             onChange={action((_, page) => { state.page = page; })}

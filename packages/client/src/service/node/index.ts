@@ -53,7 +53,10 @@ const state = observable({
     map: new Map<string, Comment>(),
     taskId: 0,
     /** `Map<postTrxId, Set<commentTrx>>` */
-    cache: new Map<string, Set<string>>(),
+    cacheByPostId: new Map<string, Set<string>>(),
+    get cache() {
+      return [...this.cacheByPostId.values()].flatMap((v) => [...v.values()]);
+    },
   },
   profile: {
     mapByTrxId: new Map<string, Profile>(),
@@ -372,7 +375,7 @@ const post = {
     const dislikeCount = post.dislikeCount + (cachedDislike ? 1 : 0);
     const liked = post.extra?.liked || !!cachedLike;
     const disliked = post.extra?.disliked || !!cachedDislike;
-    const commentCount = post.commentCount + (state.comment.cache.get(post.trxId)?.size ?? 0);
+    const commentCount = post.commentCount + (state.comment.cacheByPostId.get(post.trxId)?.size ?? 0);
 
     return {
       title: post.title,
@@ -406,7 +409,7 @@ const comment = {
       });
     });
     const trxIds = comments.map((v) => v.trxId);
-    const postSet = state.comment.cache.get(postTrxId);
+    const postSet = state.comment.cacheByPostId.get(postTrxId);
     if (postSet) {
       for (const cachedTrxId of postSet) {
         trxIds.push(cachedTrxId);
@@ -439,10 +442,10 @@ const comment = {
 
       runInAction(() => {
         state.comment.map.set(comment.trxId, comment);
-        if (!state.comment.cache.has(params.objectId)) {
-          state.comment.cache.set(params.objectId, new Set());
+        if (!state.comment.cacheByPostId.has(params.objectId)) {
+          state.comment.cacheByPostId.set(params.objectId, new Set());
         }
-        const postSet = state.comment.cache.get(params.objectId)!;
+        const postSet = state.comment.cacheByPostId.get(params.objectId)!;
         postSet.add(comment.trxId);
       });
       return comment;
@@ -464,7 +467,7 @@ const comment = {
       profile.save(item.extra.userProfile);
     }
     state.comment.map.set(item.trxId, item);
-    state.comment.cache.forEach((s) => {
+    state.comment.cacheByPostId.forEach((s) => {
       s.delete(item.trxId);
     });
     return state.comment.map.get(item.trxId)!;
@@ -488,7 +491,7 @@ const comment = {
       likeDiff = -1;
     }
 
-    const cachedCommentCount = Array.from(state.comment.cache.get(comment.postId)?.values() ?? []).filter((trxId) => {
+    const cachedCommentCount = Array.from(state.comment.cacheByPostId.get(comment.postId)?.values() ?? []).filter((trxId) => {
       const c = state.comment.map.get(trxId);
       return c?.threadId === comment.trxId;
     }).length;

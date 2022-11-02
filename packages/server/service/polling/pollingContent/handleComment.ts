@@ -21,10 +21,6 @@ export const handleComment = async (item: IContent, transactionManager: EntityMa
     ? data.inreplyto.trxid
     : '';
 
-  if (trxId === '4901e676-3a29-4506-8a89-9f20d6dd4471') {
-    console.log(data);
-  }
-
   const [comment, post, threadComment, replyComment] = await Promise.all([
     Comment.add({
       trxId,

@@ -177,8 +177,8 @@ export const PostDetail = observer((props: { className?: string }) => {
           state.replyTo.content = '';
           state.replyTo.open = false;
         }
+        state.commentContextState.newCommentTrxId = comment.trxId;
       });
-      state.commentContextState.newCommentTrxId = comment.trxId;
     }
   };
 

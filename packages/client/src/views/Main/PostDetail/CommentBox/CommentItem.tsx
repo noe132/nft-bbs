@@ -46,7 +46,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
       return nodeService.comment.getStat(this.comment);
     },
     get synced() {
-      return !nodeService.state.comment.cache.get(state.comment.groupId)?.has(state.comment.trxId);
+      return !nodeService.state.comment.cache.includes(state.comment.trxId);
     },
   }));
 
@@ -67,6 +67,14 @@ export const CommentItem = observer((props: CommentItemProps) => {
         state.commentStat.liked ? 'Dislike' : 'Like',
       ),
     );
+  };
+
+  const handleReply = () => {
+    if (!state.synced) {
+      snackbarService.show('请等待回复同步完成');
+      return;
+    }
+    context.onReply(state.comment);
   };
 
   const highlighted = context.state.highlightedComments.has(state.comment.trxId);
@@ -164,7 +172,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
                 variant="text"
                 color="inherit"
                 size="small"
-                onClick={() => context.onReply(state.comment)}
+                onClick={handleReply}
               >
                 <ReplyIcon className="mr-1 -mt-[2px] text-24" />
                 回复
