@@ -30,11 +30,12 @@ export const NotificationPage = observer((props: { className?: string }) => {
 
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
-  const handleViewItem = async (v: Notification) => {
-    const post = await nodeService.post.get(v.objectId);
+  const handleViewItem = (v: Notification) => {
+    const post = v.extra?.object?.value;
     if (!post) { return; }
+    const postId = 'postId' in post ? post.postId : post.trxId;
     navigate(stringifyUrl({
-      url: `/${post.groupId}/post/${post.trxId}`,
+      url: `/${post.groupId}/post/${postId}`,
       query: { commentTrx: v.actionObjectId },
     }));
   };
