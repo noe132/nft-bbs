@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { Close } from '@mui/icons-material';
-import { Dialog, FormControl, FormHelperText, IconButton, InputLabel, OutlinedInput } from '@mui/material';
+import { Dialog, FormControl, IconButton, InputLabel, OutlinedInput } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import { blobToDataUrl, createPromise, runLoading, ThemeLight } from '~/utils';
@@ -119,7 +119,7 @@ export const EditProfileView = observer((props: Props) => {
 
   const handleSubmitProfile = async () => {
     if (!nftService.hasPermissionAndTip('profile')) { return; }
-    if (state.introLength > 200) { return; }
+    // if (state.introLength > 200) { return; }
     if (!state.name || state.loading) { return; }
     const match = /data:(.+?);base64,(.+)/.exec(state.avatar);
     const avatar = match
@@ -171,7 +171,7 @@ export const EditProfileView = observer((props: Props) => {
             onChange={action((e) => { state.name = e.target.value; })}
           />
         </FormControl>
-        <FormControl size="small" error={state.introLength > 200}>
+        {/* <FormControl size="small" error={state.introLength > 200}>
           <InputLabel>简介</InputLabel>
           <OutlinedInput
             label="简介"
@@ -184,7 +184,7 @@ export const EditProfileView = observer((props: Props) => {
           <FormHelperText>
             {state.introLength} / 200
           </FormHelperText>
-        </FormControl>
+        </FormControl> */}
       </div>
       {props.showSkip && (
         <button className="text-gray-9c rounded-full text-14">
