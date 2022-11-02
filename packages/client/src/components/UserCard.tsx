@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { action } from 'mobx';
 import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
@@ -20,12 +21,12 @@ interface Props {
 export const UserCard = observer((props: Props) => {
   const navigate = useNavigate();
   const state = useLocalObservable(() => ({
+    propsProfile: props.profile,
     get profile() {
-      return nodeService.profile.getComputedProfile(props.profile ?? '');
+      return nodeService.profile.getComputedProfile(state.propsProfile ?? '');
     },
     get fistPostTime() {
-      const userAddress = state.profile?.userAddress;
-      if (!userAddress) { return null; }
+      const userAddress = state.profile.userAddress;
       return nodeService.state.profile.firstPostMap.get(userAddress) ?? null;
     },
     get totalPosts() {
@@ -44,15 +45,15 @@ export const UserCard = observer((props: Props) => {
     }
   };
 
-  const loadUserData = () => {
+  useEffect(() => {
     const userAddress = props.profile?.userAddress;
     if (!userAddress) { return; }
     nodeService.profile.loadUserInfo(userAddress);
-  };
+  }, [props.profile?.userAddress]);
 
-  useEffect(() => {
-    loadUserData();
-  }, []);
+  useEffect(action(() => {
+    state.propsProfile = props.profile;
+  }), [props.profile]);
 
   return (
     <div className={classNames('flex-col relative bg-black/80 py-5 px-5', props.className)}>
