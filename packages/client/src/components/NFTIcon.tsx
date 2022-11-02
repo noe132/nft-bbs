@@ -5,7 +5,7 @@ import NFTImage from '~/assets/images/NFT_for_port500.png';
 
 interface Props {
   className?: string
-  color: 'light' | 'dark'
+  color: 'light' | 'dark' | 'semilight'
   lock?: boolean
   onClick?: (e: React.MouseEvent) => unknown
   size?: number
@@ -17,6 +17,7 @@ interface Props {
 export const NFTIcon = (props: Props) => {
   const light = props.color === 'light';
   const dark = props.color === 'dark';
+  const semilight = props.color === 'semilight';
   const size = props.size ?? 60;
   const lockSize = Math.ceil(size * 0.375);
   const tokenIdSize = Math.ceil(size * 0.1666);
@@ -27,6 +28,8 @@ export const NFTIcon = (props: Props) => {
         'flex items-stretch flex-none relative p-[3px] border',
         light && !props.lock && 'border-black/25',
         light && props.lock && 'border-black/15',
+        semilight && !props.lock && 'border-white/85',
+        semilight && props.lock && 'border-white/70',
         dark && !props.lock && 'border-white/40',
         dark && props.lock && 'border-white/20',
         props.highlight && 'outline outline-2 outline-offset-[-1px] outline-rum-orange',
@@ -51,6 +54,7 @@ export const NFTIcon = (props: Props) => {
             'absolute-center',
             light && 'text-gray-4a/60',
             dark && 'text-white/80',
+            semilight && 'text-white/85',
           )}
           style={{ fontSize: `${lockSize}px` }}
         />
