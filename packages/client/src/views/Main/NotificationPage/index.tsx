@@ -123,46 +123,73 @@ export const NotificationPage = observer((props: { className?: string }) => {
               return (
                 <React.Fragment key={v.id}>
                   <div className="flex-col px-8 gap-y-4">
-                    <div className="flex items-center gap-x-3 ml-8">
-                      <UserAvatar
-                        className="cursor-pointer"
-                        profile={fromProfile}
-                        onClick={() => navigate(`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`)}
-                      />
-                      <button
-                        className=""
-                        onClick={() => navigate(`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`)}
-                      >
-                        <span className="text-rum-orange text-16 mr-3">
-                          {fromProfileName}
-                        </span>
-                        {!!v.timestamp && (
-                          <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
-                            <span className="text-gray-af text-12 mr-3">
-                              {ago(v.timestamp)}
+                    <div className="flex justify-between">
+                      <div className="flex items-center ml-8">
+                        <UserAvatar
+                          className="cursor-pointer mr-3"
+                          profile={fromProfile}
+                          onClick={() => navigate(`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`)}
+                        />
+
+                        <span>
+                          <button
+                            className=""
+                            onClick={() => navigate(`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`)}
+                          >
+                            <span className="text-rum-orange text-16 mr-3">
+                              {fromProfileName}
                             </span>
-                          </Tooltip>
-                        )}
-                        <span className="text-14 text-white">
-                          {actionText}
+                          </button>
+
+                          {!!v.timestamp && (
+                            <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
+                              <span className="text-gray-af text-12 mr-3">
+                                {ago(v.timestamp)}
+                              </span>
+                            </Tooltip>
+                          )}
+
+                          <span className="text-14 text-white mr-3">
+                            {actionText}
+                          </span>
+
+                          <button
+                            className="text-link-soft text-14"
+                            onClick={() => handleViewItem(v)}
+                          >
+                            前往查看
+                          </button>
                         </span>
-                      </button>
+                      </div>
+                      <div className="flex gap-x-4 ml-8">
+                        {v.type === 'comment' && (
+                          <Button
+                            className="text-link-soft"
+                            variant="text"
+                            size="small"
+                            onClick={() => handleViewItem(v)}
+                          >
+                            <ReplyIcon className="mr-1 -mt-[2px] text-24" />
+                            回复
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center">
                       {v.type === 'like' && (
-                        <ThumbUpAlt className="flex-none mr-3 -mb-px text-26 text-link-soft" />
+                        <ThumbUpAlt className="flex-none mr-3 -mb-px text-18 text-link-soft" />
                       )}
                       {v.type === 'dislike' && (
-                        <ThumbDownAlt className="flex-none mr-3 -mb-px text-26 text-link-soft" />
+                        <ThumbDownAlt className="flex-none mr-3 -mb-px text-18 text-link-soft" />
                       )}
                       {v.type === 'comment' && (
-                        <CommentDetailIcon className="flex-none mr-3 -mb-px text-26 text-link-soft" />
+                        <CommentDetailIcon className="flex-none mr-3 -mb-px text-18 text-link-soft" />
                       )}
                       {false && (
-                        <AlternateEmail className="flex-none mr-3 -mb-px text-26 text-link-soft" />
+                        <AlternateEmail className="flex-none mr-3 -mb-px text-18 text-link-soft" />
                       )}
                       {false && (
-                        <WineIcon className="flex-none mr-3 -mb-px text-26 text-rum-orange" />
+                        <WineIcon className="flex-none mr-3 -mb-px text-18 text-rum-orange" />
                       )}
 
                       <div
@@ -175,30 +202,9 @@ export const NotificationPage = observer((props: { className?: string }) => {
                         {!content && (<span>&nbsp;</span>)}
                       </div>
                     </div>
-                    <div className="flex gap-x-4 ml-8">
-                      <Button
-                        className="text-link-soft"
-                        variant="text"
-                        size="small"
-                        onClick={() => handleViewItem(v)}
-                      >
-                        前往查看
-                      </Button>
-                      {v.type === 'comment' && (
-                        <Button
-                          className="text-link-soft"
-                          variant="text"
-                          size="small"
-                          onClick={() => handleViewItem(v)}
-                        >
-                          <ReplyIcon className="mr-1 -mt-[2px] text-24" />
-                          回复
-                        </Button>
-                      )}
-                    </div>
                   </div>
 
-                  <div className="border-t border-white/15 my-4 mx-16" />
+                  <div className="border-t border-white/15 my-5 mx-8" />
                 </React.Fragment>
               );
             })}
