@@ -48,6 +48,7 @@ const mixinAuth = async (mixinUserId: string) => {
 const getNFT = (userAddress: string) => {
   const contractAddress = nodeService.config.get().nft;
   if (!contractAddress) { return []; }
+  if (!userAddress) { return []; }
   if (!state.tokenIdMap.has(userAddress)) {
     runInAction(() => {
       state.tokenIdMap.set(userAddress, {

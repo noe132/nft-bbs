@@ -53,9 +53,12 @@ export const NFTSideBox = observer((props: Props) => {
             className={classNames(
               'flex-col items-stretch relative rounded-b-lg overflow-hidden',
               props.className,
+              state.hover && !state.expand && 'cursor-pointer',
               state.semiOpaque && 'bg-white/70',
               !state.semiOpaque && '!bg-white',
             )}
+            onMouseEnter={action(() => { state.hover = true; })}
+            onMouseLeave={action(() => { state.hover = false; })}
           >
             {state.expand && (
               <IconButton
@@ -69,8 +72,6 @@ export const NFTSideBox = observer((props: Props) => {
 
             <div
               className="flex-col flex-center relative rounded-b-lg overflow-hidden py-4 gap-y-4"
-              onMouseEnter={action(() => { state.hover = true; })}
-              onMouseLeave={action(() => { state.hover = false; })}
               onClick={action(() => { if (!state.expand) { state.expand = true; } })}
             >
               <div
@@ -87,6 +88,7 @@ export const NFTSideBox = observer((props: Props) => {
                 )}
                 {!state.loading && !nftService.state.tokenIds.length && (
                   <NFTIcon
+                    className="cursor-pointer"
                     color={state.semiOpaque ? 'semilight' : 'light'}
                     size={state.expand ? 96 : 60}
                     lock
@@ -94,6 +96,7 @@ export const NFTSideBox = observer((props: Props) => {
                 )}
                 {!state.loading && nftService.state.tokenIds.map((v) => (
                   <NFTIcon
+                    className="cursor-pointer"
                     color={state.semiOpaque ? 'semilight' : 'light'}
                     size={state.expand ? 96 : 60}
                     onClick={action(() => { state.expand = true; state.selectedTokenId = v; })}
@@ -151,8 +154,8 @@ export const NFTSideBox = observer((props: Props) => {
                 <div className="px-4">
                   <div className={classNames(
                     'border-t w-full',
-                    state.semiOpaque && 'border-white/40',
-                    !state.semiOpaque && 'border-black/10',
+                    state.semiOpaque && 'border-black/10',
+                    !state.semiOpaque && 'border-black/15',
                   )}
                   />
                 </div>

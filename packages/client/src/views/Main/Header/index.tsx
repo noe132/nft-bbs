@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useLocation, useNavigate, useParams, Link, matchPath } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
@@ -28,31 +28,24 @@ import { SiteLogo, UserAvatar } from '~/components';
 
 import { createPostlistState } from '../PostList';
 
-type HotestFilter = string;
-
 export const Header = observer((props: { className?: string }) => {
   const routeParams = useParams();
   const routeLocation = useLocation();
   const navigate = useNavigate();
   const postlistState = usePageState('postlist', routeLocation.key, createPostlistState, 'readonly');
   const state = useLocalObservable(() => ({
-    tab: 0,
     userDropdown: false,
-    searchTerm: '',
-    searchMode: false,
     menu: false,
     langMenu: false,
-    filter: 'all' as HotestFilter,
 
     get profile() {
       return nodeService.state.myProfile;
     },
-    get notificationLink() {
-      const match = matchPath(routeUrlPatterns.notification, routeLocation.pathname);
-      const groupId = nodeService.state.groupId;
-      return match ? `/${groupId}` : `/${groupId}/notification`;
-    },
   }));
+
+  const isPostlistPage = !!matchPath(routeUrlPatterns.postlist, routeLocation.pathname);
+  const isNotificationPage = !!matchPath(routeUrlPatterns.notification, routeLocation.pathname);
+  const isUserProfilePage = !!matchPath(routeUrlPatterns.userprofile, routeLocation.pathname);
 
   const userBoxRef = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -63,19 +56,26 @@ export const Header = observer((props: { className?: string }) => {
     state.langMenu = false;
   });
 
-  const handleChangeFilter = action((filter: HotestFilter) => {
-    state.filter = filter;
+  const handleChangeFilter = action((filter: 'all' | 'week' | 'month' | 'year') => {
+    if (!postlistState) { return; }
+    postlistState.mode.hot = filter;
+    postlistState.loadPosts();
   });
 
   const handleChangeTab = action((tab: number) => {
-    state.tab = tab;
+    if (!postlistState) { return; }
+    postlistState.header.tab = tab;
+    if (tab === 0) { postlistState.mode.type = 'normal'; }
+    if (tab === 1) { postlistState.mode.type = 'hot'; }
+    postlistState.loadPosts();
   });
 
   const handleSearchInputKeydown = action((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && state.searchTerm) {
-      if (!postlistState) { return; }
+    if (!postlistState) { return; }
+    if (e.key === 'Enter' && postlistState.header.searchTerm) {
       runInAction(() => {
-        postlistState.mode = { type: 'search', search: state.searchTerm };
+        postlistState.mode.type = 'search';
+        postlistState.mode.search = postlistState.header.searchTerm;
       });
       postlistState.loadPosts();
     }
@@ -85,18 +85,19 @@ export const Header = observer((props: { className?: string }) => {
   });
 
   const handleOpenSearchInput = action(() => {
-    state.searchMode = !state.searchMode;
+    if (!postlistState) { return; }
+    postlistState.header.searchMode = !postlistState.header.searchMode;
     setTimeout(() => {
       searchInput.current?.focus();
     });
   });
 
   const handleExitSearchMode = action(() => {
-    state.searchMode = false;
     if (!postlistState) { return; }
+    postlistState.header.searchMode = false;
     if (postlistState.mode.type === 'search') {
       runInAction(() => {
-        postlistState.mode = { type: 'normal' };
+        postlistState.mode.type = 'normal';
       });
       postlistState.loadPosts();
     }
@@ -113,7 +114,7 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleOpenUserProfile = action(() => {
     state.userDropdown = false;
-    if (routeLocation.pathname === '/userprofile' && routeParams.userAddress === state.profile?.userAddress) {
+    if (isUserProfilePage && routeParams.userAddress === state.profile?.userAddress) {
       return;
     }
     if (!state.profile) {
@@ -146,10 +147,7 @@ export const Header = observer((props: { className?: string }) => {
       password,
     });
     QuorumLightNodeSDK.cache.Group.clear();
-    if (window.location.pathname !== '/') {
-      history.replaceState(null, '', '/');
-    }
-    window.location.reload();
+    window.location.href = '/';
   };
 
   const handleShowAccountInfo = action(() => {
@@ -192,22 +190,25 @@ export const Header = observer((props: { className?: string }) => {
   });
 
   const handleBackToLogin = action((jumpToLogin = false) => {
-    if (routeLocation.pathname !== '/') {
-      navigate('/', { replace: true });
-    }
     state.userDropdown = false;
     state.menu = false;
     setLoginState({ autoLogin: null, jumpToLogin });
-    window.location.reload();
+    window.location.href = '/';
   });
 
   const handleClickLogo = () => {
-    if (routeLocation.pathname === '/') {
+    if (isPostlistPage) {
       postlistState?.loadPosts();
     } else {
       navigate(`/${nodeService.state.groupId}`);
     }
   };
+
+  const notificationLink = useMemo(() => {
+    const match = matchPath(routeUrlPatterns.notification, routeLocation.pathname);
+    const groupId = nodeService.state.groupId;
+    return match ? `/${groupId}` : `/${groupId}/notification`;
+  }, [routeLocation.pathname]);
 
   return (<>
     <div className="h-[60px]" />
@@ -231,33 +232,30 @@ export const Header = observer((props: { className?: string }) => {
           >
             <SiteLogo />
           </button>
-          {!state.searchMode && routeLocation.pathname === '/' && (
+          {isPostlistPage && !!postlistState && !postlistState.header.searchMode && (
             <div className="flex gap-x-4">
-              {false && (
-                <Tabs
-                  value={state.tab}
-                  TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
-                >
-                  {/* {['最新', '最热'].map((v, i) => ( */}
-                  {['最新'].map((v, i) => (
-                    <Tab
-                      className="text-gray-9c text-20 h-[60px] px-8"
-                      classes={{ selected: '!text-rum-orange' }}
-                      label={v}
-                      key={i}
-                      onClick={() => handleChangeTab(i)}
-                    />
-                  ))}
-                </Tabs>
-              )}
-              {state.tab === 1 && (
+              <Tabs
+                value={postlistState.header.tab}
+                TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
+              >
+                {['最新', '最热'].map((v, i) => (
+                  <Tab
+                    className="text-gray-9c text-20 h-[60px] px-8"
+                    classes={{ selected: '!text-rum-orange' }}
+                    label={v}
+                    key={i}
+                    onClick={() => handleChangeTab(i)}
+                  />
+                ))}
+              </Tabs>
+              {postlistState.header.tab === 1 && (
                 <div className="flex flex-center gap-x-2">
                   {([['周', 'week'], ['月', 'month'], ['年', 'year'], ['一直', 'all']] as const).map(([t, v], i) => (
                     <Button
                       className={classNames(
                         'min-w-0 px-4',
-                        state.filter === v && 'text-rum-orange',
-                        state.filter !== v && 'text-gray-9c',
+                        postlistState?.mode.hot === v && 'text-rum-orange',
+                        postlistState?.mode.hot && 'text-gray-9c',
                       )}
                       key={i}
                       color="inherit"
@@ -273,7 +271,7 @@ export const Header = observer((props: { className?: string }) => {
             </div>
           )}
 
-          {state.searchMode && routeLocation.pathname === '/' && (
+          {!!postlistState && postlistState.header.searchMode && isPostlistPage && (
             <div className="flex flex-1 items-center">
               <Input
                 className="flex-1 max-w-[550px] text-white text-14 pb-px"
@@ -285,8 +283,8 @@ export const Header = observer((props: { className?: string }) => {
                 }}
                 startAdornment={<Search className="text-gray-9c mr-1 text-26" />}
                 placeholder="搜索种子网络…"
-                value={state.searchTerm}
-                onChange={(action((e) => { state.searchTerm = e.target.value; }))}
+                value={postlistState.header.searchTerm}
+                onChange={(action((e) => { postlistState.header.searchTerm = e.target.value; }))}
                 onKeyDown={handleSearchInputKeydown}
                 inputProps={{ ref: searchInput }}
               />
@@ -305,11 +303,11 @@ export const Header = observer((props: { className?: string }) => {
               onClick: () => 1,
               active: false,
             }} */}
-            {routeLocation.pathname === '/' && (
+            {!!postlistState && isPostlistPage && (
               <Button
                 className={classNames(
                   'text-white p-0 w-10 h-10 min-w-0',
-                  state.searchMode && 'bg-white/10 hover:bg-white/15',
+                  postlistState.header.searchMode && 'bg-white/10 hover:bg-white/15',
                 )}
                 onClick={handleOpenSearchInput}
                 variant="text"
@@ -318,11 +316,11 @@ export const Header = observer((props: { className?: string }) => {
               </Button>
             )}
             {nodeService.state.logined && (
-              <Link to={state.notificationLink}>
+              <Link to={notificationLink}>
                 <Button
                   className={classNames(
                     'text-white p-0 w-10 h-10 min-w-0',
-                    routeLocation.pathname === '/notification' && 'bg-white/10 hover:bg-white/15',
+                    isNotificationPage && 'bg-white/10 hover:bg-white/15',
                   )}
                   variant="text"
                 >

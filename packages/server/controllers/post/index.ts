@@ -1,8 +1,11 @@
 import { FastifyRegister } from 'fastify';
 import { type, string, partial, literal, union, intersection } from 'io-ts';
 import { NotFound } from 'http-errors';
+import { Brackets } from 'typeorm';
+
 import { Post } from '~/orm';
 import { assertValidation, parseIntFromString, truncate } from '~/utils';
+import { AppDataSource } from '~/orm/data-source';
 
 export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.get('/:groupId/:trxId', async (req) => {
@@ -26,16 +29,48 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
       userAddress: string,
       truncatedLength: string,
       search: string,
+      hot: union([literal('all'), literal('week'), literal('month'), literal('year')]),
     }));
 
-    let posts = await Post.list({
-      groupId: params.groupId,
-      order: query.order === 'asc' ? 'ASC' : 'DESC',
-      userAddress: query.userAddress,
-      limit: Math.min(parseIntFromString(query.limit, 10), 100),
-      offset: parseIntFromString(query.offset, 10),
-      search: query.search,
-    });
+    const dbQuery = AppDataSource.manager.createQueryBuilder()
+      .select('post')
+      .from(Post, 'post')
+      .where({ groupId: params.groupId })
+      .limit(Math.min(parseIntFromString(query.limit, 10), 100))
+      .offset(parseIntFromString(query.offset, 10));
+
+    if (query.userAddress) {
+      dbQuery.andWhere({ userAddress: query.userAddress });
+    }
+
+    if (query.hot) {
+      if (query.hot !== 'all') {
+        const hotTime = {
+          week: '1 week',
+          month: '1 month',
+          year: '1 year',
+        }[query.hot];
+        dbQuery.andWhere(`post.timestamp > now() - interval '${hotTime}'`);
+      }
+      dbQuery.addOrderBy('post.likeCount', 'DESC');
+      dbQuery.addOrderBy('post.commentCount', 'DESC');
+    }
+
+    dbQuery.addOrderBy('post.timestamp', query.order === 'asc' ? 'ASC' : 'DESC');
+
+    if (query.search) {
+      const keywords = query.search.split(' ').filter((v) => v);
+      keywords.forEach((keyword, i) => {
+        dbQuery.andWhere(new Brackets((qb) => {
+          qb
+            .where(`post.content like :keyword${i}`, { [`keyword${i}`]: `%${keyword}%` })
+            .orWhere(`post.title like :keyword${i}`, { [`keyword${i}`]: `%${keyword}%` });
+        }));
+      });
+    }
+
+    let posts = await dbQuery.getMany();
+
     posts = await Post.appendExtra(posts, {
       viewer: query.viewer,
     });

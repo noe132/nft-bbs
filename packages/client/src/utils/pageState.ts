@@ -1,6 +1,13 @@
+import { useState, useEffect } from 'react';
 import { observable } from 'mobx';
 
-export const pageStateMap = new Map<string, Map<string, unknown>>();
+interface PageStateMapItem {
+  state: unknown
+  nonce: number
+  listeners: Array<() => unknown>
+}
+
+const pageStateMap = new Map<string, PageStateMapItem>();
 
 /* eslint-disable @typescript-eslint/ban-types */
 interface UsePageState {
@@ -14,13 +21,38 @@ export const usePageState: UsePageState = <T extends object>(
   init: () => T,
   readonly?: 'readonly',
 ) => {
-  if (!readonly && !pageStateMap.has(pageName)) {
-    pageStateMap.set(pageName, new Map());
+  const compositedKey = `${pageName}-${key}`;
+  if (!pageStateMap.has(compositedKey)) {
+    pageStateMap.set(compositedKey, {
+      state: null,
+      nonce: 0,
+      listeners: [],
+    });
   }
-  const pageMap = pageStateMap.get(pageName);
-  if (!pageMap && readonly) { return undefined; }
-  if (!readonly && !pageMap!.has(key)) {
-    pageMap!.set(key, observable(init()));
+  const item = pageStateMap.get(compositedKey)!;
+  if (!readonly && !item.state) {
+    item.state = observable(init());
   }
-  return pageMap?.get(key);
+  const [_, setState] = useState(0);
+
+  useEffect(() => {
+    const update = () => {
+      item.nonce += 1;
+      setState(item.nonce);
+    };
+    item.listeners.push(update);
+    return () => {
+      item.listeners.splice(item.listeners.indexOf(update), 1);
+    };
+  }, []);
+
+  return item.state;
+};
+
+export const getPageStateByPageName = <T = unknown>(pageName: string) => {
+  const items = Array.from(pageStateMap.entries())
+    .filter(([k]) => k.startsWith(`${pageName}-`))
+    .map(([_, v]) => v);
+
+  return items as Array<T>;
 };

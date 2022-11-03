@@ -25,9 +25,20 @@ export const createPostlistState = () => ({
   offset: 0,
   done: false,
   loading: false,
-  mode: { type: 'normal' } as { type: 'normal' } | { type: 'search', search: string },
+
+  header: {
+    tab: 0,
+    searchTerm: '',
+    searchMode: false,
+  },
+  mode: {
+    type: 'normal' as 'normal' | 'search' | 'hot',
+    hot: 'all' as 'week' | 'month' | 'year' | 'all',
+    search: '',
+  },
 
   ntfPopup: false,
+
   likeLoadingMap: new Map<string, boolean>(),
   intersectionRatio: 0,
   pauseAutoLoading: false,
@@ -57,6 +68,7 @@ export const createPostlistState = () => ({
           offset: this.offset,
           viewer: keyService.state.address,
           search: this.mode.type === 'search' ? this.mode.search : undefined,
+          hot: this.mode.type === 'hot' ? this.mode.hot : undefined,
         });
 
         if (!posts) { return; }

@@ -11,7 +11,7 @@ import { CommentApi, ConfigApi, GroupApi, NotificationApi, PostApi, ProfileApi, 
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
 import { routerService } from '~/service/router';
-import { pageStateMap } from '~/utils/pageState';
+import { getPageStateByPageName } from '~/utils/pageState';
 import type { createPostlistState } from '~/views/Main/PostList';
 
 const state = observable({
@@ -237,6 +237,7 @@ const post = {
     limit: number
     offset: number
     search?: string
+    hot?: 'week' | 'month' | 'year' | 'all'
   }) => {
     const posts = await PostApi.list(state.groupId, {
       limit: params.limit,
@@ -244,6 +245,7 @@ const post = {
       viewer: params.viewer ?? keyService.state.address,
       userAddress: params.userAddress,
       search: params.search,
+      hot: params.hot,
     });
     if (posts) {
       runInAction(() => {
@@ -697,8 +699,7 @@ const socketEventHandler: Partial<SocketEventListeners> = {
   }),
   post: action((v) => {
     post.get(v.trxId);
-    Array.from(pageStateMap.get('postlist')?.values() ?? []).forEach((_s) => {
-      const s = _s as ReturnType<typeof createPostlistState>;
+    getPageStateByPageName<ReturnType<typeof createPostlistState>>('postlist').forEach((s) => {
       if (s.mode.type !== 'search' && !s.trxIds.includes(v.trxId)) {
         s.trxIds.unshift(v.trxId);
       }
@@ -707,16 +708,15 @@ const socketEventHandler: Partial<SocketEventListeners> = {
   postDelete: action((v) => {
     const trxId = v.trxId;
     state.post.map.delete(trxId);
-    Array.from(pageStateMap.get('postlist')?.values() ?? []).forEach((_s) => {
-      const s = _s as ReturnType<typeof createPostlistState>;
+    getPageStateByPageName<ReturnType<typeof createPostlistState>>('postlist').forEach((s) => {
       const index = s.trxIds.indexOf(trxId);
       if (index !== -1) {
         s.trxIds.splice(index, 1);
       }
     });
-    const match = matchPath('/post/:groupId/:trxId', location.pathname);
+    const match = matchPath(routeUrlPatterns.postdetail, location.pathname);
     if (match && match.params.trxId === trxId) {
-      window.location.href = '/';
+      window.location.href = `/${state.groupId}`;
     }
   }),
   comment: (v) => comment.get(v.trxId),

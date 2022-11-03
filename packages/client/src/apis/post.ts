@@ -46,6 +46,7 @@ export const list = async (groupId: string, options: {
   offset?: number
   limit?: number
   search?: string
+  hot?: 'week' | 'month' | 'year' | 'all'
 } = {}) => {
   const item = await request<Array<Post>>({
     url: `${API_BASE_URL}/post/${groupId}`,

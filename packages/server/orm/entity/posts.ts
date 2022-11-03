@@ -1,7 +1,7 @@
 import { keyBy } from 'lodash';
 import {
   Brackets, Column, DeleteDateColumn, Entity, EntityManager,
-  FindOptionsWhere, Index, PrimaryGeneratedColumn,
+  Index, PrimaryGeneratedColumn,
 } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
