@@ -7,9 +7,8 @@ import { observer } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
 import type { Post } from 'nft-bbs-server';
-import { ExpandMore, Refresh, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
+import { ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 import { Button, CircularProgress, Tooltip } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
 
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 
@@ -159,19 +158,6 @@ export const PostList = observer((props: { className?: string }) => {
           <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
         </div>
         <div className="flex-col gap-y-12 py-10 px-16">
-          <div className="flex flex-center -my-4 -mb-8">
-            {!!state.trxIds.length && (
-              <LoadingButton
-                className="w-full text-white/70"
-                variant="text"
-                onClick={() => state.loadPosts()}
-                loading={state.loading}
-              >
-                刷新 <Refresh className="text-20 -mt-px" />
-              </LoadingButton>
-            )}
-          </div>
-
           {state.posts.map((v) => {
             const stat = nodeService.post.getStat(v);
             const profile = nodeService.profile.getComputedProfile(v.extra?.userProfile || v.userAddress);
