@@ -1,12 +1,72 @@
-import mdit from 'markdown-it';
+import MarkdownIt, { Options, PluginSimple } from 'markdown-it';
 import type Token from 'markdown-it/lib/token';
 import type StateCore from 'markdown-it/lib/rules_core/state_core';
 import mdanchor from 'markdown-it-anchor';
 import mdtasklist from 'markdown-it-task-lists';
 import DOMPurify from 'dompurify';
 
-export const createBaseRenderer = (options?: mdit.Options) => {
-  const renderer = mdit({
+const weakMap = new WeakSet<HTMLAnchorElement>();
+
+DOMPurify.addHook('beforeSanitizeElements', (node) => {
+  if (node instanceof HTMLAnchorElement && node.target === '_blank') {
+    weakMap.add(node);
+  }
+});
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node instanceof HTMLAnchorElement && weakMap.has(node)) {
+    node.setAttribute('target', '_blank');
+    node.setAttribute('rel', 'noopener');
+    weakMap.delete(node);
+  }
+});
+
+const mdlinknewtab: PluginSimple = (renderer) => {
+  const defaultLinkOpenRender = renderer.renderer.rules.link_open
+    || ((tokens, idx, options, env, self) => self.renderToken(tokens, idx, options));
+  renderer.renderer.rules.link_open = (tokens, idx, options, env, self) => {
+    tokens[idx].attrSet('target', '_blank');
+    return defaultLinkOpenRender(tokens, idx, options, env, self);
+  };
+};
+
+const modifyToken = (token: any, mdfn: any, env: any) => {
+  // create attrObj for convenient get/set of attributes
+  const attrObj = token.attrs ? token.attrs.reduce((acc: any, pair: any) => {
+    acc[pair[0]] = pair[1];
+    return acc;
+  }, {}) : {};
+  token.attrObj = attrObj;
+  mdfn(token, env);
+  // apply any overrides or new attributes from attrObj
+  Object.keys(token.attrObj).forEach((k) => {
+    token.attrSet(k, token.attrObj[k]);
+  });
+};
+
+type ModifyFn = (token: Token, env: StateCore['env']) => unknown;
+
+export const createMarkdownItModifyToken = (modifyFn: ModifyFn) => {
+  const fn: PluginSimple = (mdd) => {
+    mdd.core.ruler.push(
+      'modify-token',
+      (state) => {
+        state.tokens.forEach((token) => {
+          if (token.children && token.children.length) {
+            token.children.forEach((cToken) => {
+              modifyToken(cToken, modifyFn, state.env);
+            });
+          }
+          modifyToken(token, modifyFn, state.env);
+        });
+        return false;
+      },
+    );
+  };
+  return fn;
+};
+
+export const createBaseRenderer = (options?: Options) => {
+  const renderer = MarkdownIt({
     html: true,
     breaks: true,
     linkify: true,
@@ -27,6 +87,7 @@ export const createBaseRenderer = (options?: mdit.Options) => {
 
   renderer.use(mdanchor);
   renderer.use(mdtasklist);
+  renderer.use(mdlinknewtab);
 
   return renderer;
 };
@@ -45,41 +106,4 @@ export const renderPostMarkdown = (md: string) => {
   return DOMPurify.sanitize(defaultRenderer.render(processedMD), {
     ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|blob|rum):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
   });
-};
-
-const modifyToken = (token: any, mdfn: any, env: any) => {
-  // create attrObj for convenient get/set of attributes
-  const attrObj = token.attrs ? token.attrs.reduce((acc: any, pair: any) => {
-    acc[pair[0]] = pair[1];
-    return acc;
-  }, {}) : {};
-  token.attrObj = attrObj;
-  mdfn(token, env);
-  // apply any overrides or new attributes from attrObj
-  Object.keys(token.attrObj).forEach((k) => {
-    token.attrSet(k, token.attrObj[k]);
-  });
-};
-
-
-type ModifyFn = (token: Token, env: StateCore['env']) => unknown;
-
-export const createMarkdownItModifyToken = (modifyFn: ModifyFn) => {
-  const fn: mdit.PluginSimple = (mdd) => {
-    mdd.core.ruler.push(
-      'modify-token',
-      (state) => {
-        state.tokens.forEach((token) => {
-          if (token.children && token.children.length) {
-            token.children.forEach((cToken) => {
-              modifyToken(cToken, modifyFn, state.env);
-            });
-          }
-          modifyToken(token, modifyFn, state.env);
-        });
-        return false;
-      },
-    );
-  };
-  return fn;
 };
