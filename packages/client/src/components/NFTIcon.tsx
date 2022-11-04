@@ -28,8 +28,8 @@ export const NFTIcon = (props: Props) => {
         'flex items-stretch flex-none relative p-[3px] border',
         light && !props.lock && 'border-black/25',
         light && props.lock && 'border-black/15',
-        semilight && !props.lock && 'border-white/85',
-        semilight && props.lock && 'border-white/70',
+        semilight && !props.lock && 'border-black/20',
+        semilight && props.lock && 'border-black/10',
         dark && !props.lock && 'border-white/40',
         dark && props.lock && 'border-white/20',
         props.highlight && 'outline outline-2 outline-offset-[-1px] outline-rum-orange',
@@ -52,9 +52,9 @@ export const NFTIcon = (props: Props) => {
         <LockIcon
           className={classNames(
             'absolute-center',
-            light && 'text-gray-4a/60',
+            light && 'text-black/40',
             dark && 'text-white/80',
-            semilight && 'text-white/85',
+            semilight && 'text-black/30',
           )}
           style={{ fontSize: `${lockSize}px` }}
         />
