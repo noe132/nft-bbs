@@ -181,7 +181,7 @@ export const ImageZoomView = observer(() => {
             <div ref={imageBox} />
           </div>
           <div className="absolute bottom-0 left-0 right-0 flex flex-center py-2 gap-x-2 select-none">
-            <div className="flex flex-center bg-white/10 hover:bg-white/20 py-2 px-4 rounded-lg shadow-4 gap-x-2">
+            <div className="flex flex-center bg-gray-4a/40 hover:bg-gray-4a/60 py-2 px-4 rounded-lg shadow-4 gap-x-2">
               {[
                 {
                   className: 'w-10',
