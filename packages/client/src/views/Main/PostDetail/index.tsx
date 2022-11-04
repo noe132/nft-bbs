@@ -213,7 +213,7 @@ export const PostDetail = observer((props: { className?: string }) => {
       if (!highlightedId && locateComment) {
         setTimeout(() => {
           if (commentBox.current) {
-            scrollIntoView(commentBox.current, { behavior: 'smooth' });
+            scrollIntoView(commentBox.current, { behavior: 'smooth', block: 'start' });
           }
         }, 0);
       }
