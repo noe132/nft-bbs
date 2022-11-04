@@ -31,7 +31,7 @@ export const ImageZoomView = observer(() => {
 
   const handleMouseDown = useCallback(action((e: React.MouseEvent) => {
     state.dragStart = {
-      isBackDrop: e.target === e.currentTarget,
+      isBackDrop: !(e.target instanceof HTMLImageElement),
       left: state.left,
       top: state.top,
       clientX: e.clientX,
