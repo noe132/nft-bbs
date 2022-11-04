@@ -5,7 +5,11 @@ import { nodeService } from '~/service';
 export const RedirectToPostList = () => {
   const navigate = useNavigate();
   useEffect(() => {
-    navigate(`/${nodeService.state.groupId}`, { replace: true });
+    if (nodeService.state.groupId) {
+      navigate(`/${nodeService.state.groupId}`, { replace: true });
+    } else {
+      window.location.href = '/';
+    }
   }, []);
 
   return null;
