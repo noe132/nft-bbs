@@ -10,6 +10,7 @@ import { notificationController } from './notification';
 import { postController } from './post';
 import { profileController } from './profile';
 import { trxController } from './trx';
+import { nftController } from './nft';
 
 export const controllers: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.register(rootController, { prefix: '/api' });
@@ -22,6 +23,7 @@ export const controllers: Parameters<FastifyRegister>[0] = (fastify, _opts, done
   fastify.register(postController, { prefix: '/api/post' });
   fastify.register(profileController, { prefix: '/api/profile' });
   fastify.register(trxController, { prefix: '/api/trx' });
+  fastify.register(nftController, { prefix: '/api/nft' });
 
   done();
 };

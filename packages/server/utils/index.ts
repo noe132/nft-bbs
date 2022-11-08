@@ -10,6 +10,7 @@ import { FastifyBaseLogger } from 'fastify';
 export * from './PollingTask';
 export * from './store';
 export * from './truncate';
+export * from './verifySign';
 
 export const sleep = (n = 500) =>
   new Promise<void>((resolve) => {

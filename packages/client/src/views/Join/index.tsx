@@ -70,7 +70,7 @@ export const Join = observer(() => {
         loading: false,
         loadingPromise: Promise.resolve(),
         data: null as null | {
-          user: Omit<KeystoreData, 'type'>
+          user: KeystoreData
           profile: Profile
         },
       },
@@ -138,8 +138,7 @@ export const Join = observer(() => {
       nodeService.group.join(state.computedSeedUrl);
       setLoginState({ seedUrl: state.computedSeedUrl });
       runInAction(() => {
-        nodeService.state.showJoin = false;
-        nodeService.state.showMain = true;
+        nodeService.state.init.page = 'main';
       });
       navigate(`/${nodeService.state.groupId}`);
       return true;
@@ -167,8 +166,7 @@ export const Join = observer(() => {
         snackbarService.error('登录失败');
         return;
       }
-      const { jwt, user, appUser } = result.right;
-      keyService.mixinLogin(jwt, user, appUser);
+      keyService.useMixin(result.right);
       setLoginState({ autoLogin: 'mixin' });
       joinGroup();
     }
@@ -253,13 +251,12 @@ export const Join = observer(() => {
     )();
 
     if (!userResult) { return; }
-    const { jwt, user, appUser } = userResult;
     setLoginState({
       autoLogin: 'mixin',
-      mixinJWT: jwt,
+      mixinJWT: userResult.jwt,
       seedUrl: state.computedSeedUrl,
     });
-    keyService.mixinLogin(jwt, user, appUser);
+    keyService.useMixin(userResult);
     joinGroup();
   };
 

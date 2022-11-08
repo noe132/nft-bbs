@@ -16,7 +16,7 @@ export const get = async () => {
   });
   return fp.pipe(
     item,
-    either.getOrElseW((v) => {
+    either.mapLeft((v) => {
       snackbarService.networkError(v);
       return null;
     }),

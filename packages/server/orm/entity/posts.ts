@@ -1,4 +1,3 @@
-import { keyBy } from 'lodash';
 import {
   Brackets, Column, DeleteDateColumn, Entity, EntityManager,
   Index, PrimaryGeneratedColumn,
@@ -163,7 +162,10 @@ export class Post {
       groupId: item.groupId,
       userAddress: item.userAddress,
     })));
-    const profileMap = keyBy(profiles, 'userAddress');
+    const profileMap = profiles.reduce<Record<string, Profile>>((p, c) => {
+      p[c.userAddress] = c;
+      return p;
+    }, {});
 
     items.forEach((item) => {
       item.extra = {

@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { boolean, intersection, number, partial, record, string, type, TypeOf } from 'io-ts';
+import { array, boolean, intersection, number, partial, record, string, type, TypeOf } from 'io-ts';
 import { either } from 'fp-ts';
 import { load } from 'js-yaml';
 import { PathReporter } from 'io-ts/lib/PathReporter';
@@ -24,6 +24,7 @@ const configType = intersection([
       anonymous: boolean,
       nft: string,
     })),
+    admin: array(string),
   }),
 ]);
 

@@ -1,23 +1,20 @@
 import { matchPath } from 'react-router-dom';
 import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import { action, observable, reaction, runInAction } from 'mobx';
-import { either, function as fp, taskEither } from 'fp-ts';
+import { either, function as fp, option, taskEither } from 'fp-ts';
+import { constantDelay, limitRetries, Monoid } from 'retry-ts';
+import { retrying } from 'retry-ts/Task';
 import { v4 } from 'uuid';
 import type { Post, Comment, Profile, Notification } from 'nft-bbs-server';
 import { CommentType, DislikeType, ImageType, LikeType, PostDeleteType, PostType, ProfileType } from 'nft-bbs-types';
 
-import { getLoginState, runLoading, routeUrlPatterns } from '~/utils';
+import { getLoginState, runLoading, routeUrlPatterns, matchRoutePatterns, getPageStateByPageName } from '~/utils';
 import { CommentApi, ConfigApi, GroupApi, NotificationApi, PostApi, ProfileApi, TrxApi } from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
-import { routerService } from '~/service/router';
-import { getPageStateByPageName } from '~/utils/pageState';
 import type { createPostlistState } from '~/views/Main/PostList';
 
 const state = observable({
-  allowMixinLogin: false,
-  showJoin: false,
-  showMain: false,
   groupId: '',
   groups: [] as Array<GroupApi.GroupItem>,
   group: null as null | QuorumLightNodeSDK.IGroup,
@@ -28,6 +25,12 @@ const state = observable({
         either.getOrElse(() => ''),
       )
       : '';
+  },
+
+  init: {
+    page: 'init' as 'init' | 'join' | 'main',
+    step: '',
+    error: '',
   },
 
   config: {
@@ -640,14 +643,12 @@ const group = {
     },
     (e) => e as Error,
   ),
-  loadGroups: async () => {
-    const groups = await GroupApi.get();
-    runInAction(() => {
-      if (groups) {
-        state.groups = groups;
-      }
-    });
-  },
+  loadGroups: fp.pipe(
+    () => GroupApi.get(),
+    taskEither.map(action((v) => {
+      state.groups = v;
+    })),
+  ),
   tryAutoJoin: () => {
     const loginState = getLoginState();
     if (loginState.seedUrl && loginState.autoLogin) {
@@ -664,22 +665,26 @@ const group = {
 };
 
 const config = {
-  load: fp.pipe(
-    taskEither.fromIO(() => state.config.loaded),
-    taskEither.chainW((loaded) => {
-      if (loaded) { return taskEither.of(null); }
-      return fp.pipe(
-        ConfigApi.getConfig,
-        taskEither.map((v) => {
-          runInAction(() => {
-            state.config.group = v.group;
-            state.config.seedUrl = v.fixedSeed ?? '';
-            state.config.loaded = true;
-          });
-          return null;
-        }),
-      );
-    }),
+  load: retrying(
+    Monoid.concat(constantDelay(2000), limitRetries(5)),
+    () => fp.pipe(
+      taskEither.fromIO(() => state.config.loaded),
+      taskEither.chainW((loaded) => {
+        if (loaded) { return taskEither.of(null); }
+        return fp.pipe(
+          ConfigApi.getConfig,
+          taskEither.map((v) => {
+            runInAction(() => {
+              state.config.group = v.group;
+              state.config.seedUrl = v.fixedSeed ?? '';
+              state.config.loaded = true;
+            });
+            return null;
+          }),
+        );
+      }),
+    ),
+    either.isLeft,
   ),
   get: (groupId?: string) => {
     const theGroupId = groupId || state.groupId;
@@ -758,64 +763,88 @@ const init = () => {
     },
   );
   const initCheck = async () => {
-    const toJoin = action(() => {
-      state.showJoin = true;
-      state.showMain = false;
-    });
-    const toMain = action(() => {
-      state.showJoin = false;
-      state.showMain = true;
-    });
-    const pathname = window.location.pathname;
-
-    await config.load();
-    await keyService.tryAutoLogin();
-
-    if (pathname === '/') {
-      group.tryAutoJoin();
-      if (state.group) {
-        routerService.navigate(`/${state.groupId}`);
-        toMain();
-      } else {
-        toJoin();
-      }
-      return;
-    }
-
-    const urlMatchMap = {
-      postlist: matchPath(routeUrlPatterns.postlist, pathname),
-      postdetail: matchPath(routeUrlPatterns.postdetail, pathname),
-      newpost: matchPath(routeUrlPatterns.newpost, pathname),
-      userprofile: matchPath(routeUrlPatterns.userprofile, pathname),
-      notification: matchPath(routeUrlPatterns.notification, pathname),
-    };
-    const urlMatches = Object.values(urlMatchMap);
-    const nonMatch = urlMatches.every((v) => !v);
-    if (nonMatch) {
-      window.location.href = '/';
-      return;
-    }
-    await group.loadGroups();
-    const groupId = urlMatches.find((v) => v?.params?.groupId)?.params.groupId;
-    const groupItem = state.groups.find((v) => v.groupId === groupId);
-    if (!groupItem) {
-      window.location.href = '/';
-      return;
-    }
-
-    if (groupId && !keyService.state.logined && !state.config.group[groupId].anonymous) {
-      toJoin();
-      return;
-    }
-
-    group.join(groupItem.seedUrl);
-
-    if (!state.group) {
-      window.location.href = '/';
-      return;
-    }
-
-    toMain();
+    const toPage = action((v: 'join' | 'main') => { state.init.page = v; });
+    const loginState = getLoginState();
+    const run = fp.pipe(
+      taskEither.of(null),
+      taskEither.map(action(() => { state.init.step = 'config'; })),
+      taskEither.chainW(() => taskEither.sequenceArray([
+        fp.pipe(
+          () => config.load(),
+          taskEither.mapLeft(action(() => {
+            state.init.step = 'error';
+            state.init.error = 'config';
+          })),
+        ),
+        fp.pipe(
+          () => group.loadGroups(),
+          taskEither.mapLeft(action(() => {
+            state.init.step = 'error';
+            state.init.error = 'group';
+          })),
+        ),
+      ])),
+      taskEither.map(action(() => { state.init.step = 'parse-keys'; })),
+      taskEither.chainW(() => taskEither.fromTask(keyService.parseSavedLoginState)),
+      taskEither.chainW(() => taskEither.fromIO(() => {
+        if (window.location.pathname === '/') {
+          if (!(loginState.seedUrl && loginState.autoLogin)) {
+            return option.none;
+          }
+          return fp.pipe(
+            either.tryCatch(
+              () => QuorumLightNodeSDK.utils.restoreSeedFromUrl(loginState.seedUrl),
+              (e) => e as Error,
+            ),
+            either.map(
+              (v) => ({ seed: loginState.seedUrl, groupId: v.group_id }),
+            ),
+            option.fromEither,
+          );
+        }
+        const groupId = matchRoutePatterns(window.location.pathname);
+        if (!groupId) {
+          window.location.href = '/';
+          return option.none;
+        }
+        const groupItem = state.groups.find((v) => v.groupId === groupId);
+        if (!groupItem) {
+          window.location.href = '/';
+          return option.none;
+        }
+        return option.some({
+          seed: groupItem.seedUrl,
+          groupId: groupItem.groupId,
+        });
+      })),
+      taskEither.chainW((v): taskEither.TaskEither<unknown, option.Option<unknown>> => {
+        if (option.isNone(v)) { return taskEither.of(option.none); }
+        const u = v.value;
+        const groupConfig = config.get(u.groupId);
+        const canMixin = loginState.autoLogin === 'mixin' && !!keyService.state.saved.mixin?.data;
+        const canKeystore = loginState.autoLogin === 'keystore' && !!keyService.state.saved.keystore?.data;
+        const canAutoLogin = canMixin || canKeystore;
+        if (!groupConfig.anonymous && !canAutoLogin) { return taskEither.of(option.none); }
+        if (canAutoLogin) {
+          keyService.loginBySavedState(loginState.autoLogin!);
+        }
+        return taskEither.of(fp.pipe(
+          group.join(u.seed),
+          either.matchW(
+            () => option.none,
+            () => option.some(null),
+          ),
+        ));
+      }),
+      taskEither.map((v) => fp.pipe(
+        v,
+        option.matchW(
+          () => toPage('join'),
+          () => toPage('main'),
+        ),
+      )),
+    );
+    await run();
   };
   initCheck();
 

@@ -1,4 +1,3 @@
-import { keyBy } from 'lodash';
 import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryColumn } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -57,6 +56,11 @@ export class StackedCounter {
       userAddress: p.userAddress,
     })));
 
-    return keyBy(items, (v) => v.objectId);
+    const objectMap = items.reduce<Record<string, StackedCounter>>((p, c) => {
+      p[c.objectId] = c;
+      return p;
+    }, {});
+
+    return objectMap;
   }
 }

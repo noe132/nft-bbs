@@ -4,6 +4,7 @@ export * as GroupApi from './group';
 export * as GroupInfoApi from './groupInfo';
 export * as ImageApi from './image';
 export * as MVMApi from './mvm';
+export * as NftRequestApi from './nftRequest';
 export * as NotificationApi from './notification';
 export * as PixabayApi from './pixabay';
 export * as PostApi from './post';

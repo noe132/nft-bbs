@@ -1,4 +1,3 @@
-import { keyBy } from 'lodash';
 import { Column, Entity, Index, FindOptionsWhere, PrimaryGeneratedColumn, EntityManager } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
@@ -135,7 +134,10 @@ export class Comment {
       groupId: item.groupId,
       userAddress: item.userAddress,
     })));
-    const profileMap = keyBy(profiles, 'userAddress');
+    const profileMap = profiles.reduce<Record<string, Profile>>((p, c) => {
+      p[c.userAddress] = c;
+      return p;
+    }, {});
     items.forEach((item) => {
       item.extra = {
         liked: !!likedMap?.[item.trxId],

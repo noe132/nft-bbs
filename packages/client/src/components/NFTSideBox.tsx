@@ -1,7 +1,10 @@
 import classNames from 'classnames';
-import { action } from 'mobx';
+import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import { Button, CircularProgress, ClickAwayListener, IconButton, Tooltip } from '@mui/material';
+import {
+  Button, CircularProgress, ClickAwayListener, Dialog, DialogActions,
+  DialogContent, DialogTitle, IconButton, TextField, Tooltip,
+} from '@mui/material';
 
 import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
@@ -9,6 +12,7 @@ import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
 import { ThemeLight } from '~/utils';
 import { keyService, nftService, nodeService, snackbarService } from '~/service';
 import { NFTIcon } from './NFTIcon';
+import { NftRequestApi } from '~/apis';
 
 interface Props {
   className?: string
@@ -19,6 +23,10 @@ export const NFTSideBox = observer((props: Props) => {
     selectedTokenId: null as null | number,
     expand: false,
     hover: false,
+    requestDialog: {
+      open: false,
+      memo: '',
+    },
     get contractAddress() {
       return nodeService.state.config.currentGroup.nft ?? '';
     },
@@ -35,6 +43,23 @@ export const NFTSideBox = observer((props: Props) => {
       state.selectedTokenId = null;
       state.expand = false;
     }));
+  };
+
+  const handleApplyNFT = action(() => {
+    state.requestDialog.open = true;
+  });
+
+  const handleSubmitNftRequest = async () => {
+    await NftRequestApi.submitRequest({
+      ...await keyService.getAdminSignParam(),
+      groupId: nodeService.state.groupId,
+      memo: state.requestDialog.memo,
+    });
+    // TODO: loading
+    snackbarService.show('提交成功');
+    runInAction(() => {
+      state.requestDialog.open = false;
+    });
   };
 
   if (!state.contractAddress) {
@@ -163,7 +188,7 @@ export const NFTSideBox = observer((props: Props) => {
                   className="flex-1 bg-transparent rounded-none py-3"
                   color="link"
                   variant="text"
-                  onClick={() => snackbarService.show('正在开发中')}
+                  onClick={handleApplyNFT}
                 >
                   申请该论坛 NFT
                 </Button>
@@ -172,6 +197,42 @@ export const NFTSideBox = observer((props: Props) => {
           </div>
         </Tooltip>
       </ClickAwayListener>
+
+      <Dialog
+        open={state.requestDialog.open}
+        onClose={action(() => { state.requestDialog.open = false; })}
+      >
+        <DialogTitle>申请该论坛 NFT</DialogTitle>
+        <DialogContent className="overflow-visible">
+          <TextField
+            className="w-100"
+            minRows={4}
+            maxRows={6}
+            label="申请理由"
+            multiline
+            value={state.requestDialog.memo}
+            onChange={action((e) => { state.requestDialog.memo = e.target.value; })}
+          />
+        </DialogContent>
+        <DialogActions className="p-4">
+          <Button
+            className="text-gray-88"
+            color="inherit"
+            variant="outlined"
+            onClick={action(() => { state.requestDialog.open = false; })}
+          >
+            取消
+          </Button>
+          <Button
+            color="link"
+            variant="outlined"
+            onClick={handleSubmitNftRequest}
+          >
+            提交
+          </Button>
+        </DialogActions>
+
+      </Dialog>
     </ThemeLight>
   );
 });

@@ -4,6 +4,7 @@ export * from './groupInfo';
 export * from './groupSeed';
 export * from './groupStatus';
 export * from './imageFile';
+export * from './nftRequest';
 export * from './notification';
 export * from './posts';
 export * from './profile';
