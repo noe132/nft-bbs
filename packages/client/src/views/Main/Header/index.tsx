@@ -6,7 +6,7 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import { ethers } from 'ethers';
 import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import {
-  Check, Close, Logout, MoreVert, NotificationsNone,
+  Close, Logout, MoreVert, NotificationsNone,
   PersonOutline, Search,
 } from '@mui/icons-material';
 import {
@@ -17,14 +17,11 @@ import {
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
-import { routeUrlPatterns, setLoginState, ThemeLight, usePageState } from '~/utils';
-import {
-  nodeService, langService, keyService,
-  AllLanguages, langName, dialogService,
-} from '~/service';
+import { routeUrlPatterns, setLoginState, ThemeLight, usePageState, useWiderThan } from '~/utils';
+import { nodeService, keyService, dialogService } from '~/service';
 import { editProfile } from '~/modals';
 import { ACCOUNT1, ACCOUNT2 } from '~/utils/testAccount';
-import { SiteLogo, UserAvatar } from '~/components';
+import { GroupAvatar, GroupCard, NFTSideBox, SiteLogo, UserAvatar } from '~/components';
 
 import { createPostlistState } from '../PostList';
 
@@ -37,24 +34,26 @@ export const Header = observer((props: { className?: string }) => {
     userDropdown: false,
     menu: false,
     langMenu: false,
-
+    mobileGroupCard: {
+      open: false,
+      showNewPost: false,
+      showPostlist: false,
+    },
     get profile() {
       return nodeService.state.myProfile;
     },
   }));
 
+  const isPC = useWiderThan(960);
+
   const isPostlistPage = !!matchPath(routeUrlPatterns.postlist, routeLocation.pathname);
   const isNotificationPage = !!matchPath(routeUrlPatterns.notification, routeLocation.pathname);
   const isUserProfilePage = !!matchPath(routeUrlPatterns.userprofile, routeLocation.pathname);
 
+  const mobileGroupIcon = useRef<HTMLDivElement>(null);
   const userBoxRef = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
-
-  const handleChangeLanguage = action((lang: AllLanguages) => {
-    langService.switchLang(lang);
-    state.langMenu = false;
-  });
 
   const handleChangeFilter = action((filter: 'all' | 'week' | 'month' | 'year') => {
     if (!postlistState) { return; }
@@ -204,6 +203,14 @@ export const Header = observer((props: { className?: string }) => {
     }
   };
 
+  const handleOpenGroupCard = action(() => {
+    state.mobileGroupCard = {
+      open: true,
+      showNewPost: !matchPath(routeUrlPatterns.newpost, routeLocation.pathname),
+      showPostlist: !matchPath(routeUrlPatterns.postlist, routeLocation.pathname),
+    };
+  });
+
   const notificationLink = useMemo(() => {
     const match = matchPath(routeUrlPatterns.notification, routeLocation.pathname);
     const groupId = nodeService.state.groupId;
@@ -211,98 +218,194 @@ export const Header = observer((props: { className?: string }) => {
   }, [routeLocation.pathname]);
 
   return (<>
-    <div className="h-[60px]" />
-    <div
-      className={classNames(
-        'fixed top-0 left-0 right-0 z-50 flex flex-center px-5 h-[60px] bg-[#0d1d37] bg-white',
-        props.className,
-      )}
-    >
-      <button
-        className="s1360:hidden block absolute left-5 flex-none h-auto"
-        onClick={handleClickLogo}
+    {isPC && (<React.Fragment key="pc">
+      <div className="h-[60px]" />
+      <div
+        className={classNames(
+          'fixed top-0 left-0 right-0 z-50 flex flex-center px-5 h-[60px] bg-[#0d1d37] bg-white',
+          props.className,
+        )}
       >
-        <SiteLogo />
-      </button>
-      <div className="flex w-[1100px] justify-between self-stretch gap-x-4">
-        <div className="flex items-center flex-1">
-          <button
-            className="s1360:block hidden flex-none h-auto mr-4"
-            onClick={handleClickLogo}
-          >
-            <SiteLogo />
-          </button>
-          {isPostlistPage && !!postlistState && !postlistState.header.searchMode && (
-            <div className="flex gap-x-4">
-              <Tabs
-                value={postlistState.header.tab}
-                TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
-              >
-                {['最新', '最热'].map((v, i) => (
-                  <Tab
-                    className="text-gray-9c text-20 h-[60px] px-8"
-                    classes={{ selected: '!text-rum-orange' }}
-                    label={v}
-                    key={i}
-                    onClick={() => handleChangeTab(i)}
-                  />
-                ))}
-              </Tabs>
-              {postlistState.header.tab === 1 && (
-                <div className="flex flex-center gap-x-2">
-                  {([['周', 'week'], ['月', 'month'], ['年', 'year'], ['一直', 'all']] as const).map(([t, v], i) => (
-                    <Button
-                      className={classNames(
-                        'min-w-0 px-4',
-                        postlistState?.mode.hot === v && 'text-rum-orange',
-                        postlistState?.mode.hot && 'text-gray-9c',
-                      )}
+        <button
+          className="s1360:hidden block absolute left-5 flex-none h-auto"
+          onClick={handleClickLogo}
+        >
+          <SiteLogo />
+        </button>
+        <div className="flex w-[1100px] justify-between self-stretch gap-x-4">
+          <div className="flex items-center flex-1">
+            <button
+              className="s1360:block hidden flex-none h-auto mr-4"
+              onClick={handleClickLogo}
+            >
+              <SiteLogo />
+            </button>
+            {isPostlistPage && !!postlistState && !postlistState.header.searchMode && (
+              <div className="flex gap-x-4">
+                <Tabs
+                  value={postlistState.header.tab}
+                  TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
+                >
+                  {['最新', '最热'].map((v, i) => (
+                    <Tab
+                      className="text-gray-9c text-20 h-[60px] px-8"
+                      classes={{ selected: '!text-rum-orange' }}
+                      label={v}
                       key={i}
-                      color="inherit"
-                      variant="text"
-                      disableRipple
-                      onClick={() => handleChangeFilter(v)}
-                    >
-                      {t}
-                    </Button>
+                      onClick={() => handleChangeTab(i)}
+                    />
                   ))}
-                </div>
+                </Tabs>
+                {postlistState.header.tab === 1 && (
+                  <div className="flex flex-center gap-x-2">
+                    {([['周', 'week'], ['月', 'month'], ['年', 'year'], ['一直', 'all']] as const).map(([t, v], i) => (
+                      <Button
+                        className={classNames(
+                          'min-w-0 px-4',
+                          postlistState?.mode.hot === v && 'text-rum-orange',
+                          postlistState?.mode.hot && 'text-gray-9c',
+                        )}
+                        key={i}
+                        color="inherit"
+                        variant="text"
+                        disableRipple
+                        onClick={() => handleChangeFilter(v)}
+                      >
+                        {t}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!!postlistState && postlistState.header.searchMode && isPostlistPage && (
+              <div className="flex flex-1 items-center">
+                <Input
+                  className="flex-1 max-w-[550px] text-white text-14 pb-px"
+                  sx={{
+                    '&:hover:not(.Mui-disabled)::before': { borderColor: '#9c9c9c' },
+                    '&::before': { borderColor: '#9c9c9c' },
+                    '&::after': { borderColor: 'white' },
+                    '& .MuiInput-input::placeholder': { color: '#9c9c9c', opacity: 1 },
+                  }}
+                  startAdornment={<Search className="text-gray-9c mr-1 text-26" />}
+                  placeholder="搜索种子网络…"
+                  value={postlistState.header.searchTerm}
+                  onChange={(action((e) => { postlistState.header.searchTerm = e.target.value; }))}
+                  onKeyDown={handleSearchInputKeydown}
+                  inputProps={{ ref: searchInput }}
+                />
+                <IconButton onClick={handleExitSearchMode}>
+                  <Close className="text-white" />
+                </IconButton>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-x-4">
+            <div className="flex justify-end items-center gap-x-4 mr-8">
+              {/* {{
+                key: 'share',
+                icon: <Share className="text-24" />,
+                onClick: () => 1,
+                active: false,
+              }} */}
+              {!!postlistState && isPostlistPage && (
+                <Button
+                  className={classNames(
+                    'text-white p-0 w-10 h-10 min-w-0',
+                    postlistState.header.searchMode && 'bg-white/10 hover:bg-white/15',
+                  )}
+                  onClick={handleOpenSearchInput}
+                  variant="text"
+                >
+                  <Search className="text-28" />
+                </Button>
+              )}
+              {nodeService.state.logined && (
+                <Link to={notificationLink}>
+                  <Button
+                    className={classNames(
+                      'text-white p-0 w-10 h-10 min-w-0',
+                      isNotificationPage && 'bg-white/10 hover:bg-white/15',
+                    )}
+                    variant="text"
+                  >
+                    <Badge
+                      className="transform"
+                      classes={{ badge: 'bg-red-500 text-white' }}
+                      badgeContent={nodeService.state.notification.unreadCount}
+                    >
+                      <NotificationsNone className="text-26" />
+                    </Badge>
+                  </Button>
+                </Link>
               )}
             </div>
-          )}
-
-          {!!postlistState && postlistState.header.searchMode && isPostlistPage && (
-            <div className="flex flex-1 items-center">
-              <Input
-                className="flex-1 max-w-[550px] text-white text-14 pb-px"
-                sx={{
-                  '&:hover:not(.Mui-disabled)::before': { borderColor: '#9c9c9c' },
-                  '&::before': { borderColor: '#9c9c9c' },
-                  '&::after': { borderColor: 'white' },
-                  '& .MuiInput-input::placeholder': { color: '#9c9c9c', opacity: 1 },
-                }}
-                startAdornment={<Search className="text-gray-9c mr-1 text-26" />}
-                placeholder="搜索种子网络…"
-                value={postlistState.header.searchTerm}
-                onChange={(action((e) => { postlistState.header.searchTerm = e.target.value; }))}
-                onKeyDown={handleSearchInputKeydown}
-                inputProps={{ ref: searchInput }}
-              />
-              <IconButton onClick={handleExitSearchMode}>
-                <Close className="text-white" />
-              </IconButton>
+            {!nodeService.state.logined && (
+              <Button
+                className="rounded-full py-px px-5 text-16"
+                color="rum"
+                onClick={() => handleBackToLogin(true)}
+              >
+                登录
+              </Button>
+            )}
+            <div
+              className="flex flex-center gap-x-3 cursor-pointer"
+              ref={userBoxRef}
+              onClick={action(() => {
+                if (nodeService.state.logined) {
+                  state.userDropdown = true;
+                }
+              })}
+            >
+              <UserAvatar profile={nodeService.state.myProfile} />
+              <span className="text-white">
+                {nodeService.state.logined ? nodeService.state.profileName : '游客'}
+              </span>
             </div>
-          )}
+            <IconButton
+              className="text-white"
+              onClick={action(() => { state.menu = true; })}
+              ref={menuButton}
+            >
+              <MoreVert />
+            </IconButton>
+          </div>
         </div>
+      </div>
+    </React.Fragment>)}
 
-        <div className="flex items-center gap-x-4">
-          <div className="flex justify-end items-center gap-x-4 mr-8">
-            {/* {{
-              key: 'share',
-              icon: <Share className="text-24" />,
-              onClick: () => 1,
-              active: false,
-            }} */}
+    {!isPC && (<React.Fragment key="mb">
+      <div
+        className={classNames(
+          isPostlistPage && !!postlistState && 'h-[120px]',
+          !(isPostlistPage && !!postlistState) && 'h-[60px]',
+        )}
+      />
+      <div
+        className={classNames(
+          'fixed top-0 left-0 right-0 z-50 flex-col items-stretch bg-[#0d1d37] bg-white',
+          isPostlistPage && !!postlistState && 'h-[120px]',
+          !(isPostlistPage && !!postlistState) && 'h-[60px]',
+          props.className,
+        )}
+      >
+        <div className="flex justify-between items-center gap-x-4 h-[60px] px-5">
+          <div
+            ref={mobileGroupIcon}
+            onClick={handleOpenGroupCard}
+          >
+            <GroupAvatar
+              className="flex cursor-pointer border border-white/80 overflow-hidden"
+              size={32}
+              fontSize={16}
+              square
+            />
+          </div>
+          <div className="flex items-center gap-4">
             {!!postlistState && isPostlistPage && (
               <Button
                 className={classNames(
@@ -334,40 +437,103 @@ export const Header = observer((props: { className?: string }) => {
                 </Button>
               </Link>
             )}
-          </div>
-          {!nodeService.state.logined && (
-            <Button
-              className="rounded-full py-px px-5 text-16"
-              color="rum"
-              onClick={() => handleBackToLogin(true)}
+
+            {!nodeService.state.logined && (
+              <Button
+                className="rounded-full py-1 px-5 text-16"
+                color="rum"
+                onClick={() => handleBackToLogin(true)}
+              >
+                登录
+              </Button>
+            )}
+            {nodeService.state.logined && (
+              <div
+                className="flex flex-center gap-x-3 cursor-pointer h-10 w-10"
+                ref={userBoxRef}
+                onClick={action(() => {
+                  if (nodeService.state.logined) { state.userDropdown = true; }
+                })}
+              >
+                <UserAvatar profile={nodeService.state.myProfile} />
+              </div>
+            )}
+            <IconButton
+              className="text-white"
+              onClick={action(() => { state.menu = true; })}
+              ref={menuButton}
             >
-              登录
-            </Button>
-          )}
-          <div
-            className="flex flex-center gap-x-3 cursor-pointer"
-            ref={userBoxRef}
-            onClick={action(() => {
-              if (nodeService.state.logined) {
-                state.userDropdown = true;
-              }
-            })}
-          >
-            <UserAvatar profile={nodeService.state.myProfile} />
-            <span className="text-white">
-              {nodeService.state.logined ? nodeService.state.profileName : '游客'}
-            </span>
+              <MoreVert />
+            </IconButton>
           </div>
-          <IconButton
-            className="text-white"
-            onClick={action(() => { state.menu = true; })}
-            ref={menuButton}
-          >
-            <MoreVert />
-          </IconButton>
         </div>
+        {isPostlistPage && !!postlistState && (
+          <div className="flex self-stretch gap-x-4 border-t border-white/30">
+            <div className="flex gap-x-2">
+              <Tabs
+                value={postlistState.header.tab}
+                TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
+              >
+                {['最新', '最热'].map((v, i) => (
+                  <Tab
+                    className="text-gray-9c text-20 h-[60px] px-8 !min-w-0 !px-6"
+                    classes={{ selected: '!text-rum-orange' }}
+                    label={v}
+                    key={i}
+                    onClick={() => handleChangeTab(i)}
+                  />
+                ))}
+              </Tabs>
+              {postlistState.header.tab === 1 && (
+                <div className="flex items-stretch gap-x-0">
+                  {([['周', 'week'], ['月', 'month'], ['年', 'year'], ['一直', 'all']] as const).map(([t, v], i) => (
+                    <Button
+                      className={classNames(
+                        'min-w-0 px-3',
+                        postlistState?.mode.hot === v && 'text-rum-orange',
+                        postlistState?.mode.hot && 'text-gray-9c',
+                      )}
+                      key={i}
+                      color="inherit"
+                      variant="text"
+                      disableRipple
+                      onClick={() => handleChangeFilter(v)}
+                    >
+                      {t}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </React.Fragment>)}
+
+    {!isPC && (
+      <Popover
+        className="bg-black/30"
+        classes={{
+          paper: 'bg-none bg-transparent shadow-0',
+        }}
+        anchorEl={mobileGroupIcon.current}
+        open={state.mobileGroupCard.open}
+        onClose={action(() => { state.mobileGroupCard.open = false; })}
+      >
+        <div className="w-[280px]">
+          <div className="w-[280px]">
+            <GroupCard
+              className="mt-16"
+              showNewPost={state.mobileGroupCard.showNewPost}
+              showPostlist={state.mobileGroupCard.showPostlist}
+              onClose={action(() => { state.mobileGroupCard.open = false; })}
+              mobile
+            />
+            <NFTSideBox mobile />
+          </div>
+        </div>
+      </Popover>
+    )}
 
     <ThemeLight>
       <Popover
@@ -477,7 +643,7 @@ export const Header = observer((props: { className?: string }) => {
         ))}
       </Menu>
 
-      <Menu
+      {/* <Menu
         className="mt-1"
         open={state.langMenu}
         anchorEl={menuButton.current}
@@ -502,7 +668,7 @@ export const Header = observer((props: { className?: string }) => {
           </div>
           {langName['zh-cn']}
         </MenuItem>
-      </Menu>
+      </Menu> */}
     </ThemeLight>
   </>);
 });

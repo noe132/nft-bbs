@@ -35,8 +35,8 @@ export const Init = observer(() => {
         <div className="flex flex-center gap-x-12 text-14">
           {[
             ['https://rumsystem.net/', '关于'],
-            ['https://rumsystem.net/developers', '文档'],
-            ['https://rumsystem.net/faq/howtocreateseednet', '怎样创建 RumPot 种子网络？'],
+            // ['https://rumsystem.net/developers', '文档'],
+            // ['https://rumsystem.net/faq/howtocreateseednet', '怎样创建 RumPot 种子网络？'],
           ].map((v, i) => (
             <a
               className="text-black"

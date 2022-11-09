@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
@@ -10,11 +10,10 @@ import type { GroupInfo, Profile } from 'nft-bbs-server';
 import { nftbbsAppKeyName } from 'nft-bbs-types';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl,
-  FormControlLabel, IconButton, InputLabel, Menu, MenuItem, OutlinedInput, Tooltip,
+  FormControlLabel, IconButton, InputLabel, OutlinedInput, Tooltip,
 } from '@mui/material';
-import { Check, ChevronLeft, Close, Delete, Visibility, VisibilityOff } from '@mui/icons-material';
+import { ChevronLeft, Close, Delete, Visibility, VisibilityOff } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
-import PasteIcon from 'boxicons/svg/regular/bx-paste.svg?fill-icon';
 
 import bgImg1x from '~/assets/images/rum_barrel_bg.jpg';
 import bgImg2x from '~/assets/images/rum_barrel_bg@2x.jpg';
@@ -23,10 +22,9 @@ import rumsystemLogo from '~/assets/icons/rumsystem.svg';
 import RumLogo from '~/assets/icons/logo.png';
 import RumLogo2x from '~/assets/icons/logo@2x.png';
 import RumLogo3x from '~/assets/icons/logo@3x.png';
-import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
-import { chooseImgByPixelRatio, getLoginState, runLoading, setLoginState, ThemeLight } from '~/utils';
-import { AllLanguages, dialogService, keyService, KeystoreData, langName, langService, nodeService, snackbarService } from '~/service';
+import { chooseImgByPixelRatio, getLoginState, runLoading, setLoginState, ThemeLight, useWiderThan } from '~/utils';
+import { dialogService, keyService, KeystoreData, nodeService, snackbarService } from '~/service';
 import { GroupAvatar, Scrollable } from '~/components';
 import { GroupInfoApi, VaultApi } from '~/apis';
 
@@ -83,15 +81,8 @@ export const Join = observer(() => {
       return !!this.password && !!this.keystore;
     },
   }));
+  const isPC = useWiderThan(960);
   const navigate = useNavigate();
-
-  const languageButton = useRef<HTMLButtonElement>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
-
-  const handleChangeLanguage = action((lang: AllLanguages) => {
-    langService.switchLang(lang);
-    state.languageMenu = false;
-  });
 
   const handleNextStep = () => {
     if (state.step === Step.InputSeedUrl) {
@@ -119,17 +110,6 @@ export const Join = observer(() => {
           state.step = Step.SeedUrlParsingError;
         });
       }
-    }
-  };
-
-  const handlePaste = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      runInAction(() => {
-        state.seedUrl = text;
-      });
-    } catch (e) {
-      snackbarService.show('读取剪切板失败');
     }
   };
 
@@ -219,7 +199,12 @@ export const Join = observer(() => {
     runInAction(() => {
       state.crpytoKey = aesKey;
       state.keyInHex = keyInHex;
-      state.mixinLogin = true;
+      if (isPC) {
+        state.mixinLogin = true;
+      } else {
+        // window.open('/mixin-login.html');
+        window.open(`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${state.keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`);
+      }
     });
   };
 
@@ -312,17 +297,6 @@ export const Join = observer(() => {
     );
   };
 
-  const handleSelectFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.currentTarget;
-    const file = input.files?.[0];
-    input.value = '';
-    if (!file) { return; }
-    const content = await file.text();
-    runInAction(() => {
-      state.seedUrl = content;
-    });
-  };
-
   const validateLoginState = () => {
     const loginState = getLoginState();
     runInAction(() => {
@@ -378,27 +352,19 @@ export const Join = observer(() => {
   useEffect(() => {
     validateLoginState();
     nodeService.group.loadGroups();
-    const handleMessage = (e: MessageEvent<{ name: string, search: string }>) => {
-      const data = e.data;
-      if (typeof data !== 'object') { return; }
-      if (data.name !== 'mixin-login-message') { return; }
-      handleMixinLoginCallback(data.search);
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key === 'mixin-login-callback' && e.newValue) {
+        handleMixinLoginCallback(e.newValue);
+      }
     };
-    window.addEventListener('message', handleMessage);
+    window.addEventListener('storage', handleStorageEvent);
     return () => {
-      window.addEventListener('message', handleMessage);
+      window.removeEventListener('storage', handleStorageEvent);
     };
   }, []);
 
   return (<>
     <div className="min-h-[100vh] flex-col">
-      <input
-        type="file"
-        hidden
-        accept=".json,.txt"
-        onChange={handleSelectFile}
-        ref={fileInput}
-      />
       <a
         className="block fixed top-12 left-12"
         target="_blank"
@@ -412,67 +378,21 @@ export const Join = observer(() => {
           alt=""
         />
       </a>
-      <div className="fixed top-12 right-16 flex items-center flex-none">
-        {false && (
-          <Button
-            className="text-[#5fc0e9] px-4"
-            variant="text"
-            ref={languageButton}
-            onClick={action(() => { state.languageMenu = true; })}
-          >
-            <LanguageIcon className="mr-3 text-cyan-blue text-20" />
-            <span className="normal-case text-14">
-              Language
-            </span>
-          </Button>
-        )}
-
-        {false && (
-          <ThemeLight>
-            <Menu
-              className="mt-1"
-              open={state.languageMenu}
-              anchorEl={languageButton.current}
-              onClose={action(() => { state.languageMenu = false; })}
-              anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
-              transformOrigin={{ horizontal: 'center', vertical: 'top' }}
-              disableScrollLock
-            >
-              <MenuItem onClick={() => handleChangeLanguage('en')}>
-                <div className="flex flex-center w-5 mr-2">
-                  {langService.state.lang === 'en' && (
-                    <Check className="text-20 text-soft-blue" />
-                  )}
-                </div>
-                {langName.en}
-              </MenuItem>
-              <MenuItem onClick={() => handleChangeLanguage('zh-cn')}>
-                <div className="flex flex-center w-5 mr-2">
-                  {langService.state.lang === 'zh-cn' && (
-                    <Check className="text-20 text-soft-blue" />
-                  )}
-                </div>
-                {langName['zh-cn']}
-              </MenuItem>
-            </Menu>
-          </ThemeLight>
-        )}
-      </div>
       <div
         className="flex-col flex-1 bg-cover bg-center"
         style={{
           backgroundImage: `url('${chooseImgByPixelRatio({ x1: bgImg1x, x2: bgImg2x, x3: bgImg3x })}')`,
         }}
       >
-        <div className="flex flex-center flex-1">
+        <div className="flex flex-center flex-1 px-8">
           <div className="relative flex-col flex-center bg-black/80 w-[720px] rounded-[10px]">
             {state.step === Step.InputSeedUrl && (
-              <div className="flex-col flex-center min-h-[330px] py-12">
+              <div className="flex-col flex-none flex-center py-12">
                 <div className="text-white text-18">
                   加入 Port 种子网络
                 </div>
                 {!!nodeService.state.groups.length && !nodeService.state.config.seedUrl && (
-                  <div className="flex-col items-center mt-8 -mb-4 text-white gap-y-4">
+                  <div className="flex-col items-center mt-8 text-white gap-y-4">
                     <div className="text-white/80">可加入的种子网络</div>
                     <Scrollable className="max-h-[200px]" light size="large">
                       <div className="flex flex-wrap justify-center gap-4 px-4">
@@ -493,7 +413,7 @@ export const Join = observer(() => {
                     </Scrollable>
                   </div>
                 )}
-                {!nodeService.state.config.seedUrl && (
+                {/* {!nodeService.state.config.seedUrl && (
                   <OutlinedInput
                     className="text-white w-[440px] mt-12 pl-2"
                     value={state.seedUrl}
@@ -519,18 +439,9 @@ export const Join = observer(() => {
                     disabled
                     placeholder="输入种子文本 Rum://"
                   />
-                )}
+                )} */}
 
-                <div className="flex gap-x-4 mt-12">
-                  {/* <Button
-                    className="text-16 px-4"
-                    color="rum"
-                    variant="text"
-                    onClick={() => fileInput.current?.click()}
-                  >
-                    或导入本地种子文件
-                  </Button> */}
-
+                {/* <div className="flex gap-x-4 mt-12">
                   <Button
                     className="text-16 rounded-full px-7"
                     color="rum"
@@ -539,7 +450,7 @@ export const Join = observer(() => {
                   >
                     加入
                   </Button>
-                </div>
+                </div> */}
               </div>
             )}
             {false && (
@@ -598,7 +509,7 @@ export const Join = observer(() => {
               </div>
             )}
             {state.step === Step.PrepareJoinGroup && (
-              <div className="flex-col items-center py-12">
+              <div className="flex-col items-center py-12 px-6">
                 <Button
                   className="flex flex-center absolute left-2 top-2 text-14 font-normal text-gray-9c"
                   variant="text"
@@ -606,7 +517,7 @@ export const Join = observer(() => {
                   onClick={action(() => { state.step = Step.InputSeedUrl; })}
                 >
                   <ChevronLeft className="text-24 -mt-px" />
-                  返回重新输入种子
+                  返回
                 </Button>
                 <GroupAvatar
                   className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3"
@@ -634,7 +545,7 @@ export const Join = observer(() => {
                           onClick={() => handleLoginBySaved('keystore')}
                         >
                           <span className="truncate">
-                            上次使用的 keystore 登录{' '}
+                            上次使用的 keystore{' '}
                             {state.savedLoginState.keystore.data ? '(' : ''}
                             {state.savedLoginState.keystore.data?.profile.userAddress.slice(0, 10)}
                             {state.savedLoginState.keystore.data ? ')' : ''}
@@ -667,7 +578,7 @@ export const Join = observer(() => {
                           onClick={() => handleLoginBySaved('mixin')}
                         >
                           <span className="truncate">
-                            上次使用的 mixin 账号登录{' '}
+                            上次使用的 mixin 账号{' '}
                             {state.savedLoginState.mixin.data ? '(' : ''}
                             {state.savedLoginState.mixin.data?.user.display_name}
                             {state.savedLoginState.mixin.data ? ')' : ''}
@@ -740,6 +651,7 @@ export const Join = observer(() => {
           </div>
         </div>
       </div>
+
       <div className="flex items-center px-10 h-12 bg-white">
         <img src={rumsystemLogo} alt="" />
         <span className="px-2">·</span>
@@ -887,11 +799,15 @@ export const Join = observer(() => {
         )}
       </Dialog>
       <Dialog
+        classes={{
+          paper: 'mx-0 h-full',
+        }}
+        disableScrollLock
         open={state.mixinLogin}
         onClose={action(() => { state.mixinLogin = false; })}
       >
         {true && (
-          <div className="flex-col relative text-black">
+          <div className="flex-col relative text-black h-full">
             <IconButton
               className="absolute top-2 right-2"
               onClick={action(() => { state.mixinLogin = false; })}
@@ -902,9 +818,9 @@ export const Join = observer(() => {
               <div className="text-18">
                 Mixin
               </div>
-              <div className="flex-col gap-y-4 items-stretch">
+              <div className="flex-col flex-1 gap-y-4 items-stretch">
                 <iframe
-                  className="w-[400px] h-[650px]"
+                  className="w-[450px] h-full"
                   src={`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${state.keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`}
                   // src="https://vault.rumsystem.net/v1/user"
                 />

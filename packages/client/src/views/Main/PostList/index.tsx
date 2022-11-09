@@ -8,13 +8,14 @@ import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
 import type { Post } from 'nft-bbs-server';
 import { ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
-import { Button, CircularProgress, Tooltip } from '@mui/material';
+import { Button, CircularProgress, Fab, Tooltip } from '@mui/material';
 
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
+import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
-import { ScrollToTopButton, GroupSideBox, NFTSideBox, UserAvatar } from '~/components';
+import { ScrollToTopButton, GroupCard, NFTSideBox, UserAvatar } from '~/components';
 import { keyService, nftService, nodeService } from '~/service';
-import { ago, notNullFilter, runLoading, usePageState } from '~/utils';
+import { ago, notNullFilter, runLoading, usePageState, useWiderThan } from '~/utils';
 import { showTrxDetail } from '~/modals';
 
 export const createPostlistState = () => ({
@@ -96,6 +97,7 @@ export const PostList = observer((props: { className?: string }) => {
   const navigate = useNavigate();
   const routeLocation = useLocation();
   const state = usePageState('postlist', routeLocation.key, createPostlistState);
+  const isPC = useWiderThan(960);
 
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
@@ -154,15 +156,64 @@ export const PostList = observer((props: { className?: string }) => {
       )}
     >
       <div className="w-[800px] bg-black/80 flex-col">
-        <div className="flex justify-end">
-          <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
-        </div>
-        <div className="flex-col gap-y-12 py-10 px-16">
+        {isPC && (
+          <div className="flex justify-end">
+            <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
+          </div>
+        )}
+        {!isPC && nftService.state.hasPermission && (
+          <Fab
+            className="fixed bottom-8 right-6"
+            color="rum"
+            onClick={() => navigate(`/${nodeService.state.groupId}/newpost`)}
+          >
+            <EditIcon className="text-30 text-white" />
+          </Fab>
+        )}
+        <div
+          className={classNames(
+            'flex-col',
+            isPC && 'py-10 px-16 gap-y-12',
+            !isPC && 'py-3 px-4 gap-y-10 pt-6',
+          )}
+        >
           {state.posts.map((v) => {
             const stat = nodeService.post.getStat(v);
             const profile = nodeService.profile.getComputedProfile(v.extra?.userProfile || v.userAddress);
+            const authorAvatarAndName = (
+              <button
+                className="flex flex-center flex-none text-white/50 text-14 max-w-[200px]"
+                onClick={() => profile && navigate(`/${profile.groupId}/userprofile/${profile.userAddress}`)}
+              >
+                <UserAvatar className="mr-[10px] flex-none" profile={profile} size={isPC ? 24 : 28} />
+                <div className="truncate">
+                  {profile.name || profile.userAddress.slice(0, 10)}
+                </div>
+              </button>
+            );
+            const statusAndTime = (
+              <div className="flex flex-center gap-x-4">
+                <button
+                  className="text-link-soft/50 text-12"
+                  onClick={() => !nodeService.state.post.newPostCache.has(v.trxId) && showTrxDetail(v.trxId)}
+                >
+                  {nodeService.state.post.newPostCache.has(v.trxId) ? '同步中' : '已同步'}
+                </button>
+                <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
+                  <div className="text-12 text-link-soft">
+                    {ago(v.timestamp)}
+                  </div>
+                </Tooltip>
+              </div>
+            );
             return (
-              <div key={v.trxId}>
+              <div className="flex-col gap-y-2" key={v.trxId}>
+                {!isPC && (
+                  <div className="flex justify-between items-center">
+                    {authorAvatarAndName}
+                    {statusAndTime}
+                  </div>
+                )}
                 <div className="flex justify-between items-center gap-x-2">
                   <Link
                     className="text-white text-18 font-medium cursor-pointer leading-relaxed truncate-2 hover:underline"
@@ -171,20 +222,18 @@ export const PostList = observer((props: { className?: string }) => {
                   >
                     {stat.title || '无标题'}
                   </Link>
-                  <button
-                    className="flex flex-center flex-none text-white/50 text-14 max-w-[200px]"
-                    onClick={() => profile && navigate(`/${profile.groupId}/userprofile/${profile.userAddress}`)}
-                  >
-                    <UserAvatar className="mr-2 flex-none" profile={profile} size={24} />
-                    <div className="truncate">
-                      {profile.name || profile.userAddress.slice(0, 10)}
-                    </div>
-                  </button>
+                  {isPC && authorAvatarAndName}
                 </div>
-                <div className="text-blue-gray text-14 truncate-2 mt-2">
+                <div
+                  className={classNames(
+                    'text-blue-gray text-14 break-all',
+                    isPC && 'truncate-2',
+                    !isPC && 'truncate-4',
+                  )}
+                >
                   {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
                 </div>
-                <div className="flex items-center justify-between mt-3 text-14">
+                <div className="flex items-center justify-between mt-1 text-14">
                   <div className="flex gap-x-2 -ml-2">
                     <div className="min-w-[72px]">
                       <Button
@@ -234,23 +283,11 @@ export const PostList = observer((props: { className?: string }) => {
                         onClick={() => handleOpenPost(v, true)}
                       >
                         <CommentDetailIcon className="mr-2 -mb-px text-18" />
-                        {stat.commentCount || '我来写第一个评论'}
+                        {stat.commentCount || (isPC ? '我来写第一个评论' : '评论')}
                       </Button>
                     </div>
                   </div>
-                  <div className="flex flex-center gap-x-4">
-                    <button
-                      className="text-link-soft/50 text-12"
-                      onClick={() => !nodeService.state.post.newPostCache.has(v.trxId) && showTrxDetail(v.trxId)}
-                    >
-                      {nodeService.state.post.newPostCache.has(v.trxId) ? '同步中' : '已同步'}
-                    </button>
-                    <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
-                      <div className="text-12 text-link-soft">
-                        {ago(v.timestamp)}
-                      </div>
-                    </Tooltip>
-                  </div>
+                  {isPC && statusAndTime}
                 </div>
               </div>
             );
@@ -285,12 +322,14 @@ export const PostList = observer((props: { className?: string }) => {
         </div>
       </div>
 
-      <div className="w-[280px]">
-        <div className="fixed w-[280px]">
-          <GroupSideBox className="mt-16" showNewPost />
-          <NFTSideBox />
+      {isPC && (
+        <div className="w-[280px]">
+          <div className="fixed w-[280px]">
+            <GroupCard className="mt-16" showNewPost />
+            <NFTSideBox />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 });

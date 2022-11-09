@@ -6,9 +6,11 @@ import { nodeService } from '~/service';
 interface AvatarProps {
   className?: string
   size?: number
+  fontSize?: number
   children?: React.ReactNode
   avatar?: string
   groupName?: string
+  square?: boolean
   onClick?: (e: React.MouseEvent) => unknown
 }
 
@@ -20,25 +22,30 @@ export const GroupAvatar = (props: AvatarProps) => {
   }));
 
   const avatar = props.avatar || nodeService.state.groupInfo.avatar;
+  const size = props.size ?? 100;
+  const fontSize = props.fontSize ?? Math.floor((size / 10) * 4);
 
   return (
     <div
       className={classNames(
-        'w-7 h-7 bg-white bg-cover rounded-full',
+        'w-7 h-7 bg-white bg-cover',
+        !props.square && 'rounded-full',
+        props.square && 'rounded-lg',
         props.className,
         !props.className?.includes('absolute') && 'relative',
       )}
       style={{
-        width: `${props.size ?? 100}px`,
-        height: `${props.size ?? 100}px`,
+        width: `${size}px`,
+        height: `${size}px`,
         backgroundImage: `url("${avatar}")`,
       }}
       onClick={props.onClick}
     >
       {!avatar && (
         <div
-          className="absolute inset-0 flex flex-center text-gray-88 text-40 select-none"
+          className="absolute inset-0 flex flex-center text-gray-88 select-none"
           style={{
+            fontSize: `${fontSize}px`,
             fontFamily: "Varela Round, Nunito Sans, PingFang SC, Hiragino Sans GB, Heiti SC, '幼圆', '圆体-简', sans-serif",
           }}
         >

@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import classNames from 'classnames';
+import { useEffect } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import * as QuorumLightNodeSdk from 'quorum-light-node-sdk';
 import { Close } from '@mui/icons-material';
 import { Button, CircularProgress, Dialog, IconButton, Tooltip } from '@mui/material';
 
-import { createPromise, runLoading, setClipboard, ThemeLight } from '~/utils';
+import { createPromise, runLoading, setClipboard, ThemeLight, useWiderThan } from '~/utils';
 import { nodeService, snackbarService } from '~/service';
 import { modalViewState } from './helper/modalViewState';
 
@@ -28,6 +29,7 @@ const TrxDetailDialog = observer((props: ModalProps) => {
   const state = useLocalObservable(() => ({
     open: true,
   }));
+  const isPC = useWiderThan(960);
 
   const handleConfirm = action(() => {
     props.rs();
@@ -44,6 +46,11 @@ const TrxDetailDialog = observer((props: ModalProps) => {
       <Dialog
         open={state.open}
         onClose={handleCancel}
+        classes={{
+          paper: classNames(
+            !isPC && 'mx-1',
+          ),
+        }}
       >
         <div className="flex-col relative">
           <IconButton
@@ -72,6 +79,7 @@ export const TrxDetailView = observer((props: Props) => {
     trx: null as null | QuorumLightNodeSdk.ITrx,
     loading: false,
   }));
+  const isPC = useWiderThan(960);
 
   useEffect(() => {
     runLoading(
@@ -88,11 +96,17 @@ export const TrxDetailView = observer((props: Props) => {
   }, []);
 
   return (
-    <div className="flex-col items-center px-10 mt-2">
+    <div
+      className={classNames(
+        'flex-col items-center mt-2',
+        isPC && 'px-10',
+        !isPC && 'px-4',
+      )}
+    >
       <div className="text-center text-16 mt-8">
         区块详情
       </div>
-      <div className="w-[400px] mt-2">
+      <div className="max-w-[400px] mt-2">
         {state.loading && !state.trx && (
           <div className="flex flex-center py-12">
             <CircularProgress className="text-black/40" />

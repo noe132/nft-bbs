@@ -1,22 +1,22 @@
 import React, { useEffect, useRef } from 'react';
 import { stringifyUrl } from 'query-string';
 import classNames from 'classnames';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
 import type { Notification } from 'nft-bbs-server';
 import { Button, CircularProgress, Tooltip } from '@mui/material';
-import { AlternateEmail, ExpandMore, ThumbDownAlt, ThumbUpAlt } from '@mui/icons-material';
+import { AlternateEmail, ChevronLeft, ExpandMore, ThumbDownAlt, ThumbUpAlt } from '@mui/icons-material';
 
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
-import { UserAvatar, BackButton, ScrollToTopButton, GroupSideBox, NFTSideBox } from '~/components';
+import { UserAvatar, BackButton, ScrollToTopButton, GroupCard, NFTSideBox } from '~/components';
 import { nodeService } from '~/service';
-import { ago } from '~/utils';
+import { ago, useWiderThan } from '~/utils';
 
 export const NotificationPage = observer((props: { className?: string }) => {
   const navigate = useNavigate();
@@ -27,6 +27,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
     intersectionRatio: 0,
     pauseAutoLoading: false,
   }));
+  const isPC = useWiderThan(960);
 
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
@@ -84,13 +85,27 @@ export const NotificationPage = observer((props: { className?: string }) => {
       )}
     >
       <div className="flex-col relative w-[800px]">
-        <div className="flex justify-end w-full">
-          <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
-        </div>
-        <BackButton className="fixed top-[60px] mt-6 -ml-5 -translate-x-full" />
+        {isPC && (<>
+          <div className="flex justify-end w-full">
+            <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
+          </div>
+          <BackButton className="fixed top-[60px] mt-6 -ml-5 -translate-x-full" />
+        </>)}
         <div className="flex-col flex-1 w-full bg-black/80">
-          <div className="flex justify-between text-white py-6 px-10">
-            <div className="text-18">消息通知</div>
+          <div
+            className={classNames(
+              'flex justify-between text-white py-6',
+              isPC && 'px-10',
+              !isPC && 'px-4',
+            )}
+          >
+            <div
+              className="flex flex-center text-18"
+              onClick={() => !isPC && navigate(`/${nodeService.state.groupId}`)}
+            >
+              <ChevronLeft className="text-28 -mb-px" />
+              消息通知
+            </div>
             {/* <Button
               className="text-soft-blue text-14 px-3"
               variant="text"
@@ -122,24 +137,29 @@ export const NotificationPage = observer((props: { className?: string }) => {
               }
               return (
                 <React.Fragment key={v.id}>
-                  <div className="flex-col px-8 gap-y-4">
+                  <div className="flex-col px-8 py-3 gap-y-4">
                     <div className="flex justify-between">
-                      <div className="flex items-center ml-8">
+                      <div
+                        className={classNames(
+                          'flex items-center',
+                          isPC && 'ml-8',
+                        )}
+                      >
                         <UserAvatar
-                          className="cursor-pointer mr-3"
+                          className="cursor-pointer mr-3 flex-none"
                           profile={fromProfile}
                           onClick={() => navigate(`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`)}
                         />
 
-                        <span>
-                          <button
-                            className=""
-                            onClick={() => navigate(`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`)}
+                        <span className="break-all text-start">
+                          <Link
+                            className="cursor-pointer"
+                            to={`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`}
                           >
                             <span className="text-rum-orange text-16 mr-3">
                               {fromProfileName}
                             </span>
-                          </button>
+                          </Link>
 
                           {!!v.timestamp && (
                             <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
@@ -153,29 +173,37 @@ export const NotificationPage = observer((props: { className?: string }) => {
                             {actionText}
                           </span>
 
-                          <button
-                            className="text-link-soft text-14"
-                            onClick={() => handleViewItem(v)}
-                          >
-                            前往查看
-                          </button>
+                          {isPC && (
+                            <button
+                              className="text-link-soft text-14"
+                              onClick={() => handleViewItem(v)}
+                            >
+                              前往查看
+                            </button>
+                          )}
                         </span>
                       </div>
-                      <div className="flex gap-x-4 ml-8">
-                        {v.type === 'comment' && (
-                          <Button
-                            className="text-link-soft"
-                            variant="text"
-                            size="small"
-                            onClick={() => handleViewItem(v)}
-                          >
-                            <ReplyIcon className="mr-1 -mt-[2px] text-24" />
-                            回复
-                          </Button>
-                        )}
-                      </div>
+                      {isPC && (
+
+                        <div className="flex gap-x-4 ml-8">
+                          {v.type === 'comment' && (
+                            <Button
+                              className="text-link-soft"
+                              variant="text"
+                              size="small"
+                              onClick={() => handleViewItem(v)}
+                            >
+                              <ReplyIcon className="mr-1 -mt-[2px] text-24" />
+                              回复
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center">
+                    <div
+                      className="flex items-center"
+                      onClick={() => !isPC && handleViewItem(v)}
+                    >
                       {v.type === 'like' && (
                         <ThumbUpAlt className="flex-none mr-3 -mb-px text-18 text-link-soft" />
                       )}
@@ -204,7 +232,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
                     </div>
                   </div>
 
-                  <div className="border-t border-white/15 my-5 mx-8" />
+                  <div className="border-t border-white/15 my-2 mx-8" />
                 </React.Fragment>
               );
             })}
@@ -242,12 +270,14 @@ export const NotificationPage = observer((props: { className?: string }) => {
         </div>
       </div>
 
-      <div className="w-[280px]">
-        <div className="fixed w-[280px]">
-          <GroupSideBox className="mt-16" showNewPost />
-          <NFTSideBox />
+      {isPC && (
+        <div className="w-[280px]">
+          <div className="fixed w-[280px]">
+            <GroupCard className="mt-16" showNewPost />
+            <NFTSideBox />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 });

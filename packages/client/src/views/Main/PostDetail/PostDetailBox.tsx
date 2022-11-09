@@ -8,7 +8,7 @@ import { Share, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from 
 import type { Post } from 'nft-bbs-server';
 import TrashIcon from 'boxicons/svg/regular/bx-trash.svg?fill-icon';
 
-import { ago, renderPostMarkdown, runLoading, setClipboard } from '~/utils';
+import { ago, renderPostMarkdown, runLoading, setClipboard, useWiderThan } from '~/utils';
 import { imageZoomService, nodeService, snackbarService, keyService, dialogService, nftService } from '~/service';
 import { UserAvatar, PostImageZoomButton } from '~/components';
 import { ImageApi } from '~/apis';
@@ -54,6 +54,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
       return !nodeService.state.post.newPostCache.has(props.post.trxId);
     },
   }));
+  const isPC = useWiderThan(960);
 
   const handlePostClick = (e: React.MouseEvent) => {
     if (e.target instanceof HTMLImageElement) {
@@ -111,7 +112,13 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         props.className,
       )}
     >
-      <div className="flex mx-16 mt-10 gap-x-2">
+      <div
+        className={classNames(
+          'flex mt-10 gap-x-2',
+          isPC && 'mx-16',
+          !isPC && 'mx-4',
+        )}
+      >
         <div className="flex flex-1 text-20 text-white truncate-2">
           {state.postStat.title || '无标题'}
         </div>
@@ -136,7 +143,13 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
           </div>
         )}
       </div>
-      <div className="flex items-center gap-x-4 mt-6 mx-16">
+      <div
+        className={classNames(
+          'flex items-center gap-x-4 mt-6',
+          isPC && 'mx-16',
+          !isPC && 'mx-4',
+        )}
+      >
         <UserAvatar
           className="cursor-pointer"
           profile={state.profile}
@@ -164,13 +177,23 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
       <div className="relative">
         <PostImageZoomButton className="text-24 -mt-2 ml-2 text-white" />
         <div
-          className="post-detail-box text-white mx-16 pt-2"
+          className={classNames(
+            'post-detail-box text-white pt-2',
+            isPC && 'mx-16',
+            !isPC && 'mx-4',
+          )}
           dangerouslySetInnerHTML={{ __html: state.content }}
           onClick={handlePostClick}
         />
       </div>
 
-      <div className="flex justify-between border-dark-blue border-t mt-4 px-14 py-4">
+      <div
+        className={classNames(
+          'flex justify-between border-dark-blue border-t mt-4 py-4',
+          isPC && 'px-14',
+          !isPC && 'px-2',
+        )}
+      >
         <div className="flex gap-x-2">
           <Button
             className={classNames(

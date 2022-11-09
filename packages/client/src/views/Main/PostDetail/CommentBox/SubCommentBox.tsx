@@ -1,10 +1,11 @@
 import { useContext, useEffect } from 'react';
+import classNames from 'classnames';
 import { action, reaction, runInAction } from 'mobx';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import type { Comment } from 'nft-bbs-server';
 import { Pagination } from '@mui/material';
-import { sleep } from '~/utils';
+import { sleep, useWiderThan } from '~/utils';
 
 import { commentContext } from './context';
 import { CommentItem } from './CommentItem';
@@ -30,6 +31,7 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
       return this.pageSize < state.comments.length;
     },
   }));
+  const isPC = useWiderThan(960);
 
   const context = useContext(commentContext);
 
@@ -98,7 +100,11 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
     <>
       {state.displayedComments.map((v) => (
         <CommentItem
-          className="pl-5 border-l !border-l-cyan-blue border-t border-t-white/20"
+          className={classNames(
+            'border-l !border-l-cyan-blue border-t border-t-white/20',
+            isPC && 'pl-5',
+            !isPC && 'pl-4',
+          )}
           comment={v}
           key={v.trxId}
           onJumpToReply={handleJumpToReply}

@@ -32,18 +32,15 @@ declare module '@mui/material' {
     link: PaletteOptions['primary']
     'dark-blue': PaletteOptions['primary']
   }
-  interface ButtonPropsColorOverrides {
+  interface ColorOverrides {
     rum: true
     light: true
     link: true
     'dark-blue': true
   }
-  interface InputBasePropsColorOverrides {
-    rum: true
-    light: true
-    link: true
-    'dark-blue': true
-  }
+  interface ButtonPropsColorOverrides extends ColorOverrides {}
+  interface InputBasePropsColorOverrides extends ColorOverrides {}
+  interface FabPropsColorOverrides extends ColorOverrides {}
 }
 
 const themeOption: ThemeOptions = {

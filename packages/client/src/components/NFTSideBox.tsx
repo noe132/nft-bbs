@@ -9,13 +9,14 @@ import {
 import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
 
-import { ThemeLight } from '~/utils';
+import { ThemeLight, useWiderThan } from '~/utils';
 import { keyService, nftService, nodeService, snackbarService } from '~/service';
-import { NFTIcon } from './NFTIcon';
 import { NftRequestApi } from '~/apis';
+import { NFTIcon } from './NFTIcon';
 
 interface Props {
   className?: string
+  mobile?: boolean
 }
 
 export const NFTSideBox = observer((props: Props) => {
@@ -34,9 +35,10 @@ export const NFTSideBox = observer((props: Props) => {
       return !!nftService.state.tokenIdMap.get(keyService.state.address)?.loading;
     },
     get semiOpaque() {
-      return !this.expand && !state.hover;
+      return !state.expand && !state.hover && !props.mobile;
     },
   }));
+  const isPC = useWiderThan(960);
 
   const handleClose = () => {
     setTimeout(action(() => {
@@ -68,9 +70,9 @@ export const NFTSideBox = observer((props: Props) => {
 
   return (
     <ThemeLight>
-      <ClickAwayListener onClickAway={handleClose}>
+      <ClickAwayListener onClickAway={() => !props.mobile && handleClose()}>
         <Tooltip
-          title={<ExpandIcon className="text-20 -mx-1" />}
+          title={isPC ? <ExpandIcon className="text-20 -mx-1" /> : ''}
           open={state.hover && !state.expand}
           disableInteractive
         >
@@ -199,13 +201,19 @@ export const NFTSideBox = observer((props: Props) => {
       </ClickAwayListener>
 
       <Dialog
+        classes={{
+          paper: classNames(
+            !isPC && 'mx-2',
+            'w-full max-w-[400px]',
+          ),
+        }}
         open={state.requestDialog.open}
         onClose={action(() => { state.requestDialog.open = false; })}
       >
         <DialogTitle>申请该论坛 NFT</DialogTitle>
         <DialogContent className="overflow-visible">
           <TextField
-            className="w-100"
+            className="w-full"
             minRows={4}
             maxRows={6}
             label="申请理由"

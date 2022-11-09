@@ -12,7 +12,7 @@ import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 import { UserAvatar } from '~/components';
 import { imageZoomService, nftService, nodeService, snackbarService } from '~/service';
 import { showTrxDetail } from '~/modals';
-import { ago, runLoading } from '~/utils';
+import { ago, runLoading, useWiderThan } from '~/utils';
 import { commentContext } from './context';
 
 interface CommentItemProps {
@@ -49,6 +49,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
       return !nodeService.state.comment.cache.includes(state.comment.trxId);
     },
   }));
+  const isPC = useWiderThan(960);
 
   const boxRef = useRef<HTMLDivElement>(null);
   const context = useContext(commentContext);
@@ -78,6 +79,66 @@ export const CommentItem = observer((props: CommentItemProps) => {
   };
 
   const highlighted = context.state.highlightedComments.has(state.comment.trxId);
+
+  const commentButtonBox = (
+    <div
+      className={classNames(
+        'flex gap-x-2 h-[34px] items-center',
+        !isPC && '-ml-2 mt-2',
+      )}
+    >
+      {false && (
+        <Button
+          className="text-link-soft text-14 font-normal hidden group-hover:flex"
+          variant="text"
+          color="inherit"
+        >
+          <WineIcon className="mr-1 -mt-[2px] text-16" />
+          给TA买一杯
+        </Button>
+      )}
+      {state.synced && (
+        <Tooltip title={nftService.permissionTip('counter')}>
+          <Button
+            className={classNames(
+              'min-w-0 px-2 text-14',
+              !nftService.state.hasPermission && '!text-gray-9c',
+              !state.commentStat.liked && 'text-link-soft',
+              state.commentStat.liked && 'text-rum-orange',
+            )}
+            variant="text"
+            size="small"
+            onClick={() => handleToggleCommentCounter()}
+          >
+            {!state.commentStat.likeCount && (
+              <ThumbUpOffAlt className="mr-2 text-18" />
+            )}
+            {!!state.commentStat.likeCount && (
+              <ThumbUpAlt className="mr-2 text-18" />
+            )}
+            {state.commentStat.likeCount || '赞'}
+          </Button>
+        </Tooltip>
+      )}
+      {nodeService.state.logined && (
+        <Tooltip title={nftService.permissionTip('comment')}>
+          <Button
+            className={classNames(
+              'text-link-soft text-14 font-normal',
+              !nftService.state.hasPermission && '!text-gray-9c',
+            )}
+            variant="text"
+            color="inherit"
+            size="small"
+            onClick={handleReply}
+          >
+            <ReplyIcon className="mr-1 -mt-[2px] text-24" />
+            回复
+          </Button>
+        </Tooltip>
+      )}
+    </div>
+  );
   return (
     <div
       className={classNames(
@@ -92,18 +153,18 @@ export const CommentItem = observer((props: CommentItemProps) => {
       <div className="flex justify-between">
         <div className="flex items-center gap-x-4">
           <UserAvatar
-            className="cursor-pointer"
+            className="cursor-pointer flex-none"
             profile={state.profile}
             size={28}
             onClick={() => context.onOpenUserCard(state.comment, boxRef.current!)}
           />
-          <div className="">
-            <button
-              className="text-16 text-rum-orange mr-4"
+          <div className="break-all">
+            <a
+              className="text-16 text-rum-orange mr-4 cursor-pointer"
               onClick={() => context.onOpenUserCard(state.comment, boxRef.current!)}
             >
               {state.profile?.name || state.profile?.userAddress.slice(0, 10)}
-            </button>
+            </a>
 
             <Tooltip title={format(state.comment.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
               <span className="text-12 text-gray-af mr-4">
@@ -128,64 +189,20 @@ export const CommentItem = observer((props: CommentItemProps) => {
             </button>
           </div>
         </div>
-        <div className="flex gap-x-2 h-[34px] items-center">
-          {false && (
-            <Button
-              className="text-link-soft text-14 font-normal hidden group-hover:flex"
-              variant="text"
-              color="inherit"
-            >
-              <WineIcon className="mr-1 -mt-[2px] text-16" />
-              给TA买一杯
-            </Button>
-          )}
-          {state.synced && (
-            <Tooltip title={nftService.permissionTip('counter')}>
-              <Button
-                className={classNames(
-                  'min-w-0 px-2 text-14',
-                  !nftService.state.hasPermission && '!text-gray-9c',
-                  !state.commentStat.liked && 'text-link-soft',
-                  state.commentStat.liked && 'text-rum-orange',
-                )}
-                variant="text"
-                size="small"
-                onClick={() => handleToggleCommentCounter()}
-              >
-                {!state.commentStat.likeCount && (
-                  <ThumbUpOffAlt className="mr-2 text-18" />
-                )}
-                {!!state.commentStat.likeCount && (
-                  <ThumbUpAlt className="mr-2 text-18" />
-                )}
-                {state.commentStat.likeCount || '赞'}
-              </Button>
-            </Tooltip>
-          )}
-          {nodeService.state.logined && (
-            <Tooltip title={nftService.permissionTip('comment')}>
-              <Button
-                className={classNames(
-                  'text-link-soft text-14 font-normal',
-                  !nftService.state.hasPermission && '!text-gray-9c',
-                )}
-                variant="text"
-                color="inherit"
-                size="small"
-                onClick={handleReply}
-              >
-                <ReplyIcon className="mr-1 -mt-[2px] text-24" />
-                回复
-              </Button>
-            </Tooltip>
-          )}
-        </div>
+        {isPC && commentButtonBox}
       </div>
 
-      <div className="text-white text-14 mt-2">
+      <div
+        className={classNames(
+          'text-white text-14',
+          isPC && 'mt-2',
+          !isPC && 'mt-3',
+        )}
+      >
         {state.comment.content}
       </div>
-      {!!state.comment.extra?.images && (
+
+      {!!state.comment.extra?.images && !!state.comment.extra.images.length && (
         <div className="flex gap-4 mt-4">
           {state.comment.extra.images.map((v) => (
             <img
@@ -198,6 +215,8 @@ export const CommentItem = observer((props: CommentItemProps) => {
           ))}
         </div>
       )}
+
+      {!isPC && commentButtonBox}
     </div>
   );
 });

@@ -13,8 +13,8 @@ import {
 import HeadingIcon from 'boxicons/svg/regular/bx-heading.svg?fill-icon';
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
-import { compressImage, renderPostMarkdown, runLoading, SCHEMA_PREFIX } from '~/utils';
-import { BackButton, UserAvatar, GroupSideBox, NFTSideBox } from '~/components';
+import { compressImage, renderPostMarkdown, runLoading, SCHEMA_PREFIX, useWiderThan } from '~/utils';
+import { BackButton, UserAvatar, GroupCard, NFTSideBox } from '~/components';
 import { nftService, nodeService, snackbarService } from '~/service';
 import { selectImage } from '~/modals';
 
@@ -55,6 +55,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       //   : null;
     },
   }));
+  const isPC = useWiderThan(960);
   const codeMirrorBox = createRef<HTMLDivElement>();
 
   const focusEditor = () => { state.editor?.focus(); };
@@ -166,6 +167,43 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
     };
   }, []);
 
+  const toolbarIcons = [
+    {
+      onClick: handleMakeBold,
+      icon: <FormatBold className="text-24 -mb-px" />,
+    },
+    {
+      onClick: handleMakeItalic,
+      icon: <FormatItalic className="text-24 -mb-px" />,
+    },
+    {
+      onClick: handleMakeHeading,
+      icon: <HeadingIcon className="text-22" />,
+    },
+    'divider',
+    {
+      onClick: handleMakeQuote,
+      icon: <FormatQuote className="text-24" />,
+    },
+    {
+      onClick: handleMakeUL,
+      icon: <FormatListBulleted className="text-22" />,
+    },
+    {
+      onClick: handleMakeOL,
+      icon: <FormatListNumbered className="text-22" />,
+    },
+    'divider',
+    {
+      onClick: handleMakeLink,
+      icon: <AddLink className="text-22" />,
+    },
+    {
+      onClick: handleMakeImage,
+      icon: <Image className="text-22" />,
+    },
+  ] as const;
+
   return (
     <div
       className={classNames(
@@ -173,8 +211,16 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
         props.className,
       )}
     >
-      <div className="relative w-[800px] bg-black/80 flex-col py-10 px-12">
-        <BackButton className="fixed top-[60px] mt-6 -ml-17 -translate-x-full" to="/" />
+      <div
+        className={classNames(
+          'relative bg-black/80 flex-col',
+          isPC && 'w-[800px] py-10 px-12',
+          !isPC && 'w-full py-4 px-4',
+        )}
+      >
+        {isPC && (
+          <BackButton className="fixed top-[60px] mt-6 -ml-17 -translate-x-full" to="/" />
+        )}
         <div className="flex justify-between text-white">
           <div className="text-18">
             {state.postToEdit ? '编辑帖子' : '发布新帖'}
@@ -204,44 +250,40 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
           {state.titleLength}/100
         </div>
 
-        <div className="flex justify-between mt-6">
-          <div className="flex items-center gap-x-1">
-            {([
-              {
-                onClick: handleMakeBold,
-                icon: <FormatBold className="text-24 -mb-px" />,
-              },
-              {
-                onClick: handleMakeItalic,
-                icon: <FormatItalic className="text-24 -mb-px" />,
-              },
-              {
-                onClick: handleMakeHeading,
-                icon: <HeadingIcon className="text-22" />,
-              },
-              'divider',
-              {
-                onClick: handleMakeQuote,
-                icon: <FormatQuote className="text-24" />,
-              },
-              {
-                onClick: handleMakeUL,
-                icon: <FormatListBulleted className="text-22" />,
-              },
-              {
-                onClick: handleMakeOL,
-                icon: <FormatListNumbered className="text-22" />,
-              },
-              'divider',
-              {
-                onClick: handleMakeLink,
-                icon: <AddLink className="text-22" />,
-              },
-              {
-                onClick: handleMakeImage,
-                icon: <Image className="text-22" />,
-              },
-            ] as const).map((v, i) => (v === 'divider' ? (
+        {isPC && (
+          <div className="flex justify-between mt-6">
+            <div className="flex items-center gap-x-1">
+              {toolbarIcons.map((v, i) => (v === 'divider' ? (
+                <div className="border-l border-white/40 h-5 mx-2" key={i} />
+              ) : (
+                <IconButton
+                  className="h-8 w-8 p-0 text-soft-blue"
+                  onClick={v.onClick}
+                  disabled={state.preview}
+                  key={i}
+                >
+                  {v.icon}
+                </IconButton>
+              )))}
+            </div>
+            <div>
+              <Button
+                className="text-soft-blue"
+                variant="text"
+                color="light"
+                onClick={handlePreview}
+              >
+                {!state.preview && <Visibility className="text-20 mr-2 -mt-px" />}
+                {state.preview && <VisibilityOff className="text-20 mr-2 -mt-px" />}
+                {state.preview ? '取消预览' : '预览'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!isPC && (
+          <div className="flex flex-wrap items-center gap-y-1 mt-6">
+            {toolbarIcons.map((v, i) => (v === 'divider' ? (
               <div className="border-l border-white/40 h-5 mx-2" key={i} />
             ) : (
               <IconButton
@@ -253,8 +295,6 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
                 {v.icon}
               </IconButton>
             )))}
-          </div>
-          <div>
             <Button
               className="text-soft-blue"
               variant="text"
@@ -266,7 +306,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
               {state.preview ? '取消预览' : '预览'}
             </Button>
           </div>
-        </div>
+        )}
 
         <div
           className={classNames(
@@ -314,12 +354,14 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
         </div>
       </div>
 
-      <div className="w-[280px]">
-        <div className="fixed w-[280px]">
-          <GroupSideBox className="mt-16" />
-          <NFTSideBox />
+      {isPC && (
+        <div className="w-[280px]">
+          <div className="fixed w-[280px]">
+            <GroupCard className="mt-16" />
+            <NFTSideBox />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 });

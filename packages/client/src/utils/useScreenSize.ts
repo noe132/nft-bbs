@@ -39,7 +39,7 @@ export const useWiderThan = (width: number) => {
   if (typeof document === 'undefined') {
     return width >= 960;
   }
-  const [state, setState] = React.useState(window.innerWidth > width);
+  const [state, setState] = React.useState(window.innerWidth >= width);
 
   React.useEffect(() => {
     const item: SetItem = [width, setState];

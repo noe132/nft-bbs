@@ -16,6 +16,7 @@ interface Props {
   scrollBoxClassName?: string
   onScroll?: () => unknown
   light?: boolean
+  hideTrackOnMobile?: boolean
   autoHideMode?: boolean
   size?: 'small' | 'normal' | 'large' | {
     thumb: number
@@ -227,42 +228,44 @@ export const Scrollable = observer((props: Props) => {
       onMouseEnter={action(() => { if (props.autoHideMode) { state.hide = false; } })}
       onMouseLeave={action(() => { if (props.autoHideMode) { state.hide = true; } })}
     >
-      <div
-        className={classNames(
-          'scroll-bar-track absolute top-[3px] right-0 bottom-[3px] z-[200]',
-          state.noScrollBar && 'no-scroll-bar',
-          !!props.autoHideMode && 'duration-150',
-          !!props.autoHideMode && state.hide && 'opacity-0',
-          props.trackClassName,
-        )}
-        style={{ width: `${sizes.track}px` }}
-        onClick={handleTrackClick}
-        onMouseEnter={action(() => { state.hover = true; })}
-        onMouseLeave={action(() => { state.hover = false; })}
-      >
-        {!state.noScrollBar && (
-          <div
-            className={classNames(
-              'scroll-bar-thumb-box absolute flex justify-center h-0 left-0 right-0 cursor-pointer',
-              props.thumbClassName,
-            )}
-            onMouseDown={handleScrollbarThumbClick}
-            style={{ width: `${sizes.track}px`, ...state.thumbStyle }}
-          >
+      {!(!state.scrollbarWidth && props.hideTrackOnMobile) && (
+        <div
+          className={classNames(
+            'scroll-bar-track absolute top-[3px] right-0 bottom-[3px] z-[200]',
+            state.noScrollBar && 'no-scroll-bar',
+            !!props.autoHideMode && 'duration-150',
+            !!props.autoHideMode && state.hide && 'opacity-0',
+            props.trackClassName,
+          )}
+          style={{ width: `${sizes.track}px` }}
+          onClick={handleTrackClick}
+          onMouseEnter={action(() => { state.hover = true; })}
+          onMouseLeave={action(() => { state.hover = false; })}
+        >
+          {!state.noScrollBar && (
             <div
               className={classNames(
-                'scroll-bar-thumb ease-in-out duration-100 rounded-full',
-                !props.light && 'bg-black/15 group-hover:bg-black/25',
-                props.light && 'bg-white/25 group-hover:bg-white/40',
-                !props.light && state.drag.start && 'bg-black/25',
-                props.light && state.drag.start && 'bg-white/40',
+                'scroll-bar-thumb-box absolute flex justify-center h-0 left-0 right-0 cursor-pointer',
+                props.thumbClassName,
               )}
-              ref={thumb}
-              style={{ width: `${state.hover || state.drag.start ? sizes.thumbHover : sizes.thumb}px` }}
-            />
-          </div>
-        )}
-      </div>
+              onMouseDown={handleScrollbarThumbClick}
+              style={{ width: `${sizes.track}px`, ...state.thumbStyle }}
+            >
+              <div
+                className={classNames(
+                  'scroll-bar-thumb ease-in-out duration-100 rounded-full',
+                  !props.light && 'bg-black/15 group-hover:bg-black/25',
+                  props.light && 'bg-white/25 group-hover:bg-white/40',
+                  !props.light && state.drag.start && 'bg-black/25',
+                  props.light && state.drag.start && 'bg-white/40',
+                )}
+                ref={thumb}
+                style={{ width: `${state.hover || state.drag.start ? sizes.thumbHover : sizes.thumb}px` }}
+              />
+            </div>
+          )}
+        </div>
+      )}
       <div className="scroll-content flex-col flex-auto overflow-hidden">
         <div
           style={state.scrollBoxStyle}

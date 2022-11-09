@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { observable } from 'mobx';
 
 interface PageStateMapItem {
@@ -32,18 +32,26 @@ export const usePageState: UsePageState = <T extends object>(
   const item = pageStateMap.get(compositedKey)!;
   if (!readonly && !item.state) {
     item.state = observable(init());
+    if (item.listeners) {
+      setTimeout(() => {
+        item.listeners.forEach((v) => v());
+      });
+    }
   }
+  const updateRef = useRef(() => {
+    item.nonce += 1;
+    setState(item.nonce);
+  });
   const [_, setState] = useState(0);
+  if (!item.listeners.includes(updateRef.current)) {
+    item.listeners.push(updateRef.current);
+  }
 
-  useEffect(() => {
-    const update = () => {
-      item.nonce += 1;
-      setState(item.nonce);
-    };
-    item.listeners.push(update);
-    return () => {
-      item.listeners.splice(item.listeners.indexOf(update), 1);
-    };
+  useEffect(() => () => {
+    const index = item.listeners.indexOf(updateRef.current);
+    if (index !== -1) {
+      item.listeners.splice(index, 1);
+    }
   }, []);
 
   return item.state;

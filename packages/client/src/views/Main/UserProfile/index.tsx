@@ -16,7 +16,7 @@ import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon } from '~/components';
 import { imageZoomService, keyService, nftService, nodeService } from '~/service';
-import { ago, runLoading, ThemeLight, usePageState } from '~/utils';
+import { ago, runLoading, ThemeLight, usePageState, useWiderThan } from '~/utils';
 import { editProfile } from '~/modals';
 
 export const UserProfile = observer((props: { className?: string }) => {
@@ -78,6 +78,7 @@ export const UserProfile = observer((props: { className?: string }) => {
       return nodeService.state.profile.userPostCountMap.get(userAddress) ?? 0;
     },
   }));
+  const isPC = useWiderThan(960);
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
   const nftBox = useRef<HTMLDivElement>(null);
 
@@ -188,6 +189,76 @@ export const UserProfile = observer((props: { className?: string }) => {
   }, []);
 
   if (!state.profile) { return null; }
+
+  const nftCardBox = (
+    <div
+      className={classNames(
+        'flex-col relative py-5 px-5 mt-6 rounded',
+        state.selfProfile && 'bg-white shadow-4 text-black',
+        !state.selfProfile && 'bg-black/80 text-white',
+      )}
+      ref={nftBox}
+    >
+      <div
+        className={classNames(
+          'text-center',
+          state.selfProfile && 'text-dark-blue',
+          !state.selfProfile && 'text-gray-9c',
+        )}
+      >
+        {state.selfProfile ? '我' : 'Ta'}
+        持有的 NFT
+      </div>
+
+      <div className="flex flex-center flex-wrap gap-4 mt-4">
+        {state.nftLoading && (
+          <div className="flex flex-center w-24 h-24">
+            <CircularProgress className={classNames(state.selfProfile ? 'text-black/30' : 'text-white/70')} />
+          </div>
+        )}
+        {!state.nftLoading && !state.nfts.length && (
+          <NFTIcon
+            size={96}
+            color={state.selfProfile ? 'light' : 'dark'}
+            lock
+          />
+        )}
+        {!state.nftLoading && state.nfts.map((v) => (
+          <NFTIcon
+            key={v}
+            size={96}
+            color={state.selfProfile ? 'light' : 'dark'}
+            tokenId={v}
+            onClick={action(() => { state.ntfPopup = { open: true, nft: v }; })}
+          />
+        ))}
+      </div>
+
+      {state.selfProfile && (
+        <div className="text-center mt-4">
+          <ClickAwayListener onClickAway={action(() => { state.nftTradeTooltip = false; })}>
+            <Tooltip
+              PopperProps={{ disablePortal: true }}
+              onClose={action(() => { state.nftTradeTooltip = false; })}
+              open={state.nftTradeTooltip}
+              disableFocusListener
+              disableHoverListener
+              disableTouchListener
+              title="功能开发中"
+            >
+              <button
+                className="text-link text-14"
+                onClick={action(() => { state.nftTradeTooltip = true; })}
+              >
+                NFT 交易或转让
+              </button>
+            </Tooltip>
+          </ClickAwayListener>
+        </div>
+      )}
+    </div>
+  );
+
   return (<>
     <div
       className={classNames(
@@ -195,14 +266,22 @@ export const UserProfile = observer((props: { className?: string }) => {
         props.className,
       )}
     >
-      <div className="relative flex-col w-[800px]">
-        <div className="flex justify-end w-full">
-          <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
-        </div>
-        <BackButton className="fixed top-[60px] mt-6 -ml-5 -translate-x-full" />
+      <div
+        className={classNames(
+          'relative flex-col',
+          isPC && 'w-[800px]',
+          !isPC && 'w-full',
+        )}
+      >
+        {isPC && (<>
+          <div className="flex justify-end w-full">
+            <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
+          </div>
+          <BackButton className="fixed top-[60px] mt-6 -ml-5 -translate-x-full" />
+        </>)}
         <div
           className={classNames(
-            'flex-col relative w-full mt-6 ',
+            'flex-col relative w-full mt-6',
             state.selfProfile && 'bg-white shadow-4 text-black',
             !state.selfProfile && 'bg-black/80 text-white',
           )}
@@ -265,7 +344,13 @@ export const UserProfile = observer((props: { className?: string }) => {
               !state.selfProfile && 'border-white/30',
             )}
           >
-            <div className="ml-16 text-14">
+            <div
+              className={classNames(
+                'text-14',
+                isPC && 'ml-16',
+                !isPC && 'ml-0',
+              )}
+            >
               {!!state.fistPostTime && `加入于 ${format(state.fistPostTime, 'yyyy-MM')}`}
               {!!state.fistPostTime && ' · '}
               共发表 {state.totalPosts} 帖
@@ -273,7 +358,13 @@ export const UserProfile = observer((props: { className?: string }) => {
           </div>
         </div>
 
-        <div className="w-[800px] bg-black/80 flex-col flex-1 gap-y-12 py-10 px-16 mt-6">
+        <div
+          className={classNames(
+            'bg-black/80 flex-col flex-1 gap-y-12 mt-6',
+            isPC && 'w-[800px] py-10 px-16',
+            !isPC && 'py-3 px-4',
+          )}
+        >
           {state.profileLoading && (
             <div className="flex flex-center py-4">
               <CircularProgress className="text-white/70" />
@@ -300,7 +391,13 @@ export const UserProfile = observer((props: { className?: string }) => {
                     {RemoveMarkdown(stat.content)}
                   </div>
                   <div className="flex items-center justify-between mt-3 text-link-soft text-14">
-                    <div className="flex gap-x-6 -ml-2">
+                    <div
+                      className={classNames(
+                        'flex -ml-2',
+                        isPC && 'gap-x-6',
+                        !isPC && 'gap-x-5',
+                      )}
+                    >
                       <Button
                         className={classNames(
                           'text-14 min-w-0 px-2',
@@ -344,7 +441,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                         onClick={() => handleOpenPost(v, true)}
                       >
                         <CommentDetailIcon className="mr-2 -mb-px text-18" />
-                        {v.commentCount || '我来写第一个评论'}
+                        {v.commentCount || (isPC ? '我来写第一个评论' : '评论')}
                       </Button>
                     </div>
                     <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
@@ -386,83 +483,18 @@ export const UserProfile = observer((props: { className?: string }) => {
         />
       </div>
 
-      <div className="w-[280px]">
-        {!nodeService.state.config.currentGroup.nft && (
-          <UserCard
-            className="mt-6"
-            profile={state.profile}
-            disableClickAction
-          />
-        )}
-        {!!nodeService.state.config.currentGroup.nft && (
-          <div
-            className={classNames(
-              'flex-col relative py-5 px-5 mt-6 rounded',
-              state.selfProfile && 'bg-white shadow-4 text-black',
-              !state.selfProfile && 'bg-black/80 text-white',
-            )}
-            ref={nftBox}
-          >
-            <div
-              className={classNames(
-                'text-center',
-                state.selfProfile && 'text-dark-blue',
-                !state.selfProfile && 'text-gray-9c',
-              )}
-            >
-              {state.selfProfile ? '我' : 'Ta'}
-              持有的 NFT
-            </div>
-
-            <div className="flex flex-center flex-wrap gap-4 mt-4">
-              {state.nftLoading && (
-                <div className="flex flex-center w-24 h-24">
-                  <CircularProgress className={classNames(state.selfProfile ? 'text-black/30' : 'text-white/70')} />
-                </div>
-              )}
-              {!state.nftLoading && !state.nfts.length && (
-                <NFTIcon
-                  size={96}
-                  color={state.selfProfile ? 'light' : 'dark'}
-                  lock
-                />
-              )}
-              {!state.nftLoading && state.nfts.map((v) => (
-                <NFTIcon
-                  key={v}
-                  size={96}
-                  color={state.selfProfile ? 'light' : 'dark'}
-                  tokenId={v}
-                  onClick={action(() => { state.ntfPopup = { open: true, nft: v }; })}
-                />
-              ))}
-            </div>
-
-            {state.selfProfile && (
-              <div className="text-center mt-4">
-                <ClickAwayListener onClickAway={action(() => { state.nftTradeTooltip = false; })}>
-                  <Tooltip
-                    PopperProps={{ disablePortal: true }}
-                    onClose={action(() => { state.nftTradeTooltip = false; })}
-                    open={state.nftTradeTooltip}
-                    disableFocusListener
-                    disableHoverListener
-                    disableTouchListener
-                    title="功能开发中"
-                  >
-                    <button
-                      className="text-link text-14"
-                      onClick={action(() => { state.nftTradeTooltip = true; })}
-                    >
-                      NFT 交易或转让
-                    </button>
-                  </Tooltip>
-                </ClickAwayListener>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      {isPC && (
+        <div className="w-[280px]">
+          {!nodeService.state.config.currentGroup.nft && (
+            <UserCard
+              className="mt-6"
+              profile={state.profile}
+              disableClickAction
+            />
+          )}
+          {!!nodeService.state.config.currentGroup.nft && nftCardBox}
+        </div>
+      )}
     </div>
 
     <ThemeLight>

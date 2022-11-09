@@ -65,6 +65,7 @@ export const Main = observer(() => {
           tabIndex: 0,
         }}
         onScroll={handleScroll}
+        hideTrackOnMobile
       >
         <Routes>
           <Route path="/" element={<RedirectToPostList key={routeLocation.key} />} />
