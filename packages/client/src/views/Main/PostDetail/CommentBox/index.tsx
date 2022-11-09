@@ -23,6 +23,9 @@ export const CommentBox = observer((props: Props) => {
   const handleJumpToReply = (commentTrx: string) => {
     const commentElement = document.querySelector(`[data-comment-trx-id="${commentTrx}"]`);
     if (commentElement) {
+      runInAction(() => {
+        context.state.highlightedComments.add(commentTrx);
+      });
       scrollIntoView(commentElement, {
         behavior: 'smooth',
       });
@@ -37,17 +40,33 @@ export const CommentBox = observer((props: Props) => {
         context.state.initCommentTrx = '';
       });
     }
+    const dispose = reaction(
+      () => context.state.newCommentTrxId,
+      async (trxId) => {
+        await sleep();
+        if (props.comments.some((v) => v.trxId === trxId)) {
+          handleJumpToReply(trxId);
+          runInAction(() => {
+            context.state.newCommentTrxId = '';
+          });
+        }
+      },
+    );
+
+    return dispose;
   }, []);
 
-  useEffect(() => reaction(
-    () => context.state.newCommentTrxId,
-    async (trxId) => {
+  useEffect(() => {
+    const trxId = context.state.newCommentTrxId;
+    const run = async () => {
+      await sleep();
       await sleep();
       if (props.comments.some((v) => v.trxId === trxId)) {
         handleJumpToReply(trxId);
       }
-    },
-  ), []);
+    };
+    run();
+  }, [context.state.newCommentTrxId]);
 
   return (
     <div className="comment-box">

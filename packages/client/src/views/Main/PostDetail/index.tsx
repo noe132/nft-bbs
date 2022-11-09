@@ -5,7 +5,7 @@ import { action, reaction, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { Comment, Profile } from 'nft-bbs-server';
-import { Button, CircularProgress, ClickAwayListener, Fade, IconButton, InputBase, Modal, Tooltip } from '@mui/material';
+import { Button, CircularProgress, ClickAwayListener, Fade, IconButton, InputBase, Portal, Tooltip } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 
@@ -40,12 +40,14 @@ export const PostDetail = observer((props: { className?: string }) => {
       open: false,
       comment: null as null | Comment,
       content: '',
+      inputFocused: false,
     },
     userCardId: 0,
     userCards: [] as Array<UserCardItem>,
     commentLoading: false,
     commentSort: 'latest' as 'latest' | 'oldest',
     commentInput: '',
+    commentInputFocused: false,
     commentPosting: false,
     commentContextState: {
       initCommentTrx: '',
@@ -96,8 +98,9 @@ export const PostDetail = observer((props: { className?: string }) => {
   const isPC = useWiderThan(960);
 
   const commentBox = useRef<HTMLDivElement>(null);
+  const mobileCommentInput = useRef<HTMLTextAreaElement>(null);
   const replyTextarea = useRef<HTMLTextAreaElement>(null);
-  const mobileCommentReplyInput = useRef<HTMLTextAreaElement>(null);
+  const mobileReplyTextarea = useRef<HTMLTextAreaElement>(null);
 
   const handleOpenUserCard = action((v: Comment, commentBox: HTMLElement) => {
     if (state.userCards.some((v) => v.el === commentBox && v.in)) {
@@ -136,7 +139,7 @@ export const PostDetail = observer((props: { className?: string }) => {
       if (isPC) {
         replyTextarea.current?.focus();
       } else {
-        mobileCommentReplyInput.current?.focus();
+        mobileReplyTextarea.current?.focus();
       }
     });
   });
@@ -296,55 +299,54 @@ export const PostDetail = observer((props: { className?: string }) => {
           <PostDetailBox post={state.post} />
         )}
 
-        <div
-          className={classNames(
-            'flex w-full bg-black/80 mt-5 gap-x-6',
-            isPC && 'p-8',
-            !isPC && 'p-4',
-          )}
-        >
-          <div className="flex flex-1 items-stretch">
-            <InputBase
-              className={classNames(
-                'flex-1 rounded-l !text-black px-4 text-14 outline-none min-w-0 py-[10px]',
-                nftService.state.hasPermission && 'bg-white',
-                !nftService.state.hasPermission && 'bg-white/20 cursor-not-allowed',
-              )}
-              classes={{ focused: 'outline outline-rum-orange -outline-offset-2' }}
-              placeholder={nftService.permissionTip('comment') || '在这里写下你的评论…'}
-              value={state.commentInput}
-              onChange={action((e) => { state.commentInput = e.target.value; })}
-              disabled={!nftService.state.hasPermission}
-              multiline
-              maxRows={5}
-              onKeyDown={(e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                  handlePostComment('direct');
-                }
-                if (!isPC && e.key === 'Enter') {
-                  handlePostComment('direct');
-                }
-              }}
-            />
-            <Tooltip title={nftService.permissionTip('comment')}>
-              <div className="flex self-stretch">
-                <LoadingButton
-                  className="rounded-l-none"
-                  color="rum"
-                  variant="contained"
-                  onClick={() => handlePostComment('direct')}
-                  disabled={!nftService.state.hasPermission}
-                  loading={state.commentPosting}
-                >
-                  发布评论
-                </LoadingButton>
-              </div>
-            </Tooltip>
+        {isPC && (
+          <div
+            className={classNames(
+              'flex w-full bg-black/80 mt-5 gap-x-6',
+              isPC && 'p-8',
+              !isPC && 'p-4',
+            )}
+          >
+            <div className="flex flex-1 items-stretch">
+              <InputBase
+                className={classNames(
+                  'flex-1 rounded-l !text-black px-4 text-14 outline-none min-w-0 py-[10px]',
+                  nftService.state.hasPermission && 'bg-white',
+                  !nftService.state.hasPermission && 'bg-white/20 cursor-not-allowed',
+                )}
+                classes={{ focused: 'outline outline-rum-orange -outline-offset-2' }}
+                placeholder={nftService.permissionTip('comment') || '在这里写下你的评论…'}
+                value={state.commentInput}
+                onChange={action((e) => { state.commentInput = e.target.value; })}
+                disabled={!nftService.state.hasPermission}
+                multiline
+                maxRows={5}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    handlePostComment('direct');
+                  }
+                }}
+              />
+              <Tooltip title={nftService.permissionTip('comment')}>
+                <div className="flex self-stretch">
+                  <LoadingButton
+                    className="rounded-l-none"
+                    color="rum"
+                    variant="contained"
+                    onClick={() => handlePostComment('direct')}
+                    disabled={!nftService.state.hasPermission}
+                    loading={state.commentPosting}
+                  >
+                    发布评论
+                  </LoadingButton>
+                </div>
+              </Tooltip>
+            </div>
+            {isPC && (
+              <UserAvatar size={40} profile={nodeService.state.myProfile} />
+            )}
           </div>
-          {isPC && (
-            <UserAvatar size={40} profile={nodeService.state.myProfile} />
-          )}
-        </div>
+        )}
 
         <div
           className="flex-col mt-5 gap-x-6"
@@ -498,49 +500,128 @@ export const PostDetail = observer((props: { className?: string }) => {
               </div>
             </Fade>
           )}
-          {!isPC && (
-            <Modal
-              open={state.replyTo.open}
-              onClose={action(() => { state.replyTo.open = false; })}
-            >
-              <div className="flex-col fixed inset-0">
-                <div
-                  className="flex flex-center flex-1"
-                  onClick={action(() => { if (!state.commentPosting) { state.replyTo.open = false; } })}
-                >
-                  {state.commentPosting && (
-                    <CircularProgress className="text-white/80" size={64} />
-                  )}
-                </div>
-                <div className="w-full bg-white p-4">
-                  <InputBase
-                    className="flex-none bg-black/5 w-full rounded text-black"
-                    inputProps={{
-                      className: 'placeholder:text-black placeholder:opacity-40 px-3 py-1',
-                    }}
-                    inputRef={mobileCommentReplyInput}
-                    value={state.replyTo.content}
-                    onKeyDown={action((e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handlePostComment('reply');
-                      }
-                      if (e.key === 'Escape') {
-                        state.replyTo.open = false;
-                      }
-                    })}
-                    disabled={state.commentPosting}
-                    onChange={action((e) => { state.replyTo.content = e.target.value; })}
-                    placeholder={`正在回复 @${state.replyToProfile.name || state.replyToProfile.userAddress.slice(0, 10)}`}
-                    multiline
-                    maxRows={20}
-                  />
-                </div>
-              </div>
-            </Modal>
-          )}
         </div>
       </div>
+
+      {!isPC && nftService.state.hasPermission && (
+        <Portal>
+          <div className="flex-col fixed inset-0 z-[50] pointer-events-none">
+            <div
+              className={
+                classNames(
+                  'flex flex-center flex-1 duration-150',
+                  !state.commentInputFocused && 'pointer-events-none',
+                  state.commentInputFocused && 'pointer-events-auto bg-black/50',
+                )
+              }
+            >
+              {state.commentPosting && !state.replyTo.open && (
+                <CircularProgress className="text-white/80" size={64} />
+              )}
+            </div>
+            <div className="w-full bg-white p-4 pointer-events-auto">
+              <InputBase
+                className="flex-none bg-black/5 w-full rounded text-black"
+                inputProps={{
+                  className: 'placeholder:text-black placeholder:opacity-40 px-3 py-1',
+                  style: { WebkitTextFillColor: 'unset' },
+                }}
+                inputRef={mobileCommentInput}
+                value={state.commentInput}
+                onChange={action((e) => { state.commentInput = e.target.value; })}
+                disabled={!nftService.state.hasPermission}
+                placeholder={nftService.permissionTip('comment') || '在这里写下你的评论…'}
+                multiline
+                maxRows={5}
+                onFocus={action(() => { state.commentInputFocused = true; })}
+                onBlur={action(() => { state.commentInputFocused = false; })}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    await handlePostComment('direct');
+                    mobileCommentInput.current?.blur();
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </Portal>
+      )}
+
+      {!isPC && (
+        <Portal>
+          <div
+            className={classNames(
+              'flex-col fixed inset-0 z-[60]',
+              !state.replyTo.open && 'pointer-events-none',
+            )}
+          >
+            <Fade in={state.replyTo.open}>
+              <div
+                className={classNames(
+                  'flex flex-center flex-1 duration-150',
+                  state.replyTo.open && 'bg-black/50',
+                )}
+                onClick={action(() => { if (!state.commentPosting) { state.replyTo.open = false; } })}
+              />
+            </Fade>
+
+            <div
+              className={classNames(
+                'items-stretch bg-[#0d1d37] p-4 gap-y-3 relative',
+                state.replyTo.open && 'flex-col',
+                !state.replyTo.open && 'hidden',
+              )}
+            >
+              <div className="text-white text-14">
+                正在回复{' '}
+                <span className="text-rum-orange">
+                  @{state.replyToProfile.name || state.replyToProfile.userAddress.slice(0, 10)}
+                </span>
+              </div>
+              <IconButton
+                className="absolute right-[10px] top-[10px]"
+                size="small"
+                onClick={action(() => { state.replyTo.open = false; })}
+              >
+                <Close className="text-white/80 text-20" />
+              </IconButton>
+              <textarea
+                className={classNames(
+                  'mt-1 text-14 h-[144px] text-white px-3 py-2 bg-transparent resize-none rounded',
+                  'outline-none border border-white/20 hover:border-white/80',
+                  'focus:border-white focus:border-2 focus:px-[11px] focus:py-[7px]',
+                  state.replyTo.content.length > 300 && '!border-red-400',
+                )}
+                value={state.replyTo.content}
+                ref={mobileReplyTextarea}
+                onChange={action((e) => { state.replyTo.content = e.target.value; })}
+              />
+              <div className="flex justify-between">
+                <Button
+                  className="text-gray-9c py-1"
+                  color="inherit"
+                  variant="text"
+                  onClick={action(() => { state.replyTo.content = ''; })}
+                  disabled={state.commentPosting}
+                >
+                  清除文本
+                </Button>
+                <LoadingButton
+                  className=" py-1"
+                  color="rum"
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handlePostComment('reply')}
+                  loading={state.commentPosting}
+                >
+                  发表回复
+                </LoadingButton>
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
 
       {isPC && (
         <div className="w-[280px]">

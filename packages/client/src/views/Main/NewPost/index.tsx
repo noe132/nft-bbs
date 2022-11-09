@@ -275,7 +275,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
               >
                 {!state.preview && <Visibility className="text-20 mr-2 -mt-px" />}
                 {state.preview && <VisibilityOff className="text-20 mr-2 -mt-px" />}
-                {state.preview ? '取消预览' : '预览'}
+                {isPC && (state.preview ? '取消预览' : '预览')}
               </Button>
             </div>
           </div>

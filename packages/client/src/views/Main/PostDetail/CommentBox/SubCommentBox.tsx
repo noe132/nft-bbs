@@ -71,15 +71,9 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
           await sleep();
           if (state.comments.some((v) => v.trxId === trxId)) {
             handleJumpToReply(trxId);
-          }
-        },
-      ),
-      reaction(
-        () => context.state.newCommentTrxId,
-        async (trxId) => {
-          await sleep();
-          if (state.comments.some((v) => v.trxId === trxId)) {
-            handleJumpToReply(trxId);
+            runInAction(() => {
+              context.state.newCommentTrxId = '';
+            });
           }
         },
       ),
