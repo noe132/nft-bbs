@@ -18,6 +18,7 @@ import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon } from '~/
 import { imageZoomService, keyService, nftService, nodeService } from '~/service';
 import { ago, runLoading, ThemeLight, usePageState, useWiderThan } from '~/utils';
 import { editProfile } from '~/modals';
+import { Link } from 'react-router-dom';
 
 export const UserProfile = observer((props: { className?: string }) => {
   const routeParams = useParams<{ groupId: string, userAddress: string }>();
@@ -387,9 +388,20 @@ export const UserProfile = observer((props: { className?: string }) => {
                   >
                     {stat.title || '无标题'}
                   </a>
-                  <div className="text-blue-gray text-14 truncate-2 mt-2">
-                    {RemoveMarkdown(stat.content)}
-                  </div>
+                  {isPC && (
+                    <div className="text-blue-gray text-14 truncate-2 mt-2">
+                      {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
+                    </div>
+                  )}
+                  {!isPC && (
+                    <Link
+                      className="text-blue-gray text-14 truncate-2 mt-2"
+                      to={`/${v.groupId}/post/${v.trxId}`}
+                      onClick={(e) => { e.preventDefault(); handleOpenPost(v); }}
+                    >
+                      {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
+                    </Link>
+                  )}
                   <div className="flex items-center justify-between mt-3 text-link-soft text-14">
                     <div
                       className={classNames(

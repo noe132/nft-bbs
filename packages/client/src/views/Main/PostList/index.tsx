@@ -216,23 +216,39 @@ export const PostList = observer((props: { className?: string }) => {
                 )}
                 <div className="flex justify-between items-center gap-x-2">
                   <Link
-                    className="text-white text-18 font-medium cursor-pointer leading-relaxed truncate-2 hover:underline"
-                    to={`/post/${v.groupId}/${v.trxId}`}
+                    className="text-white text-18 font-medium leading-relaxed truncate-2 hover:underline w-full"
+                    to={`/${v.groupId}/post/${v.trxId}`}
                     onClick={(e) => { e.preventDefault(); handleOpenPost(v); }}
                   >
                     {stat.title || '无标题'}
                   </Link>
                   {isPC && authorAvatarAndName}
                 </div>
-                <div
-                  className={classNames(
-                    'text-blue-gray text-14 break-all',
-                    isPC && 'truncate-2',
-                    !isPC && 'truncate-4',
-                  )}
-                >
-                  {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
-                </div>
+                {isPC && (
+                  <div
+                    className={classNames(
+                      'text-blue-gray text-14 break-all',
+                      isPC && 'truncate-2',
+                      !isPC && 'truncate-4',
+                    )}
+                  >
+                    {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
+                  </div>
+                )}
+                {!isPC && (
+                  <Link
+                    className={classNames(
+                      'text-blue-gray text-14 break-all !no-underline',
+                      isPC && 'truncate-2',
+                      !isPC && 'truncate-4',
+                    )}
+                    to={`/${v.groupId}/post/${v.trxId}`}
+                    onClick={(e) => { e.preventDefault(); handleOpenPost(v); }}
+                  >
+                    {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
+                  </Link>
+                )}
+
                 <div className="flex items-center justify-between mt-1 text-14">
                   <div className="flex gap-x-2 -ml-2">
                     <div className="min-w-[72px]">
