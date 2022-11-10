@@ -7,8 +7,9 @@ import { Button, Dialog, IconButton, Slider } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { RiZoomOutLine, RiZoomInLine } from 'react-icons/ri';
 
-import { createPromise, runLoading, ThemeLight } from '~/utils';
+import { createPromise, runLoading, ThemeLight, useWiderThan } from '~/utils';
 import { modalViewState } from './helper/modalViewState';
+import classNames from 'classnames';
 
 const AVATAR_SIZE = 120;
 
@@ -35,6 +36,7 @@ const editAvatarDialog = observer((props: ModalProps) => {
   const state = useLocalObservable(() => ({
     open: true,
   }));
+  const isPC = useWiderThan(960);
 
   const handleConfirm = action((imgBase64: Blob) => {
     props.rs(imgBase64);
@@ -51,8 +53,14 @@ const editAvatarDialog = observer((props: ModalProps) => {
       <Dialog
         open={state.open}
         onClose={handleCancel}
+        classes={{
+          paper: classNames(
+            'max-w-[400px] w-full',
+            !isPC && 'mx-2',
+          ),
+        }}
       >
-        <div className="flex-col relative w-[400px]">
+        <div className="flex-col relative">
           <IconButton
             className="absolute top-2 right-2"
             onClick={handleCancel}

@@ -6,7 +6,7 @@ import { Close } from '@mui/icons-material';
 import { Dialog, FormControl, IconButton, InputLabel, OutlinedInput } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
-import { blobToDataUrl, createPromise, runLoading, ThemeLight } from '~/utils';
+import { blobToDataUrl, createPromise, runLoading, ThemeLight, useWiderThan } from '~/utils';
 import { nftService, nodeService, snackbarService } from '~/service';
 import { UserAvatar } from '~/components';
 
@@ -38,6 +38,7 @@ const EditProfileDialog = observer((props: ModalProps) => {
   const state = useLocalObservable(() => ({
     open: true,
   }));
+  const isPC = useWiderThan(960);
 
   const handleConfirm = action(() => {
     props.rs();
@@ -54,8 +55,14 @@ const EditProfileDialog = observer((props: ModalProps) => {
       <Dialog
         open={state.open}
         onClose={handleSkip}
+        classes={{
+          paper: classNames(
+            'max-w-[400px] w-full',
+            !isPC && 'mx-2',
+          ),
+        }}
       >
-        <div className="flex-col relative w-[400px]">
+        <div className="flex-col relative">
           <IconButton
             className="absolute top-2 right-2"
             onClick={handleSkip}
