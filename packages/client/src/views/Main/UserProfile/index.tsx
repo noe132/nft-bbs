@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import { stringifyUrl } from 'query-string';
 import classNames from 'classnames';
 import { action, reaction, runInAction } from 'mobx';
@@ -18,7 +18,6 @@ import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon } from '~/
 import { imageZoomService, keyService, nftService, nodeService } from '~/service';
 import { ago, runLoading, ThemeLight, usePageState, useWiderThan } from '~/utils';
 import { editProfile } from '~/modals';
-import { Link } from 'react-router-dom';
 
 export const UserProfile = observer((props: { className?: string }) => {
   const routeParams = useParams<{ groupId: string, userAddress: string }>();
