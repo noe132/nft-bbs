@@ -10,8 +10,8 @@ import {
   PersonOutline, Search,
 } from '@mui/icons-material';
 import {
-  Badge, Button, FormControl, IconButton, Input,
-  InputLabel, Menu, MenuItem, OutlinedInput, Popover, Tab, Tabs,
+  Badge, Button, Fade, FormControl, IconButton, Input, InputBase,
+  InputLabel, Menu, MenuItem, OutlinedInput, Popover, Portal, Tab, Tabs,
 } from '@mui/material';
 
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
@@ -54,6 +54,7 @@ export const Header = observer((props: { className?: string }) => {
   const userBoxRef = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
+  const mobileSearchInput = useRef<HTMLInputElement>(null);
 
   const handleChangeFilter = action((filter: 'all' | 'week' | 'month' | 'year') => {
     if (!postlistState) { return; }
@@ -62,6 +63,7 @@ export const Header = observer((props: { className?: string }) => {
   });
 
   const handleChangeTab = action((tab: number) => {
+    if (tab === 2) { return; }
     if (!postlistState) { return; }
     postlistState.header.tab = tab;
     if (tab === 0) { postlistState.mode.type = 'normal'; }
@@ -72,9 +74,13 @@ export const Header = observer((props: { className?: string }) => {
   const handleSearchInputKeydown = action((e: React.KeyboardEvent) => {
     if (!postlistState) { return; }
     if (e.key === 'Enter' && postlistState.header.searchTerm) {
+      e.preventDefault();
       runInAction(() => {
         postlistState.mode.type = 'search';
         postlistState.mode.search = postlistState.header.searchTerm;
+        if (!isPC) {
+          postlistState.header.searchMode = false;
+        }
       });
       postlistState.loadPosts();
     }
@@ -85,9 +91,13 @@ export const Header = observer((props: { className?: string }) => {
 
   const handleOpenSearchInput = action(() => {
     if (!postlistState) { return; }
+    if (!isPC) {
+      postlistState.header.searchTerm = '';
+    }
     postlistState.header.searchMode = !postlistState.header.searchMode;
     setTimeout(() => {
       searchInput.current?.focus();
+      mobileSearchInput.current?.focus();
     });
   });
 
@@ -216,6 +226,10 @@ export const Header = observer((props: { className?: string }) => {
     const groupId = nodeService.state.groupId;
     return match ? `/${groupId}` : `/${groupId}/notification`;
   }, [routeLocation.pathname]);
+
+  const computedMobileTab = postlistState?.mode.type === 'search'
+    ? 2
+    : postlistState?.header.tab ?? 0;
 
   return (<>
     {isPC && (<React.Fragment key="pc">
@@ -471,10 +485,10 @@ export const Header = observer((props: { className?: string }) => {
           <div className="flex self-stretch gap-x-4 border-t border-white/30">
             <div className="flex gap-x-2">
               <Tabs
-                value={postlistState.header.tab}
+                value={computedMobileTab}
                 TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
               >
-                {['最新', '最热'].map((v, i) => (
+                {['最新', '最热', postlistState.mode.type === 'search' ? '搜索' : ''].filter((v) => v).map((v, i) => (
                   <Tab
                     className="text-gray-9c text-20 h-[60px] px-8 !min-w-0 !px-6"
                     classes={{ selected: '!text-rum-orange' }}
@@ -484,7 +498,7 @@ export const Header = observer((props: { className?: string }) => {
                   />
                 ))}
               </Tabs>
-              {postlistState.header.tab === 1 && (
+              {computedMobileTab === 1 && (
                 <div className="flex items-stretch gap-x-0">
                   {([['周', 'week'], ['月', 'month'], ['年', 'year'], ['一直', 'all']] as const).map(([t, v], i) => (
                     <Button
@@ -533,6 +547,35 @@ export const Header = observer((props: { className?: string }) => {
           </div>
         </div>
       </Popover>
+    )}
+
+    {!isPC && !!postlistState && isPostlistPage && (
+      <Portal>
+        <Fade in={postlistState.header.searchMode}>
+          <div className="flex-col fixed inset-0 z-[50]">
+            <div className="w-full bg-white p-4">
+              <InputBase
+                className="flex-none bg-black/5 w-full rounded text-black"
+                inputProps={{
+                  className: 'placeholder:text-black placeholder:opacity-40 px-3 py-1',
+                  style: { WebkitTextFillColor: 'unset' },
+                }}
+                inputRef={mobileSearchInput}
+                value={postlistState.header.searchTerm}
+                onChange={(action((e) => { postlistState.header.searchTerm = e.target.value; }))}
+                placeholder="搜索种子网络…"
+                multiline
+                maxRows={5}
+                onKeyDown={handleSearchInputKeydown}
+              />
+            </div>
+            <div
+              className="flex flex-center flex-1 duration-150 bg-black/50"
+              onClick={handleExitSearchMode}
+            />
+          </div>
+        </Fade>
+      </Portal>
     )}
 
     <ThemeLight>
