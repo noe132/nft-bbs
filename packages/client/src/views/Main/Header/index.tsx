@@ -6,6 +6,7 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import { ethers } from 'ethers';
 import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import {
+  AdminPanelSettings,
   Close, Logout, MoreVert, NotificationsNone,
   PersonOutline, Search,
 } from '@mui/icons-material';
@@ -41,6 +42,9 @@ export const Header = observer((props: { className?: string }) => {
     },
     get profile() {
       return nodeService.state.myProfile;
+    },
+    get isAdmin() {
+      return nodeService.state.config.admin.includes(keyService.state.address);
     },
   }));
 
@@ -667,6 +671,11 @@ export const Header = observer((props: { className?: string }) => {
             text: '使用账号2',
             onClick: () => handleChangeAccount('2'),
             icon: '',
+          },
+          state.isAdmin && {
+            text: '管理后台',
+            onClick: () => window.open('/admin'),
+            icon: <AdminPanelSettings className="text-22 text-red-500/90" />,
           },
           // process.env.NODE_ENV === 'development' && { text: '使用新号', onClick: () => handleChangeAccount('new') },
           {

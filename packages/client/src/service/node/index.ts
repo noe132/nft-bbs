@@ -36,6 +36,7 @@ const state = observable({
   config: {
     loaded: false,
     group: {} as ConfigApi.SiteConfig['group'],
+    admin: [] as Array<string>,
     groupId: '',
     get currentGroup() {
       return state.config.group[state.groupId] ?? state.config.group.default ?? {
@@ -676,6 +677,7 @@ const config = {
           taskEither.map((v) => {
             runInAction(() => {
               state.config.group = v.group;
+              state.config.admin = v.admin;
               state.config.seedUrl = v.fixedSeed ?? '';
               state.config.loaded = true;
             });

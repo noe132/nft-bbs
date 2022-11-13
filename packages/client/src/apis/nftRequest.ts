@@ -14,6 +14,11 @@ export interface NFTRequestData {
   groupId: string
   memo: string
 }
+export interface NFTRequestReplyData {
+  id: number
+  type: string
+  reply: string
+}
 
 export const submitRequest = async (data: NFTRequestData & AdminAuthParams) => {
   const item = await request({
@@ -35,11 +40,29 @@ export const submitRequest = async (data: NFTRequestData & AdminAuthParams) => {
 interface ListParams {
   offset: number
   limit: number
+  filter?: string
 }
 
 export const list = async (data: ListParams & AdminAuthParams) => {
   const item = await request<Array<NftRequest>>({
     url: `${API_BASE_URL}/nft/request/list`,
+    method: 'post',
+    data,
+  });
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      if (v.response?.status !== 404) {
+        snackbarService.networkError(v);
+      }
+      return null;
+    }),
+  );
+};
+
+export const submitRequestReply = async (data: NFTRequestReplyData & AdminAuthParams) => {
+  const item = await request({
+    url: `${API_BASE_URL}/nft/request/reply`,
     method: 'post',
     data,
   });

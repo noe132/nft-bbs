@@ -1,5 +1,5 @@
 import { FastifyRegister } from 'fastify';
-import { type, string, number, literal, union } from 'io-ts';
+import { type, string, number, literal, union, intersection, partial } from 'io-ts';
 import { BadRequest } from 'http-errors';
 import { AppDataSource } from '~/orm/data-source';
 import { NftRequest } from '~/orm/entity/nftRequest';
@@ -29,27 +29,43 @@ export const nftController: Parameters<FastifyRegister>[0] = (fastify, _opts, do
   });
 
   fastify.post('/request/list', async (req) => {
-    const body = assertValidation(req.body, type({
-      address: string,
-      nonce: number,
-      sign: string,
-      offset: number,
-      limit: number,
-    }));
+    const body = assertValidation(req.body, intersection([
+      type({
+        address: string,
+        nonce: number,
+        sign: string,
+        offset: number,
+        limit: number,
+      }),
+      partial({
+        filter: union([
+          literal('all'),
+          literal('pending'),
+          literal('rejected'),
+          literal('approved'),
+        ]),
+      }),
+    ]));
     assertVerifySign(body);
     assertAdmin(body.address);
 
-    const items = await AppDataSource.manager.createQueryBuilder()
+    const query = AppDataSource.manager.createQueryBuilder()
       .select('req')
       .from(NftRequest, 'req')
       .orderBy('req.id', 'DESC')
       .offset(body.offset)
-      .limit(Math.min(body.limit, 500))
-      .getMany();
+      .limit(Math.min(body.limit, 500));
+
+    if (body.filter && ['approved', 'rejected', 'pending'].includes(body.filter)) {
+      query.where('req.status = :status', { status: body.filter });
+    }
+
+    const items = await query.getMany();
+
+    await NftRequest.pack(items);
 
     return items;
   });
-
 
   fastify.post('/request/reply', async (req) => {
     const body = assertValidation(req.body, type({
@@ -70,6 +86,7 @@ export const nftController: Parameters<FastifyRegister>[0] = (fastify, _opts, do
     item.reply = body.reply;
     item.status = body.type;
     await AppDataSource.manager.save(NftRequest, item);
+    return item;
   });
 
   done();

@@ -11,6 +11,7 @@ export interface SiteConfig {
     anonymous: boolean
     nft?: string
   }>
+  admin: Array<string>
   fixedSeed?: string
 }
 
