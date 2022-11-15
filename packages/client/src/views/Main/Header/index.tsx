@@ -3,8 +3,6 @@ import { useLocation, useNavigate, useParams, Link, matchPath } from 'react-rout
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import { ethers } from 'ethers';
-import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import {
   AdminPanelSettings,
   Close, Logout, MoreVert, NotificationsNone,
@@ -21,7 +19,6 @@ import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import { routeUrlPatterns, setLoginState, ThemeLight, usePageState, useWiderThan } from '~/utils';
 import { nodeService, keyService, dialogService } from '~/service';
 import { editProfile } from '~/modals';
-import { ACCOUNT1, ACCOUNT2 } from '~/utils/testAccount';
 import { GroupAvatar, GroupCard, NFTSideBox, SiteLogo, UserAvatar } from '~/components';
 
 import { createPostlistState } from '../PostList';
@@ -136,32 +133,6 @@ export const Header = observer((props: { className?: string }) => {
       navigate(`/${state.profile.groupId}/userprofile/${state.profile.userAddress}`);
     }
   });
-
-  const handleChangeAccount = async (type: '1' | '2' | 'new') => {
-    let wallet;
-    if (type === '1') {
-      const privateKey = ACCOUNT1.privateKey;
-      wallet = new ethers.Wallet(privateKey);
-    } else if (type === '2') {
-      const privateKey = ACCOUNT2.privateKey;
-      wallet = new ethers.Wallet(privateKey);
-    } else {
-      wallet = ethers.Wallet.createRandom();
-    }
-    const password = '123';
-    const keystore = await wallet.encrypt(password, {
-      scrypt: {
-        N: 64,
-      },
-    });
-
-    setLoginState({
-      keystore,
-      password,
-    });
-    QuorumLightNodeSDK.cache.Group.clear();
-    window.location.href = '/';
-  };
 
   const handleShowAccountInfo = action(() => {
     state.menu = false;
@@ -661,16 +632,6 @@ export const Header = observer((props: { className?: string }) => {
             text: '我的账号信息',
             onClick: handleShowAccountInfo,
             icon: <PersonOutline className="text-22 text-blue-500/90" />,
-          },
-          process.env.NODE_ENV === 'development' && {
-            text: '使用账号1',
-            onClick: () => handleChangeAccount('1'),
-            icon: '',
-          },
-          process.env.NODE_ENV === 'development' && {
-            text: '使用账号2',
-            onClick: () => handleChangeAccount('2'),
-            icon: '',
           },
           state.isAdmin && {
             text: '管理后台',

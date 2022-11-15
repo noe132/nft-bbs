@@ -129,12 +129,12 @@ export const Join = observer(() => {
   };
 
   const handleLoginByRandom = async () => {
-    const loginedKeystore = await keyService.loginRandom('123');
+    const keys = await keyService.createRandom('123');
+    keyService.useKeystore(keys);
     setLoginState({
       autoLogin: 'keystore',
-      keystore: loginedKeystore.keystore,
-      password: '123',
       seedUrl: state.computedSeedUrl,
+      ...keys,
     });
     joinGroup();
   };
@@ -152,12 +152,8 @@ export const Join = observer(() => {
     }
 
     if (type === 'keystore' && state.savedLoginState.keystore.data) {
-      const { keystore, password, address, privateKey } = state.savedLoginState.keystore.data.user;
-      const loginResult = await keyService.login(keystore, password, address, privateKey);
-      if (either.isLeft(loginResult)) {
-        snackbarService.error('登录失败');
-        return;
-      }
+      const data = state.savedLoginState.keystore.data.user;
+      keyService.useKeystore(data);
       setLoginState({ autoLogin: 'keystore' });
       joinGroup();
     }
@@ -185,6 +181,8 @@ export const Join = observer(() => {
       setLoginState({
         keystore: '',
         password: '',
+        privateKey: '',
+        address: '',
       });
     }
   };
@@ -258,16 +256,23 @@ export const Join = observer(() => {
     runLoading(
       (l) => { state.keystoreLoginLoading = l; },
       async () => {
-        const result = await keyService.login(state.keystore, state.password);
+        const result = await keyService.validate(state.keystore, state.password);
         if (either.isLeft(result)) {
           snackbarService.error('keystore或密码错误');
           return;
         }
+        const data = result.right;
+        keyService.useKeystore(data);
+
         setLoginState({
           autoLogin: state.rememberPassword ? 'keystore' : null,
-          keystore: state.keystore,
           seedUrl: state.computedSeedUrl,
-          password: state.rememberPassword ? state.password : '',
+          ...state.rememberPassword ? data : {
+            keystore: '',
+            password: '',
+            privateKey: '',
+            address: '',
+          },
         });
         joinGroup();
       },
@@ -325,20 +330,24 @@ export const Join = observer(() => {
       });
     }
 
-    if (loginState && loginState.keystore && loginState.password) {
-      const validateKeystore = async () => {
-        runInAction(() => { state.savedLoginState.keystore.show = true; });
-        const loginResult = await keyService.validate(loginState.keystore, loginState.password);
-        if (either.isRight(loginResult)) {
+    if (loginState && loginState.keystore && loginState.password && loginState.privateKey && loginState.address) {
+      const validateKeystore = () => {
+        runInAction(() => {
+          state.savedLoginState.keystore.show = true;
           runInAction(() => {
             state.savedLoginState.keystore.data = {
-              user: loginResult.right,
+              user: {
+                address: loginState.address,
+                keystore: loginState.keystore,
+                password: loginState.password,
+                privateKey: loginState.privateKey,
+              },
               profile: nodeService.profile.getFallbackProfile({
-                userAddress: loginResult.right.address,
+                userAddress: loginState.address,
               }),
             };
           });
-        }
+        });
       };
       runInAction(() => {
         state.savedLoginState.keystore.loadingPromise = runLoading(

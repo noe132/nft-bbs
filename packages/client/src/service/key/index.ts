@@ -84,16 +84,6 @@ const logout = action(() => {
   state.keys = null;
 });
 
-const login = (keystore: string, password: string, address?: string, privateKey?: string) => fp.pipe(
-  address && privateKey
-    ? taskEither.of({ keystore, password, address, privateKey })
-    : () => validate(keystore, password),
-  taskEither.map((v) => {
-    useKeystore(v);
-    return v;
-  }),
-)();
-
 const createRandom = async (password: string) => {
   const wallet = ethers.Wallet.createRandom();
   const keystore = await wallet.encrypt(password, { scrypt: { N: 64 } });
@@ -103,12 +93,6 @@ const createRandom = async (password: string) => {
     address: wallet.address,
     privateKey: wallet.privateKey,
   };
-  return keys;
-};
-
-const loginRandom = async (password: string) => {
-  const keys = await createRandom(password);
-  useKeystore(keys);
   return keys;
 };
 
@@ -165,18 +149,15 @@ const parseSavedLoginState = () => {
               data: null,
             };
           });
-          return fp.pipe(
-            () => keyService.validate(loginState.keystore, loginState.password),
-            taskEither.mapLeft((v) => {
-              setLoginState({
-                keystore: '',
-                password: '',
-                autoLogin: null,
-              });
-              return v;
-            }),
-            taskOption.fromTaskEither,
-          );
+          if (loginState.keystore && loginState.password && loginState.address && loginState.privateKey) {
+            return taskOption.some({
+              keystore: loginState.keystore,
+              password: loginState.password,
+              address: loginState.address,
+              privateKey: loginState.privateKey,
+            });
+          }
+          return taskOption.none;
         }),
         taskOption.map(action((v) => {
           state.saved.keystore = {
@@ -257,9 +238,8 @@ const loginBySavedState = action((type?: 'keystore' | 'mixin') => {
 export const keyService = {
   state,
 
-  login,
+  useKeystore,
   useMixin,
-  loginRandom,
   createRandom,
   logout,
   validate,

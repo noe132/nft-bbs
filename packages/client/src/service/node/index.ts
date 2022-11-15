@@ -650,12 +650,6 @@ const group = {
       state.groups = v;
     })),
   ),
-  tryAutoJoin: () => {
-    const loginState = getLoginState();
-    if (loginState.seedUrl && loginState.autoLogin) {
-      group.join(loginState.seedUrl);
-    }
-  },
   setDocumentTitle: (title?: string) => {
     document.title = [
       'Port',

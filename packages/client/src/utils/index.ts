@@ -113,6 +113,8 @@ export interface LoginState {
   seedUrl: string
   mixinJWT: string
   keystore: string
+  privateKey: string
+  address: string
   password: string
   autoLogin: null | 'keystore' | 'mixin'
   jumpToLogin: boolean
@@ -123,6 +125,7 @@ export const getLoginState = () => {
     seedUrl: '',
     mixinJWT: '',
     keystore: '',
+    privateKey: '',
     password: '',
     autoLogin: null as null | 'keystore' | 'mixin',
   };
