@@ -22,6 +22,7 @@ export const handlePost = async (item: IContent, transactionManager: EntityManag
     commentCount: 0,
     likeCount: 0,
     dislikeCount: 0,
+    hot: 0,
   }, transactionManager);
 
   queueSocket({

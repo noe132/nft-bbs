@@ -52,8 +52,7 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
         }[query.hot];
         dbQuery.andWhere(`post.timestamp > now() - interval '${hotTime}'`);
       }
-      dbQuery.addOrderBy('post.likeCount', 'DESC');
-      dbQuery.addOrderBy('post.commentCount', 'DESC');
+      dbQuery.addOrderBy('post.hot', 'DESC');
     }
 
     dbQuery.addOrderBy('post.timestamp', query.order === 'asc' ? 'ASC' : 'DESC');

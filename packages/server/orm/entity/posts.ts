@@ -50,6 +50,9 @@ export class Post {
   @Column({ type: 'int', nullable: false })
   public dislikeCount!: number;
 
+  @Column({ type: 'int', nullable: false, default: 0 })
+  public hot!: number;
+
   @DeleteDateColumn({
     transformer: {
       from: (v: Date | null) => v?.getTime() ?? null,
@@ -137,6 +140,10 @@ export class Post {
       groupId,
       userAddress,
     });
+  }
+
+  public static getHot(post: Post) {
+    return post.likeCount * 2 + post.commentCount - post.dislikeCount * 2;
   }
 
   public static async appendExtra(items: Post, options?: { viewer?: string }): Promise<Post>;

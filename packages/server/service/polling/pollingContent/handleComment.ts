@@ -70,6 +70,7 @@ export const handleComment = async (item: IContent, transactionManager: EntityMa
   if (threadComment) {
     threadComment.commentCount += 1;
   }
+  post.hot = Post.getHot(post);
 
   await Promise.all([
     Post.save(post, transactionManager),

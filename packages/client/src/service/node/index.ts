@@ -284,6 +284,7 @@ const post = {
         commentCount: 0,
         likeCount: 0,
         dislikeCount: 0,
+        hot: 0,
         extra: {
           disliked: false,
           liked: false,
