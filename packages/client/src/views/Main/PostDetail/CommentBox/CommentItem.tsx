@@ -199,7 +199,11 @@ export const CommentItem = observer((props: CommentItemProps) => {
           !isPC && 'mt-3',
         )}
       >
-        {state.comment.content}
+        {state.comment.content.split('\n').map((v, i) => (
+          <p key={i}>
+            {v}
+          </p>
+        ))}
       </div>
 
       {!!state.comment.extra?.images && !!state.comment.extra.images.length && (
