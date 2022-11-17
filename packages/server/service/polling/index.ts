@@ -4,58 +4,74 @@ import { PollingTask } from '~/utils';
 import { pollingTask } from './pollingContent';
 
 const state = {
-  map: new Map<string, PollingTask>(),
+  map: new Map<number, PollingTask>(),
 };
 
-const initData = async () => {
-  const groupStatus = await GroupStatus.list();
-  QuorumLightNodeSDK.cache.Group.clear();
-  groupStatus.forEach((v) => {
-    QuorumLightNodeSDK.cache.Group.add(v.seedUrl);
-  });
-  updatePollingTasks();
-};
+const updatePollingTasks = async () => {
+  const groups = await GroupStatus.list();
 
-const updatePollingTasks = () => {
-  const groups = QuorumLightNodeSDK.cache.Group.list();
   groups.forEach((group) => {
-    if (state.map.has(group.groupId)) {
-      return;
-    }
+    if (state.map.has(group.id)) { return; }
+    const seedUrls = [
+      group.mainSeedUrl,
+      group.commentSeedUrl,
+      group.counterSeedUrl,
+      group.profileSeedUrl,
+    ];
+    seedUrls.filter((v) => v).forEach((u) => {
+      QuorumLightNodeSDK.cache.Group.add(u);
+    });
+
     const task = new PollingTask(
-      async () => {
-        await pollingTask(group);
-      },
+      () => pollingTask(group.id),
       2000,
     );
-    state.map.set(group.groupId, task);
+    state.map.set(group.id, task);
   });
 
   Array.from(state.map.keys())
-    .filter((groupId) => groups.every((group) => group.groupId !== groupId))
-    .forEach((groupId) => {
-      const task = state.map.get(groupId);
-      if (task) {
-        task.stop();
-      }
-      state.map.delete(groupId);
+    .filter((id) => groups.every((group) => group.id !== id))
+    .forEach((id) => {
+      const task = state.map.get(id);
+      if (task) { task.stop(); }
+      state.map.delete(id);
     });
 };
 
-const addGroup = (groupId: string, seedUrl: string) => {
-  QuorumLightNodeSDK.cache.Group.remove(groupId);
-  QuorumLightNodeSDK.cache.Group.add(seedUrl);
-  updatePollingTasks();
+const deleteTask = async (group: GroupStatus) => {
+  const task = state.map.get(group.id);
+  if (!task) { return; }
+  await task.stop();
+  state.map.delete(group.id);
+};
+
+const updateTask = async (group: GroupStatus) => {
+  await deleteTask(group);
+  const seedUrls = [
+    group.mainSeedUrl,
+    group.commentSeedUrl,
+    group.counterSeedUrl,
+    group.profileSeedUrl,
+  ];
+  seedUrls.filter((v) => v).forEach((u) => {
+    QuorumLightNodeSDK.cache.Group.add(u);
+  });
+  const task = new PollingTask(
+    () => pollingTask(group.id),
+    2000,
+  );
+  state.map.set(group.id, task);
 };
 
 const init = () => {
-  initData();
-
+  updatePollingTasks();
   return () => 1;
 };
 
 export const pollingService = {
   init,
   state,
-  addGroup,
+  updatePollingTasks,
+  deleteTask,
+  updateTask,
 };

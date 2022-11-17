@@ -23,13 +23,24 @@ const state = observable({
   get hasNFT() {
     return !!this.tokenIdMap.get(keyService.state.address)?.balance;
   },
-  get hasPermission() {
-    if (!nodeService.state.logined) { return false; }
+  get permissionMap() {
+    if (!nodeService.state.logined) {
+      return { main: false, comment: false, counter: false, profile: false };
+    }
     const config = nodeService.config.get();
     if (!config.nft) {
-      return true;
+      return { main: true, comment: true, counter: true, profile: true };
     }
-    return this.hasNFT;
+    const group = nodeService.state.group;
+    if (!group) {
+      return { main: false, comment: false, counter: false, profile: false };
+    }
+    return {
+      main: this.hasNFT,
+      comment: group.commentSeedUrl === group.mainSeedUrl ? this.hasNFT : true,
+      counter: group.counterSeedUrl === group.mainSeedUrl ? this.hasNFT : true,
+      profile: group.profileSeedUrl === group.mainSeedUrl ? this.hasNFT : true,
+    };
   },
 });
 
@@ -108,9 +119,9 @@ const getNFT = (userAddress: string) => {
   return promise;
 };
 
-const permissionTip = (type: 'post' | 'comment' | 'counter' | 'profile') => {
+const permissionTip = (type: 'main' | 'comment' | 'counter' | 'profile') => {
   const map = {
-    post: '您不持有具备发帖权限的 NFT',
+    main: '您不持有具备发帖权限的 NFT',
     comment: '您不持有具备评论权限的 NFT',
     counter: '您没有评论互动权限',
     profile: '您没有提交个人资料的权限',
@@ -118,13 +129,13 @@ const permissionTip = (type: 'post' | 'comment' | 'counter' | 'profile') => {
   if (!nodeService.state.logined) {
     return '请先登录';
   }
-  if (!state.hasPermission) {
+  if (!state.permissionMap[type]) {
     return map[type];
   }
   return '';
 };
 
-const hasPermissionAndTip = (type: 'post' | 'comment' | 'counter' | 'profile') => {
+const hasPermissionAndTip = (type: 'main' | 'comment' | 'counter' | 'profile') => {
   const tip = permissionTip(type);
   if (tip) {
     snackbarService.show(tip);
@@ -135,11 +146,11 @@ const hasPermissionAndTip = (type: 'post' | 'comment' | 'counter' | 'profile') =
 export const init = () => {
   const disposes = [
     reaction(
-      () => nodeService.state.groupId,
+      () => nodeService.state.group,
       action(() => state.tokenIdMap.clear()),
     ),
     reaction(
-      () => [nodeService.state.groupId, nodeService.state.config.loaded, keyService.state.address],
+      () => [nodeService.state.group, nodeService.state.config.loaded, keyService.state.address],
       (items) => {
         if (items.some((v) => !v)) {
           state.tokenIdMap.delete(keyService.state.address);

@@ -110,7 +110,7 @@ export const notNullFilter = <T>(v: T | undefined | null): v is T => v !== undef
 
 
 export interface LoginState {
-  seedUrl: string
+  groupId: number
   mixinJWT: string
   keystore: string
   privateKey: string
@@ -122,7 +122,7 @@ export interface LoginState {
 
 export const getLoginState = () => {
   const loginState: LoginState = store('login_state') || {
-    seedUrl: '',
+    groupId: 0,
     mixinJWT: '',
     keystore: '',
     privateKey: '',

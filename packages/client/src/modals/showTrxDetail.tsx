@@ -10,12 +10,12 @@ import { createPromise, runLoading, setClipboard, ThemeLight, useWiderThan } fro
 import { nodeService, snackbarService } from '~/service';
 import { modalViewState } from './helper/modalViewState';
 
-export const showTrxDetail = action((trxId: string) => {
+export const showTrxDetail = action((trxId: string, type: 'main' | 'comment') => {
   const p = createPromise();
   modalViewState.push({
     component: TrxDetailDialog,
     resolve: p.rs,
-    props: { trxId },
+    props: { trxId, type },
   });
   return p.p;
 });
@@ -23,6 +23,7 @@ export const showTrxDetail = action((trxId: string) => {
 interface ModalProps {
   trxId: string
   rs: () => unknown
+  type: 'main' | 'comment'
 }
 
 const TrxDetailDialog = observer((props: ModalProps) => {
@@ -62,6 +63,7 @@ const TrxDetailDialog = observer((props: ModalProps) => {
           <TrxDetailView
             onConfirm={handleConfirm}
             trxId={props.trxId}
+            type={props.type}
           />
         </div>
       </Dialog>
@@ -73,6 +75,7 @@ interface Props {
   className?: string
   trxId: string
   onConfirm: () => unknown
+  type: 'main' | 'comment'
 }
 export const TrxDetailView = observer((props: Props) => {
   const state = useLocalObservable(() => ({
@@ -85,7 +88,13 @@ export const TrxDetailView = observer((props: Props) => {
     runLoading(
       (l) => { state.loading = l; },
       async () => {
-        const groupId = nodeService.state.groupId;
+        let groupId;
+        if (props.type === 'main') {
+          groupId = nodeService.state.groupMap?.main.groupId;
+        }
+        if (props.type === 'comment') {
+          groupId = nodeService.state.groupMap?.comment.groupId;
+        }
         if (!groupId) { return; }
         const trx = await QuorumLightNodeSdk.chain.Trx.get(groupId, props.trxId);
         runInAction(() => {
@@ -107,12 +116,12 @@ export const TrxDetailView = observer((props: Props) => {
         区块详情
       </div>
       <div className="max-w-[400px] mt-2">
-        {state.loading && !state.trx && (
+        {state.loading && (
           <div className="flex flex-center py-12">
             <CircularProgress className="text-black/40" />
           </div>
         )}
-        {!!state.trx && (
+        {!state.loading && !!state.trx && (
           <div
             className="grid gap-x-3 gap-y-2 mt-4 text-14"
             style={{ gridTemplateColumns: 'min-content 1fr' }}
@@ -152,6 +161,11 @@ export const TrxDetailView = observer((props: Props) => {
             <div className="truncate">{state.trx.TimeStamp}</div>
             <div>Version:</div>
             <div className="truncate">{state.trx.Version}</div>
+          </div>
+        )}
+        {!state.loading && !state.trx && (
+          <div className="flex flex-center mt-4 text-14">
+            数据获取失败
           </div>
         )}
       </div>

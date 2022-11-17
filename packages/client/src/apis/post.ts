@@ -1,10 +1,10 @@
 import { either, function as fp } from 'fp-ts';
-import type { Post } from 'nft-bbs-server';
+import type { GroupStatus, Post } from 'nft-bbs-server';
 import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { API_BASE_URL } from './common';
 
-export const get = async (params: { groupId: string, trxId: string, viewer?: string }) => {
+export const get = async (params: { groupId: GroupStatus['id'], trxId: string, viewer?: string }) => {
   const item = await request<Post>({
     url: `${API_BASE_URL}/post/${params.groupId}/${params.trxId}`,
     params: { viewer: params.viewer },
@@ -20,7 +20,7 @@ export const get = async (params: { groupId: string, trxId: string, viewer?: str
   );
 };
 
-export const getFirst = async (params: { groupId: string, userAddress: string, viewer?: string }) => {
+export const getFirst = async (params: { groupId: GroupStatus['id'], userAddress: string, viewer?: string }) => {
   const item = await request<Post>({
     url: `${API_BASE_URL}/post/${params.groupId}/first`,
     params: {
@@ -39,7 +39,7 @@ export const getFirst = async (params: { groupId: string, userAddress: string, v
   );
 };
 
-export const list = async (groupId: string, options: {
+export const list = async (groupId: GroupStatus['id'], options: {
   order?: 'asc' | 'desc'
   viewer?: string
   userAddress?: string
@@ -61,7 +61,7 @@ export const list = async (groupId: string, options: {
   );
 };
 
-export const getCount = async (groupId: string, userAddress: string) => {
+export const getCount = async (groupId: GroupStatus['id'], userAddress: string) => {
   const item = await request<number>({
     url: `${API_BASE_URL}/post/count/${groupId}/${userAddress}`,
   });

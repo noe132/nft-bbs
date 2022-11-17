@@ -1,12 +1,10 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { nodeService } from '~/service';
+import { nodeService, routerService } from '~/service';
 
 export const RedirectToPostList = () => {
-  const navigate = useNavigate();
   useEffect(() => {
-    if (nodeService.state.groupId) {
-      navigate(`/${nodeService.state.groupId}`, { replace: true });
+    if (nodeService.state.group) {
+      routerService.navigate({ page: 'postlist' }, { replace: true });
     } else {
       window.location.href = '/';
     }

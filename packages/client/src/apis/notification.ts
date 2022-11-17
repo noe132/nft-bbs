@@ -1,10 +1,18 @@
 import { either, function as fp } from 'fp-ts';
-import type { Notification } from 'nft-bbs-server';
+import type { GroupStatus, Notification } from 'nft-bbs-server';
 import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { API_BASE_URL } from './common';
 
-export const list = async (params: { groupId: string, userAddress: string, limit: number, offset: number }) => {
+
+interface NotificationListParam {
+  groupId: GroupStatus['id']
+  userAddress: string
+  limit: number
+  offset: number
+}
+
+export const list = async (params: NotificationListParam) => {
   const { groupId, userAddress, limit, offset } = params;
   const item = await request<Array<Notification>>({
     url: `${API_BASE_URL}/notification/${groupId}/${userAddress}`,
@@ -19,7 +27,7 @@ export const list = async (params: { groupId: string, userAddress: string, limit
   );
 };
 
-export const getUnreadCount = async (groupId: string, userAddress: string) => {
+export const getUnreadCount = async (groupId: GroupStatus['id'], userAddress: string) => {
   const item = await request<number>({
     url: `${API_BASE_URL}/notification/${groupId}/${userAddress}/unread_count`,
   });

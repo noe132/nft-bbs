@@ -5,23 +5,33 @@ import { either, function as fp, option, taskEither } from 'fp-ts';
 import { constantDelay, limitRetries, Monoid } from 'retry-ts';
 import { retrying } from 'retry-ts/Task';
 import { v4 } from 'uuid';
-import type { Post, Comment, Profile, Notification } from 'nft-bbs-server';
+import type { Post, Comment, Profile, Notification, GroupStatus, GroupConfig } from 'nft-bbs-server';
 import { CommentType, DislikeType, ImageType, LikeType, PostDeleteType, PostType, ProfileType } from 'nft-bbs-types';
 
-import { getLoginState, runLoading, routeUrlPatterns, matchRoutePatterns, getPageStateByPageName } from '~/utils';
+import { getLoginState, runLoading, routeUrlPatterns, matchRoutePatterns, getPageStateByPageName, constructRoutePath } from '~/utils';
 import { CommentApi, ConfigApi, GroupApi, NotificationApi, PostApi, ProfileApi, TrxApi } from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
 import type { createPostlistState } from '~/views/Main/PostList';
 
 const state = observable({
-  groupId: '',
-  groups: [] as Array<GroupApi.GroupItem>,
-  group: null as null | QuorumLightNodeSDK.IGroup,
+  groups: [] as Array<GroupStatus>,
+  group: null as null | GroupStatus,
+  routeGroupId: '',
+  groupMap: null as null | {
+    main: QuorumLightNodeSDK.IGroup
+    comment: QuorumLightNodeSDK.IGroup
+    counter: QuorumLightNodeSDK.IGroup
+    profile: QuorumLightNodeSDK.IGroup
+  },
+  get groupId() {
+    return this.group?.id ?? 0;
+  },
   get groupOwnerAddress() {
-    return nodeService.state.group?.ownerPubKey
+    const pubkey = nodeService.state.groupMap?.main?.ownerPubKey;
+    return pubkey
       ? fp.pipe(
-        either.tryCatch(() => QuorumLightNodeSDK.utils.pubkeyToAddress(nodeService.state.group!.ownerPubKey), fp.identity),
+        either.tryCatch(() => QuorumLightNodeSDK.utils.pubkeyToAddress(pubkey), fp.identity),
         either.getOrElse(() => ''),
       )
       : '';
@@ -35,11 +45,12 @@ const state = observable({
 
   config: {
     loaded: false,
-    group: {} as ConfigApi.SiteConfig['group'],
+    group: {} as Record<number, GroupConfig>,
+    defaultGroup: {} as GroupConfig,
     admin: [] as Array<string>,
     groupId: '',
     get currentGroup() {
-      return state.config.group[state.groupId] ?? state.config.group.default ?? {
+      return state.config.group[state.groupId] ?? state.config.defaultGroup ?? {
         anonymous: false,
         keystore: false,
         mixin: false,
@@ -93,7 +104,7 @@ const state = observable({
     return this.myProfile.name || keyService.state.address.slice(0, 10);
   },
   get groupName() {
-    return this.group?.groupName || '';
+    return (this.groupMap?.main?.groupName || this.groupMap?.main.groupId) ?? '';
   },
   get logined() {
     return !!keyService.state.address;
@@ -101,9 +112,19 @@ const state = observable({
 });
 
 const trx = {
-  create: async (object: any, type: '_Object' | 'Person' = '_Object') => {
-    const group = QuorumLightNodeSDK.cache.Group.list()[0];
-    const groupId = group.groupId;
+  create: async (object: any, seed: 'main' | 'comment' | 'counter' | 'profile', type: '_Object' | 'Person' = '_Object') => {
+    const groupStatus = state.group;
+    if (!groupStatus) { throw new Error('no groupstatus while creating trx'); }
+    const seedUrl = {
+      main: groupStatus.mainSeedUrl,
+      comment: groupStatus.commentSeedUrl,
+      counter: groupStatus.counterSeedUrl,
+      profile: groupStatus.profileSeedUrl,
+    }[seed];
+    const groupId = QuorumLightNodeSDK.utils.restoreSeedFromUrl(seedUrl).group_id;
+    const group = QuorumLightNodeSDK.cache.Group.get(groupId);
+    if (!group) { throw new Error('no group while creating trx'); }
+
     let res;
     if (window.location.protocol === 'https:') {
       const signedTrx = await QuorumLightNodeSDK.utils.signTrx({
@@ -180,16 +201,15 @@ const profile = {
   },
 
   submit: async (params: { name: string, avatar?: { mediaType: string, content: string } }) => {
-    const group = QuorumLightNodeSDK.cache.Group.list()[0];
     try {
       const person: ProfileType = {
         name: params.name,
         image: params.avatar,
       };
-      const res = await trx.create(person, 'Person');
+      const res = await trx.create(person, 'profile', 'Person');
       if (res) {
         const profileItem: Profile = {
-          groupId: group.groupId,
+          groupId: state.groupId,
           trxId: res.trx_id,
           userAddress: keyService.state.address,
           avatar: params.avatar
@@ -209,9 +229,9 @@ const profile = {
     }
   },
 
-  getFallbackProfile: (params: { userAddress: string, groupId?: string }): Profile => ({
+  getFallbackProfile: (params: { userAddress: string, groupId?: GroupStatus['id'] }): Profile => ({
     trxId: '',
-    groupId: params.groupId ?? '',
+    groupId: params.groupId ?? 0,
     userAddress: params.userAddress,
     name: '',
     avatar: '',
@@ -271,7 +291,7 @@ const post = {
       content,
     };
 
-    const res = await trx.create(object);
+    const res = await trx.create(object, 'main');
 
     if (res) {
       const post: Post = {
@@ -304,7 +324,7 @@ const post = {
       id: post.trxId,
       content: 'OBJECT_STATUS_DELETED',
     };
-    await trx.create(object);
+    await trx.create(object, 'main');
   },
 
   get: async (trxId: string, viewer?: string) => {
@@ -364,7 +384,7 @@ const post = {
         name: v4(),
       }],
     };
-    const res = await trx.create(object);
+    const res = await trx.create(object, 'main');
     if (res) {
       runInAction(() => {
         state.post.imageCache.set(res.trx_id, URL.createObjectURL(imgBlob));
@@ -430,8 +450,7 @@ const comment = {
       content: params.content,
       inreplyto: { trxid: params.replyId || params.threadId || params.objectId },
     };
-    const group = QuorumLightNodeSDK.cache.Group.list()[0];
-    const res = await trx.create(object);
+    const res = await trx.create(object, 'comment');
     if (res) {
       const comment: Comment = {
         content: params.content,
@@ -439,7 +458,7 @@ const comment = {
         threadId: params.threadId,
         replyId: params.replyId,
         userAddress: keyService.state.address,
-        groupId: group.groupId,
+        groupId: state.groupId,
         trxId: res.trx_id,
         commentCount: 0,
         likeCount: 0,
@@ -565,8 +584,7 @@ const notification = {
 
 const counter = {
   updatePost: async (item: Post, type: 'Like' | 'Dislike') => {
-    const group = state.group;
-    if (!group) { return; }
+    if (!state.group) { return; }
     const trxId = item.trxId;
     const stat = post.getStat(item);
     const liked = stat.liked && type === 'Like';
@@ -577,7 +595,7 @@ const counter = {
         id: trxId,
         type,
       };
-      const res = await trx.create(object);
+      const res = await trx.create(object, 'counter');
 
       const map = type === 'Like'
         ? state.counter.postLike
@@ -594,8 +612,7 @@ const counter = {
     }
   },
   updateComment: async (item: Comment, type: 'Like' | 'Dislike') => {
-    const group = state.group;
-    if (!group) { return; }
+    if (!state.group) { return; }
     const trxId = item.trxId;
     const stat = comment.getStat(item);
     const liked = stat.liked && type === 'Like';
@@ -606,7 +623,7 @@ const counter = {
         id: trxId,
         type,
       };
-      const res = await trx.create(object);
+      const res = await trx.create(object, 'counter');
       if (res) {
         runInAction(() => {
           if (!state.counter.comment.has(item.trxId)) {
@@ -626,17 +643,39 @@ const counter = {
 };
 
 const group = {
-  join: (seedUrl: string) => either.tryCatch(
+  join: (groupStatus: GroupStatus, useShortName = true) => either.tryCatch(
     () => {
       QuorumLightNodeSDK.cache.Group.clear();
-      QuorumLightNodeSDK.cache.Group.add(seedUrl);
+      const seedUrls = Array.from(new Set([
+        groupStatus.mainSeedUrl,
+        groupStatus.commentSeedUrl,
+        groupStatus.counterSeedUrl,
+        groupStatus.profileSeedUrl,
+      ]));
 
-      runInAction(() => {
-        state.group = QuorumLightNodeSDK.cache.Group.list()[0];
-        state.groupId = state.group.groupId;
+      seedUrls.forEach((v) => {
+        QuorumLightNodeSDK.cache.Group.add(v);
       });
 
-      GroupApi.join(seedUrl);
+      runInAction(() => {
+        state.groupMap = {
+          main: QuorumLightNodeSDK.utils.seedUrlToGroup(groupStatus.mainSeedUrl),
+          comment: QuorumLightNodeSDK.utils.seedUrlToGroup(groupStatus.commentSeedUrl),
+          counter: QuorumLightNodeSDK.utils.seedUrlToGroup(groupStatus.counterSeedUrl),
+          profile: QuorumLightNodeSDK.utils.seedUrlToGroup(groupStatus.profileSeedUrl),
+        };
+        state.group = groupStatus;
+        if (useShortName && groupStatus.shortName) {
+          state.routeGroupId = groupStatus.shortName;
+        } else {
+          state.routeGroupId = groupStatus.id.toString();
+        }
+      });
+
+      if (window.location.pathname !== `/${state.routeGroupId}`) {
+        history.replaceState(null, '', `/${state.routeGroupId}`);
+      }
+
       group.setDocumentTitle();
       if (keyService.state.address) {
         profile.get({ userAddress: keyService.state.address });
@@ -646,7 +685,7 @@ const group = {
     (e) => e as Error,
   ),
   loadGroups: fp.pipe(
-    () => GroupApi.get(),
+    () => GroupApi.list(),
     taskEither.map(action((v) => {
       state.groups = v;
     })),
@@ -655,7 +694,7 @@ const group = {
     document.title = [
       'Port',
       title,
-      `${state.group?.groupName}`,
+      `${state.groupMap?.main?.groupName}`,
     ].filter((v) => v).join(' - ');
   },
 };
@@ -671,9 +710,13 @@ const config = {
           ConfigApi.getConfig,
           taskEither.map((v) => {
             runInAction(() => {
+              state.config.defaultGroup = {
+                ...v.defaultGroup,
+                groupId: 0,
+                nft: '',
+              };
               state.config.group = v.group;
               state.config.admin = v.admin;
-              state.config.seedUrl = v.fixedSeed ?? '';
               state.config.loaded = true;
             });
             return null;
@@ -683,9 +726,9 @@ const config = {
     ),
     either.isLeft,
   ),
-  get: (groupId?: string) => {
+  get: (groupId?: number) => {
     const theGroupId = groupId || state.groupId;
-    return state.config.group[theGroupId] ?? state.config.group.default ?? {
+    return state.config.group[theGroupId] ?? state.config.defaultGroup ?? {
       anonymous: false,
       keystore: false,
       mixin: false,
@@ -718,7 +761,7 @@ const socketEventHandler: Partial<SocketEventListeners> = {
     });
     const match = matchPath(routeUrlPatterns.postdetail, location.pathname);
     if (match && match.params.trxId === trxId) {
-      window.location.href = `/${state.groupId}`;
+      window.location.href = constructRoutePath({ page: 'postlist', groupId: state.routeGroupId });
     }
   }),
   comment: (v) => comment.get(v.trxId),
@@ -785,39 +828,42 @@ const init = () => {
       taskEither.chainW(() => taskEither.fromTask(keyService.parseSavedLoginState)),
       taskEither.chainW(() => taskEither.fromIO(() => {
         if (window.location.pathname === '/') {
-          if (!(loginState.seedUrl && loginState.autoLogin)) {
+          if (!(loginState.groupId && loginState.autoLogin)) {
             return option.none;
           }
-          return fp.pipe(
-            either.tryCatch(
-              () => QuorumLightNodeSDK.utils.restoreSeedFromUrl(loginState.seedUrl),
-              (e) => e as Error,
-            ),
-            either.map(
-              (v) => ({ seed: loginState.seedUrl, groupId: v.group_id }),
-            ),
-            option.fromEither,
-          );
+          const groupItem = state.groups.find((v) => v.id === loginState.groupId);
+          if (!groupItem) {
+            return option.none;
+          }
+          return option.some({
+            groupItem,
+            useShortName: true,
+          });
         }
-        const groupId = matchRoutePatterns(window.location.pathname);
-        if (!groupId) {
+        const groupIdOrShortName = matchRoutePatterns(window.location.pathname);
+        if (!groupIdOrShortName) {
           window.location.href = '/';
           return option.none;
         }
-        const groupItem = state.groups.find((v) => v.groupId === groupId);
+        const groupId = parseInt(groupIdOrShortName, 10);
+        const groupItem = state.groups.find((v) => [
+          v.id === groupId,
+          v.shortName === groupIdOrShortName,
+          QuorumLightNodeSDK.utils.restoreSeedFromUrl(v.mainSeedUrl).group_id === groupIdOrShortName,
+        ].some((v) => v));
         if (!groupItem) {
           window.location.href = '/';
           return option.none;
         }
         return option.some({
-          seed: groupItem.seedUrl,
-          groupId: groupItem.groupId,
+          groupItem,
+          useShortName: groupIdOrShortName !== groupItem.id.toString(),
         });
       })),
       taskEither.chainW((v): taskEither.TaskEither<unknown, option.Option<unknown>> => {
         if (option.isNone(v)) { return taskEither.of(option.none); }
-        const u = v.value;
-        const groupConfig = config.get(u.groupId);
+        const { groupItem, useShortName } = v.value;
+        const groupConfig = config.get(groupItem.id);
         const canMixin = loginState.autoLogin === 'mixin' && !!keyService.state.saved.mixin?.data;
         const canKeystore = loginState.autoLogin === 'keystore' && !!keyService.state.saved.keystore?.data;
         const canAutoLogin = canMixin || canKeystore;
@@ -826,7 +872,7 @@ const init = () => {
           keyService.loginBySavedState(loginState.autoLogin!);
         }
         return taskEither.of(fp.pipe(
-          group.join(u.seed),
+          group.join(groupItem, useShortName),
           either.matchW(
             () => option.none,
             () => option.some(null),

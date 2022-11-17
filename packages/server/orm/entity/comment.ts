@@ -16,7 +16,7 @@ export class Comment {
 
   @Index()
   @Column({ nullable: false })
-  public groupId!: string;
+  public groupId!: number;
 
   @Column({ nullable: false })
   public content!: string;
@@ -79,11 +79,11 @@ export class Comment {
     await (manager || AppDataSource.manager).save(comment);
   }
 
-  public static async get(where: { groupId: string, trxId: string }, manager?: EntityManager) {
+  public static async get(where: Pick<FindOptionsWhere<Comment>, 'groupId' | 'trxId'>, manager?: EntityManager) {
     return (manager || AppDataSource.manager).findOneBy(Comment, where);
   }
 
-  public static async getFirst(params: { groupId: string, userAddress: string }) {
+  public static async getFirst(params: Pick<FindOptionsWhere<Comment>, 'groupId' | 'userAddress'>) {
     return AppDataSource.manager.findOne(Comment, {
       where: params,
       order: { timestamp: 'asc' },

@@ -3,7 +3,7 @@ import { type, string } from 'io-ts';
 import { NotFound } from 'http-errors';
 import LRUCache from 'lru-cache';
 import { ImageFile } from '~/orm';
-import { assertValidation } from '~/utils';
+import { assertValidation, parseIntAssert } from '~/utils';
 
 interface ImageCacheItem { buffer: Buffer, mineType: string }
 const cache = new LRUCache<string, ImageCacheItem>({
@@ -16,13 +16,14 @@ export const imageController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
       groupId: string,
       trxId: string,
     }));
+    const groupId = parseIntAssert(params.groupId);
     const key = `${params.groupId}-${params.trxId}`;
     let item: ImageCacheItem | null = null;
 
     if (cache.has(key)) {
       item = cache.get(key)!;
     }
-    const image = await ImageFile.get(params.groupId, params.trxId);
+    const image = await ImageFile.get(groupId, params.trxId);
     if (image) {
       const buffer = Buffer.from(image.content, 'base64');
       item = { buffer, mineType: image.mineType };

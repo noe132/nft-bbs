@@ -64,10 +64,7 @@ export const themeDarkOption = createTheme({
   palette: {
     ...themeOption.palette as any,
     mode: 'dark',
-    primary: {
-      main: '#fff',
-      contrastText: '#333',
-    },
+    primary: { main: '#fff', contrastText: '#333' },
     action: {
       disabled: 'rgba(255, 255, 255, 0.6)',
       disabledBackground: 'rgba(255, 255, 255, 0.3)',
@@ -80,9 +77,9 @@ export const themeLightOption = createTheme({
   palette: {
     ...themeOption.palette as any,
     mode: 'light',
-    primary: {
-      main: '#000',
-    },
+    primary: { main: '#000' },
+    rum: { main: '#ff931e', contrastText: '#fff' },
+    link: { main: '#0080ff', contrastText: '#fff' },
     action: {
       disabled: 'rgba(0, 0, 0, 0.44)',
       disabledBackground: 'rgba(0, 0, 0, 0.2)',

@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef } from 'react';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, reaction, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
@@ -12,7 +12,7 @@ import { LoadingButton } from '@mui/lab';
 import CommentMinusIcon from 'boxicons/svg/regular/bx-comment-minus.svg?fill-icon';
 
 import { BackButton, ScrollToTopButton, UserAvatar, UserCard } from '~/components';
-import { nftService, nodeService, snackbarService } from '~/service';
+import { nftService, nodeService, routerService, snackbarService } from '~/service';
 import { runLoading, usePageState, useWiderThan } from '~/utils';
 
 import { PostDetailBox } from './PostDetailBox';
@@ -27,10 +27,10 @@ interface UserCardItem {
   profile?: Profile | null
 }
 
+const COMMENT_LENGTH_LIMIT = 500;
 export const PostDetail = observer((props: { className?: string }) => {
   const routeParams = useParams<{ groupId: string, trxId: string }>();
   const routeLocation = useLocation();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const state = usePageState('postdetail', routeLocation.key, () => ({
     inited: false,
@@ -157,8 +157,8 @@ export const PostDetail = observer((props: { className?: string }) => {
       snackbarService.show('请输入评论');
       return;
     }
-    if (content.length > 300) {
-      snackbarService.show('请输入少于300字');
+    if (content.length > COMMENT_LENGTH_LIMIT) {
+      snackbarService.show(`请输入少于${COMMENT_LENGTH_LIMIT}字`);
       return;
     }
     const comment = await runLoading(
@@ -265,7 +265,7 @@ export const PostDetail = observer((props: { className?: string }) => {
           <Button
             className="mt-4 text-white"
             variant="outlined"
-            onClick={() => navigate(`/${nodeService.state.groupId}`)}
+            onClick={() => routerService.navigate({ page: 'postlist' })}
           >
             返回首页
           </Button>
@@ -311,14 +311,14 @@ export const PostDetail = observer((props: { className?: string }) => {
               <InputBase
                 className={classNames(
                   'flex-1 rounded-l !text-black px-4 text-14 outline-none min-w-0 py-[10px]',
-                  nftService.state.hasPermission && 'bg-white',
-                  !nftService.state.hasPermission && 'bg-white/20 cursor-not-allowed',
+                  nftService.state.permissionMap.comment && 'bg-white',
+                  !nftService.state.permissionMap.comment && 'bg-white/20 cursor-not-allowed',
                 )}
                 classes={{ focused: 'outline outline-rum-orange -outline-offset-2' }}
                 placeholder={nftService.permissionTip('comment') || '在这里写下你的评论…'}
                 value={state.commentInput}
                 onChange={action((e) => { state.commentInput = e.target.value; })}
-                disabled={!nftService.state.hasPermission}
+                disabled={!nftService.state.permissionMap.comment}
                 multiline
                 maxRows={5}
                 onKeyDown={(e) => {
@@ -334,7 +334,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                     color="rum"
                     variant="contained"
                     onClick={() => handlePostComment('direct')}
-                    disabled={!nftService.state.hasPermission}
+                    disabled={!nftService.state.permissionMap.comment}
                     loading={state.commentPosting}
                   >
                     发布评论
@@ -462,7 +462,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                     'mt-1 text-14 h-[144px] text-white px-3 py-2 bg-transparent resize-none rounded',
                     'outline-none border border-white/20 hover:border-white/80',
                     'focus:border-white focus:border-2 focus:px-[11px] focus:py-[7px]',
-                    state.replyTo.content.length > 300 && '!border-red-400',
+                    state.replyTo.content.length > COMMENT_LENGTH_LIMIT && '!border-red-400',
                   )}
                   ref={replyTextarea}
                   value={state.replyTo.content}
@@ -503,7 +503,7 @@ export const PostDetail = observer((props: { className?: string }) => {
         </div>
       </div>
 
-      {!isPC && nftService.state.hasPermission && (
+      {!isPC && nftService.state.permissionMap.comment && (
         <Portal>
           <div className="flex-col fixed inset-0 z-[50] pointer-events-none">
             <div
@@ -529,7 +529,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                 inputRef={mobileCommentInput}
                 value={state.commentInput}
                 onChange={action((e) => { state.commentInput = e.target.value; })}
-                disabled={!nftService.state.hasPermission}
+                disabled={!nftService.state.permissionMap.comment}
                 placeholder={nftService.permissionTip('comment') || '在这里写下你的评论…'}
                 multiline
                 maxRows={5}
@@ -591,7 +591,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                   'mt-1 text-14 h-[144px] text-white px-3 py-2 bg-transparent resize-none rounded',
                   'outline-none border border-white/20 hover:border-white/80',
                   'focus:border-white focus:border-2 focus:px-[11px] focus:py-[7px]',
-                  state.replyTo.content.length > 300 && '!border-red-400',
+                  state.replyTo.content.length > COMMENT_LENGTH_LIMIT && '!border-red-400',
                 )}
                 value={state.replyTo.content}
                 ref={mobileReplyTextarea}

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { stringifyUrl } from 'query-string';
+import { Link, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
 import { runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
@@ -14,7 +13,7 @@ import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-i
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
 import { ScrollToTopButton, GroupCard, NFTSideBox, UserAvatar } from '~/components';
-import { keyService, nftService, nodeService } from '~/service';
+import { keyService, nftService, nodeService, routerService } from '~/service';
 import { ago, notNullFilter, runLoading, usePageState, useWiderThan } from '~/utils';
 import { showTrxDetail } from '~/modals';
 
@@ -94,7 +93,6 @@ export const createPostlistState = () => ({
 });
 
 export const PostList = observer((props: { className?: string }) => {
-  const navigate = useNavigate();
   const routeLocation = useLocation();
   const state = usePageState('postlist', routeLocation.key, createPostlistState);
   const isPC = useWiderThan(960);
@@ -102,11 +100,11 @@ export const PostList = observer((props: { className?: string }) => {
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
   const handleOpenPost = (post: Post, locateComment: true | undefined = undefined) => {
-    const url = stringifyUrl({
-      url: `/${post.groupId}/post/${post.trxId}`,
-      query: { locateComment },
+    routerService.navigate({
+      page: 'postdetail',
+      trxId: post.trxId,
+      locateComment,
     });
-    navigate(url);
   };
 
   const handleUpdatePostCounter = (post: Post, type: 'Like' | 'Dislike') => {
@@ -161,11 +159,11 @@ export const PostList = observer((props: { className?: string }) => {
             <ScrollToTopButton className="fixed bottom-8 -mr-8 translate-x-full z-10" />
           </div>
         )}
-        {!isPC && nftService.state.hasPermission && (
+        {!isPC && nftService.state.permissionMap.main && (
           <Fab
             className="fixed bottom-8 right-6"
             color="rum"
-            onClick={() => navigate(`/${nodeService.state.groupId}/newpost`)}
+            onClick={() => routerService.navigate({ page: 'newpost' })}
           >
             <EditIcon className="text-30 text-white" />
           </Fab>
@@ -186,7 +184,10 @@ export const PostList = observer((props: { className?: string }) => {
                 onClick={(e) => {
                   e.stopPropagation();
                   if (profile) {
-                    navigate(`/${profile.groupId}/userprofile/${profile.userAddress}`);
+                    routerService.navigate({
+                      page: 'userprofile',
+                      userAddress: profile.userAddress,
+                    });
                   }
                 }}
               >
@@ -200,7 +201,7 @@ export const PostList = observer((props: { className?: string }) => {
               <div className="flex flex-center gap-x-4">
                 <button
                   className="text-link-soft/50 text-12"
-                  onClick={() => !nodeService.state.post.newPostCache.has(v.trxId) && showTrxDetail(v.trxId)}
+                  onClick={() => !nodeService.state.post.newPostCache.has(v.trxId) && showTrxDetail(v.trxId, 'main')}
                 >
                   {nodeService.state.post.newPostCache.has(v.trxId) ? '同步中' : '已同步'}
                 </button>
@@ -229,7 +230,7 @@ export const PostList = observer((props: { className?: string }) => {
                   <div className="flex justify-between items-center self-stretch gap-x-2">
                     <Link
                       className="text-white text-18 font-medium leading-relaxed truncate-2 hover:underline"
-                      to={`/${v.groupId}/post/${v.trxId}`}
+                      to={routerService.getPath({ page: 'postdetail', trxId: v.trxId })}
                       onClick={(e) => { e.preventDefault(); }}
                     >
                       {stat.title || '无标题'}

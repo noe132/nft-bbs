@@ -1,104 +1,220 @@
-import { either, taskEither } from 'fp-ts';
+import { either, taskEither, function as fp } from 'fp-ts';
 import { Type } from 'io-ts';
-import { EntityManager } from 'typeorm';
-import QuorumLightNodeSDK, { IContent, IGroup } from 'quorum-light-node-sdk-nodejs';
+import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
 import { postType, commentType, likeType, dislikeType, imageType, profileType, postDeleteType } from 'nft-bbs-types';
 
 import { AppDataSource } from '~/orm/data-source';
-import { GroupStatus, TrxSet } from '~/orm/entity';
-import { send } from '~/service/socket';
+import { GroupStatus, PendingContent, TrxSet } from '~/orm/entity';
+import { socketService, SendFn } from '~/service/socket';
+import { sleep } from '~/utils';
 
-import { groupLoadedMap } from '../state';
 import { handlePost } from './handlePost';
 import { handleComment } from './handleComment';
 import { handleCounter } from './handleCounter';
 import { handleImage } from './handleImage';
 import { handleProfile } from './handleProfile';
 import { handlePostDelete } from './handlePostDelete';
-import { sleep } from '~/utils';
+import { getMergedTaskGroup, TaskItem, TrxHandler, TrxTypes } from './helper';
 
 const LIMIT = 100;
 
-const handlers: Array<[Type<any>, (v: any, transactionManager: EntityManager, queueSocket: typeof send) => unknown, string]> = [
-  [postDeleteType, handlePostDelete, 'postDelete'],
-  [postType, handlePost, 'post'],
-  [commentType, handleComment, 'comment'],
-  [likeType, handleCounter, 'like'],
-  [dislikeType, handleCounter, 'dislike'],
-  [imageType, handleImage, 'image'],
-  [profileType, handleProfile, 'profile'],
+const handlers: Array<{ type: Type<any>, handler: TrxHandler, trxType: TrxTypes }> = [
+  { type: postDeleteType, handler: handlePostDelete, trxType: 'postDelete' },
+  { type: postType, handler: handlePost, trxType: 'post' },
+  { type: commentType, handler: handleComment, trxType: 'comment' },
+  { type: likeType, handler: handleCounter, trxType: 'like' },
+  { type: dislikeType, handler: handleCounter, trxType: 'dislike' },
+  { type: imageType, handler: handleImage, trxType: 'image' },
+  { type: profileType, handler: handleProfile, trxType: 'profile' },
 ];
 
-const handleContents = async (groupId: string, contents: Array<IContent>) => {
-  const queuedEvents: Array<Parameters<typeof send>[0]> = [];
-  const queueSocket = (item: Parameters<typeof send>[0]) => {
-    queuedEvents.push(item);
+interface HandleContentParams {
+  taskItem?: TaskItem
+  content: IContent
+  pendingId?: number
+  groupStatus: GroupStatus
+  queueSocket: SendFn
+}
+
+const handleContent = async (params: HandleContentParams) => {
+  const { content, taskItem, queueSocket, groupStatus, pendingId } = params;
+  const handlerItem = handlers.find((item) => item.type.is(params.content.Data as any));
+  if (!handlerItem) {
+    pollingLog.error({
+      message: 'invalid trx data ❌',
+      data: params.content,
+    });
+    return either.right(null);
+  }
+  const isPendingContent = !taskItem;
+  const trxType = handlerItem.trxType;
+  const groupId = groupStatus.id;
+
+  if (taskItem) {
+    const roles = taskItem.roles;
+    const main = roles.includes('main') && ['post', 'postDelete', 'image'].includes(trxType);
+    const comment = roles.includes('comment') && ['comment'].includes(trxType);
+    const counter = roles.includes('counter') && ['like', 'dislike'].includes(trxType);
+    const profile = roles.includes('profile') && ['profile'].includes(trxType);
+    const canHandle = main || comment || counter || profile;
+    if (!canHandle) {
+      return either.right(null);
+    }
+  }
+
+  const getGroupStatusUpdateParams = () => {
+    const roles = taskItem?.roles;
+    if (!roles) { return null; }
+    return {
+      ...roles.includes('main') ? { mainStartTrx: content.TrxId } : {},
+      ...roles.includes('comment') ? { commentStartTrx: content.TrxId } : {},
+      ...roles.includes('counter') ? { counterStartTrx: content.TrxId } : {},
+      ...roles.includes('profile') ? { profileStartTrx: content.TrxId } : {},
+    };
   };
+  const groupStatusUpdateParams = getGroupStatusUpdateParams();
 
-  await taskEither.tryCatch(
-    async () => {
-      for (const content of contents) {
-        const item = handlers.find(([type]) => type.is(content.Data as any));
-        if (!item) {
-          pollingLog.error({
-            message: 'invalid trx data ❌',
-            data: content,
-          });
+  const result = await AppDataSource.transaction(async (transactionManager) => {
+    const run = fp.pipe(
+      taskEither.of(isPendingContent),
+      taskEither.chainW((isPending) => {
+        if (isPending) { return taskEither.of(false); }
+        return taskEither.tryCatch(
+          () => TrxSet.has(groupId, content.TrxId, transactionManager),
+          (e) => e as Error,
+        );
+      }),
+      taskEither.chainW((dupTrx) => {
+        if (dupTrx) { return taskEither.of(null); }
+        return fp.pipe(
+          () => handlerItem.handler(content, groupStatus, transactionManager, queueSocket),
+          taskEither.chainW((handled) => taskEither.tryCatch(
+            async () => {
+              await Promise.all([
+                !isPendingContent && TrxSet.add(
+                  { groupId, trxId: content.TrxId },
+                  transactionManager,
+                ),
+                !isPendingContent && !handled && PendingContent.add(
+                  {
+                    content: JSON.stringify(content),
+                    groupId,
+                  },
+                  transactionManager,
+                ),
+                !isPendingContent && groupStatusUpdateParams && GroupStatus.update(
+                  groupId,
+                  groupStatusUpdateParams,
+                  transactionManager,
+                ),
+                isPendingContent && pendingId && handled && PendingContent.delete(
+                  pendingId,
+                  transactionManager,
+                ),
+              ]);
+
+              return null;
+            },
+            (e) => e as Error,
+          )),
+          taskEither.orElse(() => taskEither.fromTask(
+            async () => {
+              await transactionManager.queryRunner!.rollbackTransaction();
+              return null;
+            },
+          )),
+        );
+      }),
+      taskEither.mapLeft((e) => {
+        pollingLog.error(e);
+        return e;
+      }),
+      taskEither.map((v) => {
+        if (!isPendingContent) {
+          pollingLog.info(`${content.GroupId} ${content.TrxId} ✅ ${trxType}`);
         }
+        return v;
+      }),
+    );
+    return run();
+  });
 
-        if (item) {
-          await AppDataSource.transaction(async (transactionManager) => {
-            if (!await TrxSet.has(content.TrxId, transactionManager)) {
-              await item[1](content, transactionManager, queueSocket);
-              await GroupStatus.update(groupId, { startTrx: content.TrxId }, transactionManager);
-              await TrxSet.add({ trxId: content.TrxId }, transactionManager);
-            }
-          });
-
-          pollingLog.info(`${content.GroupId} ${content.TrxId} ✅ ${item[2]}`);
-        }
-
-        if (groupLoadedMap[content.GroupId]) {
-          queuedEvents.forEach((v) => {
-            send(v);
-          });
-        }
-      }
-    },
-    (e) => {
-      pollingLog.error(e);
-      return e as Error;
-    },
-  )();
+  return result;
 };
 
-export const pollingTask = async (group: IGroup) => {
-  const groupStatus = await GroupStatus.get(group.groupId);
-  const startTrx = groupStatus?.startTrx;
-  try {
+export const pollingTask = async (groupStatusId: number) => {
+  const groupStatus = await GroupStatus.get(groupStatusId);
+  if (!groupStatus) { return; }
+  const taskGroups = getMergedTaskGroup(groupStatus);
+  const queuedEvents: Array<Parameters<SendFn>[0]> = [];
+  const queueSocket: SendFn = (item) => queuedEvents.push(item);
+  let totalCount = 0;
+
+  // handle pending trx
+  await fp.pipe(
+    taskEither.tryCatch(
+      () => PendingContent.list(groupStatusId),
+      (e) => e as Error,
+    ),
+    taskEither.chainW((items) => taskEither.fromTask(async () => {
+      for (const item of items) {
+        const result = await fp.pipe(
+          () => handleContent({
+            content: JSON.parse(item.content),
+            pendingId: item.id,
+            groupStatus,
+            queueSocket,
+          }),
+        )();
+        if (either.isLeft(result)) {
+          break;
+        }
+      }
+    })),
+  )();
+
+  // handle new trx
+  for (const taskItem of taskGroups) {
+    const startTrx = groupStatus[`${taskItem.roles[0]}StartTrx`];
+    const groupId = QuorumLightNodeSDK.utils.restoreSeedFromUrl(taskItem.seedUrl).group_id;
     const listOptions = {
-      groupId: group.groupId,
+      groupId,
       count: LIMIT,
       ...startTrx ? { startTrx } : {},
     };
-    const contentsResult = await taskEither.tryCatch(
-      () => QuorumLightNodeSDK.chain.Content.list(listOptions),
-      (e) => e as Error,
+    await fp.pipe(
+      taskEither.tryCatch(
+        () => QuorumLightNodeSDK.chain.Content.list(listOptions),
+        (e) => e as Error,
+      ),
+      taskEither.chainW((contents) => taskEither.fromTask(async () => {
+        totalCount += contents.length;
+        for (const content of contents) {
+          const result = await handleContent({
+            taskItem,
+            content,
+            groupStatus,
+            queueSocket,
+          });
+          if (either.isLeft(result)) {
+            break;
+          }
+        }
+      })),
     )();
-    if (either.isLeft(contentsResult)) {
-      pollingLog.error(contentsResult.left);
-      return;
+  }
+
+  queuedEvents.forEach((v) => {
+    socketService.send(v);
+  });
+
+  if (!totalCount) {
+    if (!groupStatus.loaded) {
+      await GroupStatus.update(groupStatus.id, {
+        loaded: true,
+      });
     }
-    const contents = contentsResult.right;
-    if (contents.length > 0) {
-      await handleContents(group.groupId, contents);
-    }
-    if (contents.length === 0 || contents.length < LIMIT) {
-      groupLoadedMap[group.groupId] = true;
-      // wait for another 4 second if all contents were loaded
-      await sleep(4000);
-    }
-  } catch (err) {
-    log.error(err);
+    // wait for another 10 second if all contents were loaded
+    await sleep(10000);
   }
 };

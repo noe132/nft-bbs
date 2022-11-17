@@ -1,10 +1,10 @@
 import { either, function as fp } from 'fp-ts';
-import type { Profile } from 'nft-bbs-server';
+import type { GroupStatus, Profile } from 'nft-bbs-server';
 import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { API_BASE_URL } from './common';
 
-export const getByUserAddress = async (groupId: string, userAddress: string) => {
+export const getByUserAddress = async (groupId: GroupStatus['id'], userAddress: string) => {
   const item = await request<Profile>({
     url: `${API_BASE_URL}/profile/${groupId}/userAddress/${userAddress}`,
   });
@@ -20,7 +20,7 @@ export const getByUserAddress = async (groupId: string, userAddress: string) => 
   );
 };
 
-export const getByTrxId = async (groupId: string, trxId: string) => {
+export const getByTrxId = async (groupId: GroupStatus['id'], trxId: string) => {
   const item = await request<Profile>({
     url: `${API_BASE_URL}/profile/${groupId}/trxId/${trxId}`,
   });

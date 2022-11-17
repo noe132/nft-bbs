@@ -11,7 +11,7 @@ export class Notification {
   public id?: number;
 
   @Column({ nullable: false })
-  public groupId!: string;
+  public groupId!: number;
 
   @Index()
   @Column({ nullable: false })

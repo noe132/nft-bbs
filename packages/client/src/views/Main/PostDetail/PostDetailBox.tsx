@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
@@ -9,13 +8,12 @@ import type { Post } from 'nft-bbs-server';
 import TrashIcon from 'boxicons/svg/regular/bx-trash.svg?fill-icon';
 
 import { ago, renderPostMarkdown, runLoading, setClipboard, useWiderThan } from '~/utils';
-import { imageZoomService, nodeService, snackbarService, keyService, dialogService, nftService } from '~/service';
+import { imageZoomService, nodeService, snackbarService, keyService, dialogService, nftService, routerService } from '~/service';
 import { UserAvatar, PostImageZoomButton } from '~/components';
 import { ImageApi } from '~/apis';
 import { showTrxDetail } from '~/modals';
 
 export const PostDetailBox = observer((props: { className?: string, post: Post }) => {
-  const navigate = useNavigate();
   const state = useLocalObservable(() => ({
     likeLoading: false,
     get content() {
@@ -83,7 +81,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   // };
 
   const handleDeletePost = async () => {
-    if (!nftService.hasPermissionAndTip('post')) { return; }
+    if (!nftService.hasPermissionAndTip('main')) { return; }
     const result = await dialogService.open({
       title: '删除帖子',
       content: '确定要删除这个帖子吗？',
@@ -91,7 +89,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
     });
     if (result === 'confirm') {
       nodeService.post.delete(props.post);
-      navigate(`/${nodeService.state.groupId}`);
+      routerService.navigate({ page: 'postlist' });
       dialogService.open({
         title: '删除成功',
         content: '帖子将会在数据同步后删除。',
@@ -153,11 +151,11 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         <UserAvatar
           className="cursor-pointer"
           profile={state.profile}
-          onClick={() => state.profile && navigate(`/${state.profile.groupId}/userprofile/${state.profile.userAddress}`)}
+          onClick={() => state.profile && routerService.navigate({ page: 'userprofile', userAddress: state.profile.userAddress })}
         />
         <div
           className="text-14 text-rum-orange cursor-pointer"
-          onClick={() => state.profile && navigate(`/${state.profile.groupId}/userprofile/${state.profile.userAddress}`)}
+          onClick={() => state.profile && routerService.navigate({ page: 'userprofile', userAddress: state.profile.userAddress })}
         >
           {state.profile?.name || state.profile?.userAddress.slice(0, 10)}
         </div>
@@ -168,7 +166,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         </Tooltip>
         <button
           className="text-white/35 text-12"
-          onClick={() => state.synced && showTrxDetail(props.post.trxId)}
+          onClick={() => state.synced && showTrxDetail(props.post.trxId, 'main')}
         >
           {state.synced ? '已同步' : '同步中'}
         </button>

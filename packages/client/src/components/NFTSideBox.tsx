@@ -9,7 +9,7 @@ import {
 import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
 
-import { ThemeLight, useWiderThan } from '~/utils';
+import { runLoading, ThemeLight, useWiderThan } from '~/utils';
 import { keyService, nftService, nodeService, snackbarService } from '~/service';
 import { NftRequestApi } from '~/apis';
 import { NFTIcon } from './NFTIcon';
@@ -27,6 +27,7 @@ export const NFTSideBox = observer((props: Props) => {
     requestDialog: {
       open: false,
       memo: '',
+      loading: false,
     },
     get contractAddress() {
       return nodeService.state.config.currentGroup.nft ?? '';
@@ -52,16 +53,24 @@ export const NFTSideBox = observer((props: Props) => {
   });
 
   const handleSubmitNftRequest = async () => {
-    await NftRequestApi.submitRequest({
-      ...await keyService.getAdminSignParam(),
-      groupId: nodeService.state.groupId,
-      memo: state.requestDialog.memo,
-    });
-    // TODO: loading
-    snackbarService.show('提交成功');
-    runInAction(() => {
-      state.requestDialog.open = false;
-    });
+    if (!state.requestDialog.memo) {
+      snackbarService.show('请输入申请理由');
+      return;
+    }
+    await runLoading(
+      (l) => { state.requestDialog.loading = l; },
+      async () => {
+        await NftRequestApi.submitRequest({
+          ...await keyService.getAdminSignParam(),
+          groupId: nodeService.state.groupId,
+          memo: state.requestDialog.memo,
+        });
+        snackbarService.show('提交成功');
+        runInAction(() => {
+          state.requestDialog.open = false;
+        });
+      },
+    );
   };
 
   if (!state.contractAddress) {

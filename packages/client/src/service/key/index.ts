@@ -139,9 +139,7 @@ const parseSavedLoginState = () => {
     monoid.concatAll(task.getRaceMonoid<unknown>())([
       () => when(() => !!state.saved.keystore?.skipWaiting),
       fp.pipe(
-        task.of(!!loginState && loginState.autoLogin === 'keystore'),
-        task.chain((v) => {
-          if (!v) { return task.of(option.none); }
+        task.fromIO(() => {
           runInAction(() => {
             state.saved.keystore = {
               loading: true,
@@ -150,14 +148,14 @@ const parseSavedLoginState = () => {
             };
           });
           if (loginState.keystore && loginState.password && loginState.address && loginState.privateKey) {
-            return taskOption.some({
+            return option.some({
               keystore: loginState.keystore,
               password: loginState.password,
               address: loginState.address,
               privateKey: loginState.privateKey,
             });
           }
-          return taskOption.none;
+          return option.none;
         }),
         taskOption.map(action((v) => {
           state.saved.keystore = {
@@ -173,7 +171,7 @@ const parseSavedLoginState = () => {
     monoid.concatAll(task.getRaceMonoid<unknown>())([
       () => when(() => !!state.saved.mixin?.skipWaiting),
       fp.pipe(
-        task.of(!!loginState && loginState.autoLogin === 'mixin'),
+        task.of(!!loginState),
         task.chain((v) => {
           if (!v) { return task.of(option.none); }
           runInAction(() => {
@@ -183,6 +181,9 @@ const parseSavedLoginState = () => {
               data: null,
             };
           });
+          if (!loginState.mixinJWT) {
+            return taskOption.none;
+          }
           return fp.pipe(
             () => VaultApi.getOrCreateAppUser(loginState.mixinJWT),
             taskEither.mapLeft(() => {

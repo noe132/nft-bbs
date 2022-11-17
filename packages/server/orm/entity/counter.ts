@@ -1,4 +1,4 @@
-import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, EntityManager, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
 
@@ -13,7 +13,7 @@ export class Counter {
 
   @Index()
   @Column({ nullable: false })
-  public groupId!: string;
+  public groupId!: number;
 
   @Index()
   @Column({ type: 'varchar', nullable: false })

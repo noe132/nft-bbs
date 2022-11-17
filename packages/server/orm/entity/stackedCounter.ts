@@ -7,7 +7,7 @@ import type { Post } from './posts';
 @Entity({ name: 'stackedcounters' })
 export class StackedCounter {
   @PrimaryColumn()
-  public groupId!: string;
+  public groupId!: number;
 
   @PrimaryColumn()
   public objectId!: string;

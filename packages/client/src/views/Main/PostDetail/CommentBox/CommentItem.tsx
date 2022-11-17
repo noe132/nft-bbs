@@ -140,7 +140,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
           <Button
             className={classNames(
               'min-w-0 px-2 text-14',
-              !nftService.state.hasPermission && '!text-gray-9c',
+              !nftService.state.permissionMap.counter && '!text-gray-9c',
               !state.commentStat.liked && 'text-link-soft',
               state.commentStat.liked && 'text-rum-orange',
             )}
@@ -163,7 +163,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
           <Button
             className={classNames(
               'text-link-soft text-14 font-normal',
-              !nftService.state.hasPermission && '!text-gray-9c',
+              !nftService.state.permissionMap.comment && '!text-gray-9c',
             )}
             variant="text"
             color="inherit"
@@ -221,7 +221,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
 
             <button
               className="text-12 text-white/35"
-              onClick={() => state.synced && showTrxDetail(state.comment.trxId)}
+              onClick={() => state.synced && showTrxDetail(state.comment.trxId, 'comment')}
             >
               {state.synced ? '已同步' : '同步中'}
             </button>

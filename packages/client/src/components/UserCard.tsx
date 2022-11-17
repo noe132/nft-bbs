@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { action } from 'mobx';
-import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
@@ -9,7 +8,7 @@ import { Button } from '@mui/material';
 import { ChevronRight } from '@mui/icons-material';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
-import { nodeService } from '~/service';
+import { nodeService, routerService } from '~/service';
 import { UserAvatar } from '~/components/UserAvatar';
 
 interface Props {
@@ -19,7 +18,6 @@ interface Props {
 }
 
 export const UserCard = observer((props: Props) => {
-  const navigate = useNavigate();
   const state = useLocalObservable(() => ({
     propsProfile: props.profile,
     get profile() {
@@ -41,7 +39,10 @@ export const UserCard = observer((props: Props) => {
       return;
     }
     if (state.profile) {
-      navigate(`/${state.profile.groupId}/userprofile/${state.profile.userAddress}`);
+      routerService.navigate({
+        page: 'userprofile',
+        userAddress: state.profile.userAddress,
+      });
     }
   };
 

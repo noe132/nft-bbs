@@ -13,7 +13,7 @@ export class Profile {
 
   @Index()
   @Column({ nullable: false })
-  public groupId!: string;
+  public groupId!: number;
 
   @Index()
   @Column({ nullable: false })
@@ -59,10 +59,10 @@ export class Profile {
     return (manager || AppDataSource.manager).findBy(Profile, params);
   }
 
-  public static generateFallbackProfile(params: { groupId?: string, userAddress: string }): Profile {
+  public static generateFallbackProfile(params: { groupId?: Profile['groupId'], userAddress: Profile['userAddress'] }): Profile {
     return {
       trxId: '',
-      groupId: params.groupId ?? '',
+      groupId: params.groupId ?? 0,
       userAddress: params.userAddress,
       name: '',
       avatar: '',

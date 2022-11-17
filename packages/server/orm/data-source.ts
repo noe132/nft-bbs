@@ -15,6 +15,7 @@ export const AppDataSource = new DataSource({
   logging: false,
   migrationsRun: true,
   subscribers: [],
+  connectTimeoutMS: 60 * 1000,
   // glob root is process.cwd()
   entities: inTSNode
     ? ['./orm/entity/*.ts']

@@ -42,6 +42,14 @@ export const parseIntFromString = (s: string | undefined, defaultValue: number) 
   return n;
 };
 
+export const parseIntAssert = (s: string) => {
+  const n = parseInt(s, 10);
+  if (Number.isNaN(n)) {
+    throw new BadRequest(`invalid value ${s}`);
+  }
+  return n;
+};
+
 export const getLoggerWrite = (file: WriteStream) => function write(msg: string) {
   /* eslint-disable no-console */
   const obj = JSON.parse(msg);
@@ -77,3 +85,23 @@ export const parseQuorumTimestamp = (timestamp: string) => {
 };
 
 export const notNullFilter = <T>(v: T | undefined | null): v is T => v !== undefined && v !== null;
+
+type SetLoading = (l: boolean) => unknown;
+type UnknownFunction = (...p: Array<any>) => unknown;
+type RunLoading = <
+  T extends UnknownFunction,
+  R = ReturnType<T> extends Promise<unknown> ? ReturnType<T> : Promise<ReturnType<T>>,
+>(s: SetLoading, fn: T) => R;
+/**
+ * 立即执行异步函数 fn。
+ * 执行前调用 setLoading(true)，执行完毕调用 setLoading(false)
+ */
+export const runLoading: RunLoading = (async (setLoading: SetLoading, fn: UnknownFunction) => {
+  setLoading(true);
+  try {
+    const result = await fn();
+    return result as ReturnType<typeof fn>;
+  } finally {
+    setLoading(false);
+  }
+}) as any;

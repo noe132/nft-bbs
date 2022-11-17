@@ -4,14 +4,15 @@ import { NotFound } from 'http-errors';
 import { Brackets } from 'typeorm';
 
 import { Post } from '~/orm';
-import { assertValidation, parseIntFromString, truncate } from '~/utils';
+import { assertValidation, parseIntAssert, parseIntFromString, truncate } from '~/utils';
 import { AppDataSource } from '~/orm/data-source';
 
 export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
   fastify.get('/:groupId/:trxId', async (req) => {
     const params = assertValidation(req.params, type({ groupId: string, trxId: string }));
     const query = assertValidation(req.query, partial({ viewer: string }));
-    const post = await Post.get({ groupId: params.groupId, trxId: params.trxId });
+    const groupId = parseIntAssert(params.groupId);
+    const post = await Post.get({ groupId, trxId: params.trxId });
     if (!post) {
       throw new NotFound();
     }
@@ -21,6 +22,7 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
 
   fastify.get('/:groupId', async (req) => {
     const params = assertValidation(req.params, type({ groupId: string }));
+    const groupId = parseIntAssert(params.groupId);
     const query = assertValidation(req.query, partial({
       order: union([literal('asc'), literal('desc')]),
       limit: string,
@@ -35,7 +37,7 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
     const dbQuery = AppDataSource.manager.createQueryBuilder()
       .select('post')
       .from(Post, 'post')
-      .where({ groupId: params.groupId })
+      .where({ groupId })
       .limit(Math.min(parseIntFromString(query.limit, 10), 100))
       .offset(parseIntFromString(query.offset, 10));
 
@@ -89,9 +91,10 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
       type({ userAddress: string }),
       partial({ viewer: string }),
     ]));
+    const groupId = parseIntAssert(params.groupId);
 
     let post = await Post.getFirst({
-      groupId: params.groupId,
+      groupId,
       userAddress: query.userAddress,
     });
     if (post && query.viewer) {
@@ -102,7 +105,8 @@ export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, d
 
   fastify.get('/count/:groupId/:userAddress', (req) => {
     const params = assertValidation(req.params, type({ groupId: string, userAddress: string }));
-    return Post.count(params.groupId, params.userAddress);
+    const groupId = parseIntAssert(params.groupId);
+    return Post.count(groupId, params.userAddress);
   });
 
   done();

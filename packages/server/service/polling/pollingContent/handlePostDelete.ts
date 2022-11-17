@@ -1,31 +1,36 @@
+import { taskEither } from 'fp-ts';
 import { PostDeleteType } from 'nft-bbs-types';
-import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
-import { EntityManager } from 'typeorm';
+import QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
 import { Post } from '~/orm';
-import { send } from '~/service/socket';
+import { TrxHandler } from './helper';
 
-export const handlePostDelete = async (item: IContent, transactionManager: EntityManager, queueSocket: typeof send) => {
-  const data = item.Data as PostDeleteType;
-  const userAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey);
-  const groupId = item.GroupId;
-  const trxId = item.TrxId;
+export const handlePostDelete: TrxHandler = (item, groupStatus, transactionManager, queueSocket) => taskEither.tryCatch(
+  async () => {
+    const data = item.Data as PostDeleteType;
+    const userAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey);
+    const groupId = groupStatus.id;
+    const trxId = item.TrxId;
 
-  const post = await Post.get({
-    groupId: item.GroupId,
-    trxId: data.id,
-  }, transactionManager);
-
-  if (post && post.userAddress === userAddress) {
-    await Post.delete({
-      groupId: item.GroupId,
+    const post = await Post.get({
+      groupId,
       trxId: data.id,
     }, transactionManager);
-  }
 
-  queueSocket({
-    broadcast: true,
-    event: 'postDelete',
-    groupId,
-    data: { trxId },
-  });
-};
+    if (post && post.userAddress === userAddress) {
+      await Post.delete({
+        groupId,
+        trxId: data.id,
+      }, transactionManager);
+    }
+
+    queueSocket({
+      broadcast: true,
+      event: 'postDelete',
+      groupId,
+      data: { trxId },
+    });
+
+    return true;
+  },
+  (e) => e as Error,
+)();

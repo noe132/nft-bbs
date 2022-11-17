@@ -1,5 +1,4 @@
 import { createRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
@@ -15,7 +14,7 @@ import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
 import { compressImage, renderPostMarkdown, runLoading, SCHEMA_PREFIX, useWiderThan } from '~/utils';
 import { BackButton, UserAvatar, GroupCard, NFTSideBox } from '~/components';
-import { nftService, nodeService, snackbarService } from '~/service';
+import { nftService, nodeService, routerService, snackbarService } from '~/service';
 import { selectImage } from '~/modals';
 
 import { makeHeading, makeLink, toggleBlock, toggleLine } from './helper';
@@ -23,8 +22,6 @@ import { makeHeading, makeLink, toggleBlock, toggleLine } from './helper';
 import './index.css';
 
 export const NewPost = observer((props: { className?: string, onChange?: (v: string) => unknown }) => {
-  // const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const state = useLocalObservable(() => ({
     editor: null as null | CodeMirror.Editor,
     title: '',
@@ -83,7 +80,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
   });
 
   const handlePost = async () => {
-    if (!nftService.hasPermissionAndTip('post')) { return; }
+    if (!nftService.hasPermissionAndTip('main')) { return; }
     const allImages = state.postContent.matchAll(/!\[.*?\]\((blob:.+?)\)/g);
     const allLinks = Array.from(new Set([...allImages].map((v) => v[1])));
     const images = state.images.filter((v) => allLinks.includes(v.url)).map((v) => ({
@@ -120,7 +117,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
           });
         });
         snackbarService.show(state.postToEdit ? '编辑成功' : '发布成功');
-        navigate(`/${nodeService.state.groupId}`);
+        routerService.navigate({ page: 'postlist' });
       },
     );
   };
@@ -333,7 +330,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
             !state.preview && 'flex',
           )}
         >
-          <Tooltip title={nftService.permissionTip('post')}>
+          <Tooltip title={nftService.permissionTip('main')}>
             <div>
               <LoadingButton
                 className="rounded-full text-16 py-2 px-6"

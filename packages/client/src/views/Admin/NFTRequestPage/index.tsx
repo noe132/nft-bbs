@@ -169,18 +169,16 @@ export const NFTRequestPage = observer(() => {
               </span>
             </div>
             <div>
-              by: {v.extra?.profile?.name} {v.by}
+              by: {v.extra?.profile?.name} ({v.by})
             </div>
             <div>
-              group: {v.extra?.groupName} ({v.groupId})
+              group: {v.extra?.groupName} (#{v.groupId})
             </div>
             留言：{v.memo || '无'}
             {v.status === 'pending' && (
               <div className="mt-2">
                 <Button
-                  className="text-white"
-                  color="inherit"
-                  variant="text"
+                  variant="outlined"
                   onClick={() => handleReply(v)}
                 >
                   回复
@@ -252,16 +250,15 @@ export const NFTRequestPage = observer(() => {
         </DialogContent>
         <DialogActions className="p-4">
           <Button
-            className="text-gray-88"
             color="inherit"
-            variant="outlined"
+            variant="text"
             onClick={action(() => { state.replyDialog.open = false; })}
           >
             取消
           </Button>
           <LoadingButton
             color="link"
-            variant="outlined"
+            variant="contained"
             onClick={handleSubmit}
             disabled={!state.canSubmit}
             loading={state.replyDialog.loading}

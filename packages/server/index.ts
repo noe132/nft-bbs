@@ -12,8 +12,8 @@ import { initService, disposeService } from '~/service';
 import { getLoggerWrite, patchLogger } from './utils';
 
 export type {
-  Comment, GroupInfo, ImageFile,
-  Notification, Post, Profile,
+  Comment, GroupInfo, ImageFile, GroupStatus,
+  Notification, Post, Profile, GroupConfig,
 } from '~/orm/entity';
 
 export type { SocketIOEventMap, AuthenticateData } from '~/service/socket';

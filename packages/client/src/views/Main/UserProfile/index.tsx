@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
-import { stringifyUrl } from 'query-string';
+import { useLocation, useParams, Link } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, reaction, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
@@ -15,14 +14,13 @@ import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon } from '~/components';
-import { imageZoomService, keyService, nftService, nodeService } from '~/service';
+import { imageZoomService, keyService, nftService, nodeService, routerService } from '~/service';
 import { ago, runLoading, ThemeLight, usePageState, useWiderThan } from '~/utils';
 import { editProfile } from '~/modals';
 
 export const UserProfile = observer((props: { className?: string }) => {
   const routeParams = useParams<{ groupId: string, userAddress: string }>();
   const routeLocation = useLocation();
-  const navigate = useNavigate();
   const state = usePageState('userprofile', routeLocation.key, () => ({
     inited: false,
     likeLoading: false,
@@ -83,10 +81,11 @@ export const UserProfile = observer((props: { className?: string }) => {
   const nftBox = useRef<HTMLDivElement>(null);
 
   const handleOpenPost = (post: Post, locateComment: true | undefined = undefined) => {
-    navigate(stringifyUrl({
-      url: `/${post.groupId}/post/${post.trxId}`,
-      query: { locateComment },
-    }));
+    routerService.navigate({
+      page: 'postdetail',
+      trxId: post.trxId,
+      locateComment,
+    });
   };
 
   const handleUpdatePostCounter = (post: Post, type: 'Like' | 'Dislike') => {
@@ -386,7 +385,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                   >
                     <Link
                       className="text-white text-16 font-medium cursor-pointer leading-relaxed truncate-2 hover:underline"
-                      to={`/post/${v.groupId}/${v.trxId}`}
+                      to={routerService.getPath({ page: 'postdetail', trxId: v.trxId })}
                       onClick={(e) => e.preventDefault()}
                     >
                       {stat.title || '无标题'}

@@ -1,5 +1,5 @@
 import React, { useRef, useMemo } from 'react';
-import { useLocation, useNavigate, useParams, Link, matchPath } from 'react-router-dom';
+import { useLocation, useParams, Link, matchPath } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
@@ -17,7 +17,7 @@ import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 import { routeUrlPatterns, setLoginState, ThemeLight, usePageState, useWiderThan } from '~/utils';
-import { nodeService, keyService, dialogService } from '~/service';
+import { nodeService, keyService, dialogService, routerService } from '~/service';
 import { editProfile } from '~/modals';
 import { GroupAvatar, GroupCard, NFTSideBox, SiteLogo, UserAvatar } from '~/components';
 
@@ -26,7 +26,6 @@ import { createPostlistState } from '../PostList';
 export const Header = observer((props: { className?: string }) => {
   const routeParams = useParams();
   const routeLocation = useLocation();
-  const navigate = useNavigate();
   const postlistState = usePageState('postlist', routeLocation.key, createPostlistState, 'readonly');
   const state = useLocalObservable(() => ({
     userDropdown: false,
@@ -128,9 +127,9 @@ export const Header = observer((props: { className?: string }) => {
       return;
     }
     if (!state.profile) {
-      navigate(`/${nodeService.state.groupId}/userprofile/${keyService.state.address}`);
+      routerService.navigate({ page: 'userprofile', userAddress: keyService.state.address });
     } else {
-      navigate(`/${state.profile.groupId}/userprofile/${state.profile.userAddress}`);
+      routerService.navigate({ page: 'userprofile', userAddress: state.profile.userAddress });
     }
   });
 
@@ -184,7 +183,7 @@ export const Header = observer((props: { className?: string }) => {
     if (isPostlistPage) {
       postlistState?.loadPosts();
     } else {
-      navigate(`/${nodeService.state.groupId}`);
+      routerService.navigate({ page: 'postlist' });
     }
   };
 
@@ -198,8 +197,9 @@ export const Header = observer((props: { className?: string }) => {
 
   const notificationLink = useMemo(() => {
     const match = matchPath(routeUrlPatterns.notification, routeLocation.pathname);
-    const groupId = nodeService.state.groupId;
-    return match ? `/${groupId}` : `/${groupId}/notification`;
+    return match
+      ? routerService.getPath({ page: 'postlist' })
+      : routerService.getPath({ page: 'notification' });
   }, [routeLocation.pathname]);
 
   const computedMobileTab = postlistState?.mode.type === 'search'

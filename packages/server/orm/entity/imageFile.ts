@@ -17,7 +17,7 @@ export class ImageFile {
 
   @Index()
   @Column({ nullable: false })
-  public groupId!: string;
+  public groupId!: number;
 
   @Column({ nullable: false })
   public mineType!: string;
@@ -49,7 +49,7 @@ export class ImageFile {
     return (manager || AppDataSource.manager).save(ImageFile, item);
   }
 
-  public static async get(groupId: string, trxId: string, manager?: EntityManager) {
+  public static async get(groupId: ImageFile['groupId'], trxId: string, manager?: EntityManager) {
     return (manager || AppDataSource.manager).findOne(ImageFile, {
       where: { groupId, trxId },
       order: { id: 'desc' },

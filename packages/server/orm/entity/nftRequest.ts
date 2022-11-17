@@ -16,7 +16,7 @@ export class NftRequest {
 
   @Index()
   @Column({ nullable: false })
-  public groupId!: string;
+  public groupId!: number;
 
   @Column({ nullable: false, default: '' })
   public memo!: string;
@@ -52,23 +52,23 @@ export class NftRequest {
     return (manager || AppDataSource.manager).save(NftRequest, item);
   }
 
-  public static async get(id: number, manager?: EntityManager) {
+  public static async get(id: NftRequest['id'], manager?: EntityManager) {
     return (manager || AppDataSource.manager).findOne(NftRequest, { where: { id } });
   }
 
   public static async pack(items: Array<NftRequest>, manager?: EntityManager) {
     if (!items.length) { return items; }
     const groupIds = Array.from(
-      items.reduce((p, c) => { p.add(c.groupId); return p; }, new Set<string>()),
+      items.reduce((p, c) => { p.add(c.groupId); return p; }, new Set<NftRequest['groupId']>()),
     );
     const userAddresses = Array.from(
-      items.reduce((p, c) => { p.add(c.by); return p; }, new Set<string>()),
+      items.reduce((p, c) => { p.add(c.by); return p; }, new Set<NftRequest['by']>()),
     );
     const groups = groupIds.length
       ? await (manager ?? AppDataSource.manager).createQueryBuilder()
         .select('groupstatus')
         .from(GroupStatus, 'groupstatus')
-        .where('groupstatus.groupId in (:...groupIds)', { groupIds })
+        .where('groupstatus.id in (:...groupIds)', { groupIds })
         .getMany()
       : [];
 
@@ -82,12 +82,12 @@ export class NftRequest {
 
     const groupNameMap = groups.reduce(
       (p, c) => {
-        const seedUrl = c.seedUrl;
+        const seedUrl = c.mainSeedUrl;
         const groupName = utils.restoreSeedFromUrl(seedUrl).group_name;
-        p.set(c.groupId, groupName);
+        p.set(c.id, groupName);
         return p;
       },
-      new Map<string, string>(),
+      new Map<number, string>(),
     );
 
     const profileMap = profiles.reduce(

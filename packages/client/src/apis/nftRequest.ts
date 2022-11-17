@@ -1,5 +1,5 @@
 import { either, function as fp } from 'fp-ts';
-import type { NftRequest } from 'nft-bbs-server/orm';
+import type { GroupStatus, NftRequest } from 'nft-bbs-server/orm';
 import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { API_BASE_URL } from './common';
@@ -11,13 +11,14 @@ export interface AdminAuthParams {
 }
 
 export interface NFTRequestData {
-  groupId: string
+  groupId: GroupStatus['id']
   memo: string
 }
+
 export interface NFTRequestReplyData {
-  id: number
+  id: NftRequest['id']
   type: string
-  reply: string
+  reply: NftRequest['memo']
 }
 
 export const submitRequest = async (data: NFTRequestData & AdminAuthParams) => {

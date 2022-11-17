@@ -10,7 +10,7 @@ export const nftController: Parameters<FastifyRegister>[0] = (fastify, _opts, do
   fastify.post('/request', async (req) => {
     const body = assertValidation(req.body, type({
       address: string,
-      groupId: string,
+      groupId: number,
       nonce: number,
       memo: string,
       sign: string,

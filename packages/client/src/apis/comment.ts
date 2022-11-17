@@ -1,10 +1,10 @@
 import { either, function as fp } from 'fp-ts';
-import type { Comment } from 'nft-bbs-server';
+import type { Comment, GroupStatus } from 'nft-bbs-server';
 import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { API_BASE_URL } from './common';
 
-export const list = async (groupId: string, options: {
+export const list = async (groupId: GroupStatus['id'], options: {
   objectId: string
   viewer?: string
   offset?: number
@@ -23,7 +23,7 @@ export const list = async (groupId: string, options: {
   );
 };
 
-export const get = async (params: { groupId: string, trxId: string, viewer?: string }) => {
+export const get = async (params: { groupId: GroupStatus['id'], trxId: string, viewer?: string }) => {
   const { groupId, trxId, viewer } = params;
   const item = await request<Comment>({
     url: `${API_BASE_URL}/comment/${groupId}/${trxId}`,
@@ -40,7 +40,7 @@ export const get = async (params: { groupId: string, trxId: string, viewer?: str
   );
 };
 
-export const getFirst = async (groupId: string, userAddress: string, viewer: string) => {
+export const getFirst = async (groupId: GroupStatus['id'], userAddress: string, viewer: string) => {
   const item = await request<Comment>({
     url: `${API_BASE_URL}/comment/${groupId}/first`,
     params: { userAddress, viewer },

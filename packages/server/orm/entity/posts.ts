@@ -1,5 +1,6 @@
 import {
   Brackets, Column, DeleteDateColumn, Entity, EntityManager,
+  FindOptionsWhere,
   Index, PrimaryGeneratedColumn,
 } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
@@ -18,7 +19,7 @@ export class Post {
 
   @Index()
   @Column({ nullable: false })
-  public groupId!: string;
+  public groupId!: number;
 
   @Column({ nullable: false })
   public title!: string;
@@ -82,23 +83,23 @@ export class Post {
     await (manager || AppDataSource.manager).save(post);
   }
 
-  public static get(where: { groupId: string, trxId: string }, manager?: EntityManager) {
+  public static get(where: Pick<FindOptionsWhere<Post>, 'groupId' | 'trxId' >, manager?: EntityManager) {
     return (manager || AppDataSource.manager).findOneBy(Post, where);
   }
 
-  public static async getFirst(params: { groupId: string, userAddress: string }) {
+  public static async getFirst(params: Pick<FindOptionsWhere<Post>, 'groupId' | 'userAddress' >) {
     return AppDataSource.manager.findOne(Post, {
       where: params,
       order: { timestamp: 'asc' },
     });
   }
 
-  public static bulkGet(trxIds: Array<string>, manager?: EntityManager) {
+  public static bulkGet(trxIds: Array<Post['trxId']>, manager?: EntityManager) {
     if (!trxIds.length) { return []; }
     return (manager || AppDataSource.manager).findBy(Post, trxIds.map((trxId) => ({ trxId })));
   }
 
-  public static delete(where: { groupId: string, trxId: string }, manager?: EntityManager) {
+  public static delete(where: Pick<FindOptionsWhere<Post>, 'groupId' | 'trxId' >, manager?: EntityManager) {
     return (manager || AppDataSource.manager).softDelete(Post, where);
   }
 
@@ -135,7 +136,7 @@ export class Post {
     return query.getMany();
   }
 
-  public static count(groupId: string, userAddress: string) {
+  public static count(groupId: number, userAddress: string) {
     return AppDataSource.manager.countBy(Post, {
       groupId,
       userAddress,

@@ -13,7 +13,7 @@ export class GroupInfo {
 
   @Index()
   @Column({ nullable: false })
-  public groupId!: string;
+  public groupId!: number;
 
   @Column({ nullable: false })
   public avatar!: string;
@@ -43,7 +43,7 @@ export class GroupInfo {
     return (manager || AppDataSource.manager).save(GroupInfo, item);
   }
 
-  public static async get(groupId: string) {
+  public static async get(groupId: GroupInfo['groupId']) {
     return AppDataSource.manager.findOne(GroupInfo, {
       where: { groupId },
       order: { timestamp: 'desc' },

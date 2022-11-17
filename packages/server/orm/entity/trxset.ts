@@ -5,6 +5,9 @@ import { AppDataSource } from '../data-source';
 @Entity({ name: 'trxset' })
 export class TrxSet {
   @PrimaryColumn()
+  public groupId!: number;
+
+  @PrimaryColumn()
   public trxId!: string;
 
   private static create(params: EntityConstructorParams<TrxSet, 'id'>) {
@@ -18,7 +21,7 @@ export class TrxSet {
     return (manager || AppDataSource.manager).save(TrxSet, item);
   }
 
-  public static async has(trxId: string, manager?: EntityManager) {
-    return !!await (manager || AppDataSource.manager).countBy(TrxSet, { trxId });
+  public static async has(groupId: TrxSet['groupId'], trxId: TrxSet['trxId'], manager?: EntityManager) {
+    return !!await (manager || AppDataSource.manager).countBy(TrxSet, { groupId, trxId });
   }
 }

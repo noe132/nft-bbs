@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { stringifyUrl } from 'query-string';
 import classNames from 'classnames';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
@@ -15,11 +14,10 @@ import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-i
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { UserAvatar, BackButton, ScrollToTopButton, GroupCard, NFTSideBox } from '~/components';
-import { nodeService } from '~/service';
+import { nodeService, routerService } from '~/service';
 import { ago, useWiderThan } from '~/utils';
 
 export const NotificationPage = observer((props: { className?: string }) => {
-  const navigate = useNavigate();
   const state = useLocalObservable(() => ({
     get notificationsWithoutDislike() {
       return nodeService.state.notification.list.filter((v) => v.type !== 'dislike');
@@ -35,10 +33,13 @@ export const NotificationPage = observer((props: { className?: string }) => {
     const post = v.extra?.object?.value;
     if (!post) { return; }
     const postId = 'postId' in post ? post.postId : post.trxId;
-    navigate(stringifyUrl({
-      url: `/${post.groupId}/post/${postId}`,
-      query: { commentTrx: v.actionObjectId },
-    }));
+    routerService.navigate({
+      page: 'postdetail',
+      trxId: postId,
+      commentTrx: v.actionObjectType === 'comment'
+        ? v.actionObjectId
+        : undefined,
+    });
   };
 
   useEffect(() => {
@@ -99,11 +100,14 @@ export const NotificationPage = observer((props: { className?: string }) => {
               !isPC && 'px-4',
             )}
           >
+
             <div
               className="flex flex-center text-18"
-              onClick={() => !isPC && navigate(`/${nodeService.state.groupId}`)}
+              onClick={() => !isPC && routerService.navigate({ page: 'postlist' })}
             >
-              <ChevronLeft className="text-28 -mb-px" />
+              {!isPC && (
+                <ChevronLeft className="text-28 -mb-px" />
+              )}
               消息通知
             </div>
             {/* <Button
@@ -148,13 +152,13 @@ export const NotificationPage = observer((props: { className?: string }) => {
                         <UserAvatar
                           className="cursor-pointer mr-3 flex-none"
                           profile={fromProfile}
-                          onClick={() => navigate(`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`)}
+                          onClick={() => routerService.navigate({ page: 'userprofile', userAddress: fromProfile.userAddress })}
                         />
 
                         <span className="break-all text-start">
                           <Link
                             className="cursor-pointer"
-                            to={`/${fromProfile.groupId}/userprofile/${fromProfile.userAddress}`}
+                            to={routerService.getPath({ page: 'userprofile', userAddress: fromProfile.userAddress })}
                           >
                             <span className="text-rum-orange text-16 mr-3">
                               {fromProfileName}

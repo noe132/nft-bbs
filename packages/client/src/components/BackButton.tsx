@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import { useNavigate } from 'react-router-dom';
 import { Button, ButtonProps } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
-import { nodeService } from '~/service';
+import { routerService } from '~/service';
 
 interface Props extends ButtonProps {
   to?: string
@@ -18,7 +18,7 @@ export const BackButton = (props: Props) => {
     } else if (window.history.length > 1) {
       navigate(-1);
     } else {
-      navigate(`/${nodeService.state.groupId}`);
+      routerService.navigate({ page: 'postlist' });
     }
   };
 

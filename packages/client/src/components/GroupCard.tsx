@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { matchPath, useLocation } from 'react-router-dom';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { Button, IconButton, Tooltip } from '@mui/material';
@@ -6,8 +6,8 @@ import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 import HomeIcon from 'boxicons/svg/regular/bx-home-alt-2.svg?fill-icon';
 
 // import { editGroupInfo } from '~/modals/editGroupInfo';
-import { keyService, nftService, nodeService } from '~/service';
-import { useWiderThan } from '~/utils';
+import { keyService, nftService, nodeService, routerService } from '~/service';
+import { routeUrlPatterns, useWiderThan } from '~/utils';
 
 import { GroupAvatar } from './GroupAvatar';
 
@@ -20,7 +20,6 @@ interface Props {
 }
 
 export const GroupCard = observer((props: Props) => {
-  const navigate = useNavigate();
   const routeLocation = useLocation();
   const state = useLocalObservable(() => ({
     get isGroupOwner() {
@@ -30,16 +29,16 @@ export const GroupCard = observer((props: Props) => {
   const isPC = useWiderThan(960);
 
   const handleNewPost = () => {
-    if (!nftService.hasPermissionAndTip('post')) { return; }
+    if (!nftService.hasPermissionAndTip('main')) { return; }
     props.onClose?.();
-    navigate(`/${nodeService.state.groupId}/newpost`);
+    routerService.navigate({ page: 'newpost' });
   };
 
   const handleGotoPostlist = () => {
     props.onClose?.();
-    const postListPathname = `/${nodeService.state.groupId}`;
-    if (routeLocation.pathname === postListPathname) { return; }
-    navigate(postListPathname);
+    const match = matchPath(routeUrlPatterns.postlist, routeLocation.pathname);
+    if (match) { return; }
+    routerService.navigate({ page: 'postlist' });
   };
 
   return (
@@ -75,7 +74,7 @@ export const GroupCard = observer((props: Props) => {
         className="text-white text-center text-18 mt-16"
         onClick={handleGotoPostlist}
       >
-        {nodeService.state.groupName || `${nodeService.state.groupId}`}
+        {nodeService.state.groupName}
       </div>
       {!!nodeService.state.groupInfo.desc && (
         <div className="border-t border-white/60 text-14 text-white mt-5 mx-5 pt-5">
@@ -86,7 +85,7 @@ export const GroupCard = observer((props: Props) => {
       <div className="flex-col gap-y-4 mt-8">
         {!isPC && props.showPostlist && (
           <div className="flex flex-center">
-            <Tooltip title={nftService.permissionTip('post')}>
+            <Tooltip title={nftService.permissionTip('main')}>
               <Button
                 className="rounded-full text-16 px-5 py-[7px]"
                 variant="outlined"
@@ -101,11 +100,11 @@ export const GroupCard = observer((props: Props) => {
         )}
         {props.showNewPost && (
           <div className="flex flex-center">
-            <Tooltip title={nftService.permissionTip('post')}>
+            <Tooltip title={nftService.permissionTip('main')}>
               <Button
                 className="rounded-full text-16 px-5 py-[7px]"
                 variant="outlined"
-                color={nftService.state.hasPermission ? 'rum' : 'dark-blue'}
+                color={nftService.state.permissionMap.main ? 'rum' : 'dark-blue'}
                 onClick={handleNewPost}
               >
                 <EditIcon className="text-22 mr-3 mb-px" />
