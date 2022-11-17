@@ -380,27 +380,22 @@ export const UserProfile = observer((props: { className?: string }) => {
               const stat = nodeService.post.getStat(v);
               return (
                 <div key={v.trxId}>
-                  <a
-                    className="text-white text-16 font-medium cursor-pointer leading-relaxed truncate-2 hover:underline"
-                    href={`/post/${v.groupId}/${v.trxId}`}
-                    onClick={(e) => { e.preventDefault(); handleOpenPost(v); }}
+                  <div
+                    className="flex-col"
+                    onClick={() => handleOpenPost(v)}
                   >
-                    {stat.title || '无标题'}
-                  </a>
-                  {isPC && (
+                    <Link
+                      className="text-white text-16 font-medium cursor-pointer leading-relaxed truncate-2 hover:underline"
+                      to={`/post/${v.groupId}/${v.trxId}`}
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      {stat.title || '无标题'}
+                    </Link>
                     <div className="text-blue-gray text-14 truncate-2 mt-2">
                       {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
                     </div>
-                  )}
-                  {!isPC && (
-                    <Link
-                      className="text-blue-gray text-14 truncate-2 mt-2"
-                      to={`/${v.groupId}/post/${v.trxId}`}
-                      onClick={(e) => { e.preventDefault(); handleOpenPost(v); }}
-                    >
-                      {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
-                    </Link>
-                  )}
+                  </div>
+
                   <div className="flex items-center justify-between mt-3 text-link-soft text-14">
                     <div
                       className={classNames(

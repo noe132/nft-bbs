@@ -173,7 +173,7 @@ export const PostList = observer((props: { className?: string }) => {
         <div
           className={classNames(
             'flex-col',
-            isPC && 'py-10 px-16 gap-y-12',
+            isPC && 'py-7 px-13 gap-y-6',
             !isPC && 'py-3 px-4 gap-y-10 pt-6',
           )}
         >
@@ -183,7 +183,12 @@ export const PostList = observer((props: { className?: string }) => {
             const authorAvatarAndName = (
               <button
                 className="flex flex-center flex-none text-white/50 text-14 max-w-[200px]"
-                onClick={() => profile && navigate(`/${profile.groupId}/userprofile/${profile.userAddress}`)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (profile) {
+                    navigate(`/${profile.groupId}/userprofile/${profile.userAddress}`);
+                  }
+                }}
               >
                 <UserAvatar className="mr-[10px] flex-none" profile={profile} size={isPC ? 24 : 28} />
                 <div className="truncate">
@@ -207,24 +212,31 @@ export const PostList = observer((props: { className?: string }) => {
               </div>
             );
             return (
-              <div className="flex-col gap-y-2" key={v.trxId}>
+              <div
+                className="p-3 flex-col items-start bg-transparent normal-case rounded-none gap-y-2 cursor-auto select-auto"
+                key={v.trxId}
+              >
                 {!isPC && (
                   <div className="flex justify-between items-center">
                     {authorAvatarAndName}
                     {statusAndTime}
                   </div>
                 )}
-                <div className="flex justify-between items-center gap-x-2">
-                  <Link
-                    className="text-white text-18 font-medium leading-relaxed truncate-2 hover:underline w-full"
-                    to={`/${v.groupId}/post/${v.trxId}`}
-                    onClick={(e) => { e.preventDefault(); handleOpenPost(v); }}
-                  >
-                    {stat.title || '无标题'}
-                  </Link>
-                  {isPC && authorAvatarAndName}
-                </div>
-                {isPC && (
+                <div
+                  className="flex-col self-stretch gap-y-2"
+                  onClick={() => handleOpenPost(v)}
+                >
+                  <div className="flex justify-between items-center self-stretch gap-x-2">
+                    <Link
+                      className="text-white text-18 font-medium leading-relaxed truncate-2 hover:underline"
+                      to={`/${v.groupId}/post/${v.trxId}`}
+                      onClick={(e) => { e.preventDefault(); }}
+                    >
+                      {stat.title || '无标题'}
+                    </Link>
+                    {isPC && authorAvatarAndName}
+                  </div>
+
                   <div
                     className={classNames(
                       'text-blue-gray text-14 break-all',
@@ -234,74 +246,56 @@ export const PostList = observer((props: { className?: string }) => {
                   >
                     {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
                   </div>
-                )}
-                {!isPC && (
-                  <Link
-                    className={classNames(
-                      'text-blue-gray text-14 break-all !no-underline',
-                      isPC && 'truncate-2',
-                      !isPC && 'truncate-4',
-                    )}
-                    to={`/${v.groupId}/post/${v.trxId}`}
-                    onClick={(e) => { e.preventDefault(); handleOpenPost(v); }}
-                  >
-                    {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
-                  </Link>
-                )}
+                </div>
 
-                <div className="flex items-center justify-between mt-1 text-14">
-                  <div className="flex gap-x-2 -ml-2">
-                    <div className="min-w-[72px]">
-                      <Button
-                        className={classNames(
-                          'text-14 px-2 min-w-0',
-                          !stat.liked && 'text-link-soft',
-                          stat.liked && 'text-rum-orange',
-                        )}
-                        variant="text"
-                        size="small"
-                        onClick={() => handleUpdatePostCounter(v, 'Like')}
-                      >
-                        {!stat.likeCount && (
-                          <ThumbUpOffAlt className="mr-2 text-18" />
-                        )}
-                        {!!stat.likeCount && (
-                          <ThumbUpAlt className="mr-2 text-18" />
-                        )}
-                        {stat.likeCount || '赞'}
-                      </Button>
-                    </div>
-                    <div className="min-w-[72px]">
-                      <Button
-                        className={classNames(
-                          'text-14 px-2 min-w-0',
-                          !stat.disliked && 'text-link-soft',
-                          stat.disliked && 'text-rum-orange',
-                        )}
-                        variant="text"
-                        size="small"
-                        onClick={() => handleUpdatePostCounter(v, 'Dislike')}
-                      >
-                        {!stat.dislikeCount && (
-                          <ThumbDownOffAlt className="mr-2 text-18" />
-                        )}
-                        {!!stat.dislikeCount && (
-                          <ThumbDownAlt className="mr-2 text-18" />
-                        )}
-                        {stat.dislikeCount || '踩'}
-                      </Button>
-                    </div>
-                    <div className="min-w-[72px]">
-                      <Button
-                        className="text-link-soft text-14 px-2 min-w-0"
-                        variant="text"
-                        size="small"
-                        onClick={() => handleOpenPost(v, true)}
-                      >
-                        <CommentDetailIcon className="mr-2 -mb-px text-18" />
-                        {stat.commentCount || (isPC ? '我来写第一个评论' : '评论')}
-                      </Button>
-                    </div>
+
+                <div className="flex items-center justify-between self-stretch mt-1 text-14">
+                  <div className="flex gap-x-6 -ml-2">
+                    <Button
+                      className={classNames(
+                        'text-14 px-2 min-w-0',
+                        !stat.liked && 'text-link-soft',
+                        stat.liked && 'text-rum-orange',
+                      )}
+                      variant="text"
+                      size="small"
+                      onClick={() => handleUpdatePostCounter(v, 'Like')}
+                    >
+                      {!stat.likeCount && (
+                        <ThumbUpOffAlt className="mr-2 text-18" />
+                      )}
+                      {!!stat.likeCount && (
+                        <ThumbUpAlt className="mr-2 text-18" />
+                      )}
+                      {stat.likeCount || '赞'}
+                    </Button>
+                    <Button
+                      className={classNames(
+                        'text-14 px-2 min-w-0',
+                        !stat.disliked && 'text-link-soft',
+                        stat.disliked && 'text-rum-orange',
+                      )}
+                      variant="text"
+                      size="small"
+                      onClick={() => handleUpdatePostCounter(v, 'Dislike')}
+                    >
+                      {!stat.dislikeCount && (
+                        <ThumbDownOffAlt className="mr-2 text-18" />
+                      )}
+                      {!!stat.dislikeCount && (
+                        <ThumbDownAlt className="mr-2 text-18" />
+                      )}
+                      {stat.dislikeCount || '踩'}
+                    </Button>
+                    <Button
+                      className="text-link-soft text-14 px-2 min-w-0"
+                      variant="text"
+                      size="small"
+                      onClick={() => handleOpenPost(v, true)}
+                    >
+                      <CommentDetailIcon className="mr-2 -mb-px text-18" />
+                      {stat.commentCount || (isPC ? '我来写第一个评论' : '评论')}
+                    </Button>
                   </div>
                   {isPC && statusAndTime}
                 </div>

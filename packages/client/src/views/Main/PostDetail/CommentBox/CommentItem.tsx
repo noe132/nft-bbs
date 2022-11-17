@@ -232,7 +232,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
 
       <div
         className={classNames(
-          'text-white text-14',
+          'text-white text-14 break-all',
           isPC && 'mt-2',
           !isPC && 'mt-3',
         )}

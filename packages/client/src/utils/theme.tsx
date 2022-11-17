@@ -4,39 +4,26 @@ import createCache from '@emotion/cache';
 import { createTheme, ThemeProvider, ThemeOptions } from '@mui/material';
 
 declare module '@mui/material' {
-  // interface Theme {
-  //   status: {
-  //     danger: React.CSSProperties['color']
-  //   }
-  // }
-  // interface ThemeOptions {
-  //   status: {
-  //     danger: React.CSSProperties['color']
-  //   }
-  // }
-  // interface PaletteColor {
-  //   darker?: string
-  // }
-  // interface SimplePaletteColorOptions {
-  //   darker?: string
-  // }
   interface Palette {
     rum: Palette['primary']
     light: Palette['primary']
     link: Palette['primary']
     'dark-blue': Palette['primary']
+    dark: Palette['primary']
   }
   interface PaletteOptions {
     rum: PaletteOptions['primary']
     light: PaletteOptions['primary']
     link: PaletteOptions['primary']
     'dark-blue': PaletteOptions['primary']
+    dark: PaletteOptions['primary']
   }
   interface ColorOverrides {
     rum: true
     light: true
     link: true
     'dark-blue': true
+    dark: true
   }
   interface ButtonPropsColorOverrides extends ColorOverrides {}
   interface InputBasePropsColorOverrides extends ColorOverrides {}
@@ -50,6 +37,7 @@ const themeOption: ThemeOptions = {
     link: { main: '#0080ff' },
     'dark-blue': { main: '#576d91' },
     light: { main: '#fff' },
+    dark: { main: '#000', contrastText: '#fff' },
   },
   components: {
     MuiButton: {
