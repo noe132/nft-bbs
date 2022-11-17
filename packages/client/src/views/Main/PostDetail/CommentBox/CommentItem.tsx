@@ -2,6 +2,7 @@ import { useContext, useRef } from 'react';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
+import LinkifyIt from 'linkify-it';
 import type { Comment } from 'nft-bbs-server';
 import { Button, Tooltip } from '@mui/material';
 import { ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
@@ -21,6 +22,7 @@ interface CommentItemProps {
   onJumpToReply?: (trxId: string) => unknown
 }
 
+const linkifyIt = LinkifyIt();
 export const CommentItem = observer((props: CommentItemProps) => {
   const state = useLocalObservable(() => ({
     expand: true,
@@ -76,6 +78,42 @@ export const CommentItem = observer((props: CommentItemProps) => {
       return;
     }
     context.onReply(state.comment);
+  };
+
+  const renderTextWithLink = (text: string) => {
+    const match = linkifyIt.match(text);
+    if (match) {
+      const sections = [
+        {
+          start: 0,
+          end: match[0].index,
+          link: null,
+        },
+        ...match.flatMap((v, i, a) => [
+          {
+            start: v.index,
+            end: v.lastIndex,
+            link: v.url,
+          },
+          {
+            start: v.lastIndex,
+            end: i === a.length - 1
+              ? text.length
+              : a[i + 1].index,
+            link: null,
+          },
+        ]),
+      ].filter((v) => v.start !== v.end);
+
+      return sections.map((v, i) => {
+        const content = text.slice(v.start, v.end);
+        return v.link
+          ? <a className="text-link-soft" href={v.link} target="_blank" rel="noopener" key={i}>{content}</a>
+          : <span key={i}>{content}</span>;
+      });
+    }
+
+    return text;
   };
 
   const highlighted = context.state.highlightedComments.has(state.comment.trxId);
@@ -201,7 +239,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
       >
         {state.comment.content.split('\n').map((v, i) => (
           <p key={i}>
-            {v}
+            {renderTextWithLink(v)}
           </p>
         ))}
       </div>
