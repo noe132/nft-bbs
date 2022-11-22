@@ -6,8 +6,9 @@ COPY package.json ./
 COPY yarn.lock ./
 COPY packages/types/package.json ./packages/types/
 COPY packages/server/package.json ./packages/server/
+COPY scripts/docker_yarn_install.sh ./scripts/docker_yarn_install.sh
 
-RUN yarn install --prod --pure-lockfile
+RUN ./scripts/docker_yarn_install.sh
 
 COPY packages/types ./packages/types/
 COPY packages/server ./packages/server/

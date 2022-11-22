@@ -8,8 +8,7 @@
     "build": "vite build",
     "a": "cross-env analyze=true vite build",
     "preview": "vite preview",
-    "lint": "eslint --ext \"js,jsx,ts,tsx\" src",
-    "postinstall": "rimraf ./node_modules/.cache/"
+    "lint": "eslint --ext \"js,jsx,ts,tsx\" src"
   },
   "dependencies": {
     "@emotion/react": "^11.10.5",
