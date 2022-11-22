@@ -38,11 +38,11 @@ export const add = async (params: AddGroupParams) => {
   );
 };
 
-export const del = async (groupId: GroupStatus['id']) => {
+export const del = async (params: AdminApiParams & { id: GroupStatus['id'] }) => {
   const item = await request<{ status: 0 }>({
     url: `${API_BASE_URL}/group/delete`,
     method: 'post',
-    data: { id: groupId },
+    data: params,
   });
   return fp.pipe(
     item,

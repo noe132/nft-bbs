@@ -190,7 +190,10 @@ export const GroupPage = observer(() => {
       content: `确定要删除这个论坛吗？(${group.shortName || seed.group_name})`,
     });
     if (result === 'cancel') { return; }
-    // GroupApi.del(group.id);
+    GroupApi.del({
+      ...await keyService.getAdminSignParam(),
+      id: group.id,
+    });
     snackbarService.show('删除成功');
     runInAction(() => {
       const index = state.groups.findIndex((v) => v.id === group.id);
