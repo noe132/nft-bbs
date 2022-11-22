@@ -1,6 +1,6 @@
 import { action, observable, runInAction, when } from 'mobx';
 import { ethers, utils } from 'ethers';
-import { taskEither, function as fp, task, option, taskOption, monoid, io } from 'fp-ts';
+import { taskEither, function as fp, task, option, taskOption, monoid } from 'fp-ts';
 import { Base64 } from 'js-base64';
 import * as QuorumLightNodeSdk from 'quorum-light-node-sdk';
 
