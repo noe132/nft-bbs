@@ -144,13 +144,13 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
     group.commentSeedUrl = body.commentSeedUrl;
     group.counterSeedUrl = body.counterSeedUrl;
     group.profileSeedUrl = body.profileSeedUrl;
-    group.mainStartTrx = '';
-    group.commentStartTrx = '';
-    group.counterStartTrx = '';
-    group.profileStartTrx = '';
-    group.loaded = false;
 
     if (needToRePolling) {
+      group.mainStartTrx = '';
+      group.commentStartTrx = '';
+      group.counterStartTrx = '';
+      group.profileStartTrx = '';
+      group.loaded = false;
       await pollingService.deleteTask(group);
       await deleteGroupData(group, 'update');
       await pollingService.updateTask(group);
