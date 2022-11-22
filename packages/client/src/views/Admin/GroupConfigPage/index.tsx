@@ -38,7 +38,8 @@ export const GroupConfigPage = observer(() => {
         const config = this.list.find((u) => u.groupId === v.id);
         return {
           group: v,
-          name: v.shortName || seed.group_name,
+          shortName: v.shortName,
+          seedName: seed.group_name,
           config,
         };
       });
@@ -165,7 +166,7 @@ export const GroupConfigPage = observer(() => {
         {!state.loading && state.zipped.map((v, i) => (
           <div className="py-4" key={i}>
             <div>
-              #{v.group.id} {v.name}
+              #{v.group.id} {v.shortName} ({v.seedName})
             </div>
             {!v.config && '默认配置'}
             {!!v.config && (<>

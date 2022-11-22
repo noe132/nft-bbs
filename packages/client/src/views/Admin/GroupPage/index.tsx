@@ -27,6 +27,8 @@ export const GroupPage = observer(() => {
       counterSeedUrl: '',
       profileSeedUrl: '',
     },
+
+    seedCache: {} as Record<string, ReturnType<typeof utils.restoreSeedFromUrl>>,
   }));
 
   const loadGroups = () => {
@@ -198,6 +200,13 @@ export const GroupPage = observer(() => {
     });
   };
 
+  const getGroupFromSeed = (seedUrl: string) => {
+    if (state.seedCache[seedUrl]) { return state.seedCache[seedUrl]; }
+    const seed = utils.restoreSeedFromUrl(seedUrl);
+    state.seedCache[seedUrl] = seed;
+    return seed;
+  };
+
   useEffect(() => {
     loadGroups();
   }, []);
@@ -223,19 +232,50 @@ export const GroupPage = observer(() => {
               #{v.id}
             </div>
             <div>
-              {v.shortName}
+              {v.shortName} ({utils.restoreSeedFromUrl(v.mainSeedUrl).group_name})
             </div>
-            <div className="truncate">
-              {v.mainSeedUrl}
-            </div>
-            <div className="truncate">
-              {v.commentSeedUrl}
-            </div>
-            <div className="truncate">
-              {v.counterSeedUrl}
-            </div>
-            <div className="truncate">
-              {v.profileSeedUrl}
+            <div
+              className="grid grid-cols-3 gap-x-2"
+              style={{
+                gridTemplateColumns: 'max-content max-content 1fr',
+              }}
+            >
+              <div>
+                主种子网络：
+              </div>
+              <div>
+                {getGroupFromSeed(v.mainSeedUrl).group_id}
+              </div>
+              <div className="truncate text-white/60">
+                {' '}{v.mainSeedUrl}
+              </div>
+              <div>
+                评论种子网络：
+              </div>
+              <div>
+                {getGroupFromSeed(v.commentSeedUrl).group_id}
+              </div>
+              <div className="truncate text-white/60">
+                {' '}{v.commentSeedUrl}
+              </div>
+              <div>
+                点赞种子网络：
+              </div>
+              <div>
+                {getGroupFromSeed(v.counterSeedUrl).group_id}
+              </div>
+              <div className="truncate text-white/60">
+                {' '}{v.counterSeedUrl}
+              </div>
+              <div>
+                个人资料种子网络：
+              </div>
+              <div>
+                {getGroupFromSeed(v.profileSeedUrl).group_id}
+              </div>
+              <div className="truncate text-white/60">
+                {' '}{v.profileSeedUrl}
+              </div>
             </div>
             <div className="flex gap-4 mt-4">
               <a

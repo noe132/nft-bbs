@@ -59,6 +59,10 @@ export class GroupStatus {
   }
 
   public static async list(manager?: EntityManager) {
-    return (manager || AppDataSource.manager).find(GroupStatus);
+    return (manager || AppDataSource.manager).find(GroupStatus, {
+      order: {
+        id: 'ASC',
+      },
+    });
   }
 }

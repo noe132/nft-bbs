@@ -154,6 +154,8 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
       await pollingService.deleteTask(group);
       await deleteGroupData(group, 'update');
       await pollingService.updateTask(group);
+    } else {
+      await AppDataSource.manager.save(GroupStatus, group);
     }
 
     return group;
