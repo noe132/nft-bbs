@@ -131,6 +131,14 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
     if (either.isLeft(result)) {
       throw new BadRequest(result.left.message);
     }
+
+    const needToRePolling = [
+      body.mainSeedUrl !== group.mainSeedUrl,
+      body.commentSeedUrl !== group.commentSeedUrl,
+      body.counterSeedUrl !== group.counterSeedUrl,
+      body.profileSeedUrl !== group.profileSeedUrl,
+    ].some((v) => v);
+
     group.shortName = body.shortName;
     group.mainSeedUrl = body.mainSeedUrl;
     group.commentSeedUrl = body.commentSeedUrl;
@@ -142,9 +150,11 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
     group.profileStartTrx = '';
     group.loaded = false;
 
-    await pollingService.deleteTask(group);
-    await deleteGroupData(group, 'update');
-    await pollingService.updateTask(group);
+    if (needToRePolling) {
+      await pollingService.deleteTask(group);
+      await deleteGroupData(group, 'update');
+      await pollingService.updateTask(group);
+    }
 
     return group;
   });

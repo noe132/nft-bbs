@@ -123,10 +123,20 @@ export const GroupPage = observer(() => {
     }
 
     if (state.addGroupDialog.id) {
-      const result = await dialogService.open({
-        content: '确定要编辑这个论坛吗？（需要重新索引一遍数据）',
-      });
-      if (result === 'cancel') { return; }
+      const originalGroup = state.groups.find((v) => v.id === state.addGroupDialog.id);
+      if (!originalGroup) { return; }
+      const needToRePolling = [
+        state.addGroupDialog.mainSeedUrl !== originalGroup.mainSeedUrl,
+        state.addGroupDialog.commentSeedUrl !== originalGroup.commentSeedUrl,
+        state.addGroupDialog.counterSeedUrl !== originalGroup.counterSeedUrl,
+        state.addGroupDialog.profileSeedUrl !== originalGroup.profileSeedUrl,
+      ].some((v) => v);
+      if (needToRePolling) {
+        const result = await dialogService.open({
+          content: '确定要编辑这个论坛吗？（需要重新索引一遍数据）',
+        });
+        if (result === 'cancel') { return; }
+      }
       await runLoading(
         (l) => { state.addGroupDialog.loading = l; },
         async () => {
