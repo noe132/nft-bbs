@@ -111,12 +111,14 @@ export const Join = observer(() => {
     if (type === 'mixin' && mixin) {
       keyService.useMixin(mixin);
       setLoginState({ autoLogin: 'mixin' });
+      joinGroup();
     }
 
     const keystore = keyService.state.saved.keystore?.data;
     if (type === 'keystore' && keystore) {
       keyService.useKeystore(keystore);
       setLoginState({ autoLogin: 'keystore' });
+      joinGroup();
     }
   };
 
@@ -355,7 +357,7 @@ export const Join = observer(() => {
                 </div>
 
                 <div className="flex-col items-stertch mt-4 gap-y-4 min-w-[200px]">
-                  {!!keystore && (
+                  {!!keystore && (!keystore.loading && keystore.data) && (
                     <div className="relative flex items-center gap-x-2">
                       <Tooltip title="用上次登录使用的keystore登录" placement="right">
                         <Button
@@ -388,7 +390,7 @@ export const Join = observer(() => {
                     </div>
                   )}
 
-                  {!!mixin && (
+                  {!!mixin && (!mixin.loading && mixin.data) && (
                     <div className="relative flex items-center gap-x-2">
                       <Tooltip title="用上次登录使用的 mixin账号登录" placement="right">
                         <Button

@@ -1,6 +1,6 @@
 import { action, observable, runInAction, when } from 'mobx';
 import { ethers, utils } from 'ethers';
-import { taskEither, function as fp, task, option, taskOption, monoid } from 'fp-ts';
+import { taskEither, function as fp, task, option, taskOption, monoid, io } from 'fp-ts';
 import { Base64 } from 'js-base64';
 import * as QuorumLightNodeSdk from 'quorum-light-node-sdk';
 
@@ -164,6 +164,15 @@ const parseSavedLoginState = () => {
             data: v,
           };
         })),
+        taskOption.matchW(
+          () => null,
+          () => null,
+        ),
+        task.chain(() => task.fromIO(action(() => {
+          if (state.saved.keystore) {
+            state.saved.keystore.loading = false;
+          }
+        }))),
       ),
     ]),
   );
@@ -171,9 +180,7 @@ const parseSavedLoginState = () => {
     monoid.concatAll(task.getRaceMonoid<unknown>())([
       () => when(() => !!state.saved.mixin?.skipWaiting),
       fp.pipe(
-        task.of(!!loginState),
-        task.chain((v) => {
-          if (!v) { return task.of(option.none); }
+        taskEither.fromIO(() => {
           runInAction(() => {
             state.saved.mixin = {
               loading: true,
@@ -181,27 +188,28 @@ const parseSavedLoginState = () => {
               data: null,
             };
           });
-          if (!loginState.mixinJWT) {
-            return taskOption.none;
-          }
-          return fp.pipe(
-            () => VaultApi.getOrCreateAppUser(loginState.mixinJWT),
-            taskEither.mapLeft(() => {
-              setLoginState({
-                mixinJWT: '',
-                autoLogin: null,
-              });
-            }),
-            taskOption.fromTaskEither,
-          );
         }),
-        taskOption.map(action((v) => {
-          state.saved.mixin = {
-            loading: false,
-            skipWaiting: false,
-            data: v,
-          };
-        })),
+        taskEither.chainW(() => () => VaultApi.getOrCreateAppUser(loginState.mixinJWT)),
+        taskEither.matchW(
+          () => {
+            setLoginState({
+              mixinJWT: '',
+              autoLogin: null,
+            });
+          },
+          action((v) => {
+            state.saved.mixin = {
+              loading: false,
+              skipWaiting: false,
+              data: v,
+            };
+          }),
+        ),
+        task.chain(() => task.fromIO(action(() => {
+          if (state.saved.mixin) {
+            state.saved.mixin.loading = false;
+          }
+        }))),
       ),
     ]),
   );
