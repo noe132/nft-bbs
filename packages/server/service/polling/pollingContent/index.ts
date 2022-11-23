@@ -75,56 +75,73 @@ const handleContent = async (params: HandleContentParams) => {
   const groupStatusUpdateParams = getGroupStatusUpdateParams();
 
   const result = await AppDataSource.transaction(async (transactionManager) => {
-    const run = fp.pipe(
-      taskEither.of(isPendingContent),
-      taskEither.chainW((isPending) => {
-        if (isPending) { return taskEither.of(false); }
+    const checkIsDupTrx = () => {
+      if (isPendingContent) { return taskEither.of(false); }
+      return taskEither.tryCatch(
+        () => TrxSet.has(groupId, content.TrxId, transactionManager),
+        (e) => e as Error,
+      );
+    };
+
+    const handleContent = () => fp.pipe(
+      () => handlerItem.handler(content, groupStatus, transactionManager, queueSocket),
+      taskEither.chainW((handled) => taskEither.tryCatch(
+        async () => {
+          await Promise.all([
+            !isPendingContent && TrxSet.add(
+              { groupId, trxId: content.TrxId },
+              transactionManager,
+            ),
+            !isPendingContent && !handled && PendingContent.add(
+              {
+                content: JSON.stringify(content),
+                groupId,
+              },
+              transactionManager,
+            ),
+            isPendingContent && pendingId && handled && PendingContent.delete(
+              pendingId,
+              transactionManager,
+            ),
+          ]);
+          return null;
+        },
+        (e) => e as Error,
+      )),
+    );
+
+    const updateGroupstatus = () => {
+      if (!isPendingContent && groupStatusUpdateParams) {
         return taskEither.tryCatch(
-          () => TrxSet.has(groupId, content.TrxId, transactionManager),
+          async () => {
+            await GroupStatus.update(
+              groupId,
+              groupStatusUpdateParams,
+              transactionManager,
+            );
+            return null;
+          },
           (e) => e as Error,
         );
-      }),
-      taskEither.chainW((dupTrx) => {
-        if (dupTrx) { return taskEither.of(null); }
-        return fp.pipe(
-          () => handlerItem.handler(content, groupStatus, transactionManager, queueSocket),
-          taskEither.chainW((handled) => taskEither.tryCatch(
-            async () => {
-              await Promise.all([
-                !isPendingContent && TrxSet.add(
-                  { groupId, trxId: content.TrxId },
-                  transactionManager,
-                ),
-                !isPendingContent && !handled && PendingContent.add(
-                  {
-                    content: JSON.stringify(content),
-                    groupId,
-                  },
-                  transactionManager,
-                ),
-                !isPendingContent && groupStatusUpdateParams && GroupStatus.update(
-                  groupId,
-                  groupStatusUpdateParams,
-                  transactionManager,
-                ),
-                isPendingContent && pendingId && handled && PendingContent.delete(
-                  pendingId,
-                  transactionManager,
-                ),
-              ]);
+      }
+      return taskEither.of(null);
+    };
 
-              return null;
-            },
-            (e) => e as Error,
-          )),
-          taskEither.orElse(() => taskEither.fromTask(
-            async () => {
-              await transactionManager.queryRunner!.rollbackTransaction();
-              return null;
-            },
-          )),
-        );
+    const rollback = taskEither.fromTask(
+      async () => {
+        await transactionManager.queryRunner!.rollbackTransaction();
+        return null;
+      },
+    );
+
+    const run = fp.pipe(
+      checkIsDupTrx(),
+      taskEither.chainW((dup) => {
+        if (dup) { return taskEither.of(null); }
+        return handleContent();
       }),
+      taskEither.chainW(() => updateGroupstatus()),
+      taskEither.orElse(() => rollback),
       taskEither.mapLeft((e) => {
         pollingLog.error(e);
         return e;
@@ -136,6 +153,7 @@ const handleContent = async (params: HandleContentParams) => {
         return v;
       }),
     );
+
     return run();
   });
 
