@@ -187,7 +187,12 @@ export const GroupPage = observer(() => {
     const seed = utils.restoreSeedFromUrl(group.mainSeedUrl);
     const result = await dialogService.open({
       title: '删除论坛',
-      content: `确定要删除这个论坛吗？(${group.shortName || seed.group_name})`,
+      content: (
+        <div className="flex-col gap-y-2">
+          <p>确定要删除这个论坛吗？</p>
+          <p>(#{group.id} {group.shortName || seed.group_name})</p>
+        </div>
+      ),
     });
     if (result === 'cancel') { return; }
     GroupApi.del({
@@ -201,6 +206,26 @@ export const GroupPage = observer(() => {
         state.groups.splice(index, 1);
       }
     });
+  };
+
+  const handleRepolling = async (group: GroupStatus) => {
+    const seed = utils.restoreSeedFromUrl(group.mainSeedUrl);
+    const result = await dialogService.open({
+      title: '重新索引',
+      content: (
+        <div className="flex-col gap-y-2">
+          <p>确定要重新索引这个论坛的数据吗？</p>
+          <p>这会清空当前索引的数据，从最开始重新索引（如果索引数据有错误可以尝试重新索引）</p>
+          <p>(#{group.id} {group.shortName || seed.group_name})</p>
+        </div>
+      ),
+    });
+    if (result === 'cancel') { return; }
+    GroupApi.repolling({
+      ...await keyService.getAdminSignParam(),
+      id: group.id,
+    });
+    snackbarService.show('已清空已有数据并重新开始索引');
   };
 
   const getGroupFromSeed = (seedUrl: string) => {
@@ -238,9 +263,9 @@ export const GroupPage = observer(() => {
               {v.shortName} ({utils.restoreSeedFromUrl(v.mainSeedUrl).group_name})
             </div>
             <div
-              className="grid grid-cols-3 gap-x-2"
+              className="grid grid-cols-4 gap-x-2"
               style={{
-                gridTemplateColumns: 'max-content max-content 1fr',
+                gridTemplateColumns: 'max-content max-content max-content 1fr',
               }}
             >
               <div>
@@ -249,8 +274,11 @@ export const GroupPage = observer(() => {
               <div>
                 {getGroupFromSeed(v.mainSeedUrl).group_id}
               </div>
+              <div>
+                {getGroupFromSeed(v.mainSeedUrl).group_name}
+              </div>
               <div className="truncate text-white/60">
-                {' '}{v.mainSeedUrl}
+                {v.mainSeedUrl}
               </div>
               <div>
                 评论种子网络：
@@ -258,8 +286,11 @@ export const GroupPage = observer(() => {
               <div>
                 {getGroupFromSeed(v.commentSeedUrl).group_id}
               </div>
+              <div>
+                {getGroupFromSeed(v.commentSeedUrl).group_name}
+              </div>
               <div className="truncate text-white/60">
-                {' '}{v.commentSeedUrl}
+                {v.commentSeedUrl}
               </div>
               <div>
                 点赞种子网络：
@@ -267,8 +298,11 @@ export const GroupPage = observer(() => {
               <div>
                 {getGroupFromSeed(v.counterSeedUrl).group_id}
               </div>
+              <div>
+                {getGroupFromSeed(v.counterSeedUrl).group_name}
+              </div>
               <div className="truncate text-white/60">
-                {' '}{v.counterSeedUrl}
+                {v.counterSeedUrl}
               </div>
               <div>
                 个人资料种子网络：
@@ -276,8 +310,11 @@ export const GroupPage = observer(() => {
               <div>
                 {getGroupFromSeed(v.profileSeedUrl).group_id}
               </div>
+              <div>
+                {getGroupFromSeed(v.profileSeedUrl).group_name}
+              </div>
               <div className="truncate text-white/60">
-                {' '}{v.profileSeedUrl}
+                {v.profileSeedUrl}
               </div>
             </div>
             <div className="flex gap-4 mt-4">
@@ -302,6 +339,12 @@ export const GroupPage = observer(() => {
                 onClick={() => handleDelete(v)}
               >
                 删除
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => handleRepolling(v)}
+              >
+                重新索引
               </Button>
             </div>
           </div>

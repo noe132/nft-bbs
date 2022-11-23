@@ -88,8 +88,13 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
       throw new BadRequest('job is already running');
     }
 
-    await pollingService.deleteTask(group);
-    await deleteGroupData(group, 'delete');
+    await runLoading(
+      (l) => loadingMap.set(group.id, l),
+      async () => {
+        await pollingService.deleteTask(group);
+        await deleteGroupData(group, 'delete');
+      },
+    );
 
     return { status: 0 };
   });
@@ -145,18 +150,62 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
     group.counterSeedUrl = body.counterSeedUrl;
     group.profileSeedUrl = body.profileSeedUrl;
 
-    if (needToRePolling) {
-      group.mainStartTrx = '';
-      group.commentStartTrx = '';
-      group.counterStartTrx = '';
-      group.profileStartTrx = '';
-      group.loaded = false;
-      await pollingService.deleteTask(group);
-      await deleteGroupData(group, 'update');
-      await pollingService.updateTask(group);
-    } else {
-      await AppDataSource.manager.save(GroupStatus, group);
+    await runLoading(
+      (l) => loadingMap.set(group.id, l),
+      async () => {
+        if (needToRePolling) {
+          group.mainStartTrx = '';
+          group.commentStartTrx = '';
+          group.counterStartTrx = '';
+          group.profileStartTrx = '';
+          group.loaded = false;
+          await pollingService.deleteTask(group);
+          await deleteGroupData(group, 'update');
+          await pollingService.updateTask(group);
+        } else {
+          await AppDataSource.manager.save(GroupStatus, group);
+        }
+      },
+    );
+
+    return group;
+  });
+
+  fastify.post('/repolling', async (req) => {
+    const body = assertValidation(req.body, type({
+      address: string,
+      nonce: number,
+      sign: string,
+
+      id: number,
+    }));
+
+    assertVerifySign(body);
+    assertAdmin(body.address);
+
+    const group = await GroupStatus.get(body.id);
+    if (!group) {
+      throw new BadRequest(`group ${body.id} not found`);
     }
+
+    if (loadingMap.get(group.id)) {
+      throw new BadRequest('job is already running');
+    }
+
+    group.mainStartTrx = '';
+    group.commentStartTrx = '';
+    group.counterStartTrx = '';
+    group.profileStartTrx = '';
+    group.loaded = false;
+
+    await runLoading(
+      (l) => loadingMap.set(group.id, l),
+      async () => {
+        await pollingService.deleteTask(group);
+        await deleteGroupData(group, 'update');
+        await pollingService.updateTask(group);
+      },
+    );
 
     return group;
   });
@@ -196,34 +245,29 @@ const validateSeed = (seedUrl: string) => fp.pipe(
 );
 
 const deleteGroupData = async (group: GroupStatus, groupStausType: 'update' | 'delete') => {
-  await runLoading(
-    (l) => loadingMap.set(group.id, l),
-    async () => {
-      await AppDataSource.manager.transaction(async (manager) => {
-        const groupId = group.id;
-        await manager.save(GroupStatus, group);
-        const entities = [Comment, Counter, ImageFile, Notification, Post, Profile, StackedCounter, TrxSet];
-        const promiese = entities.map(async (v) => {
-          await manager.createQueryBuilder()
-            .delete()
-            .from(v)
-            .where('groupId = :groupId', { groupId })
-            .execute();
-        });
-        if (groupStausType === 'update') {
-          await manager.save(GroupStatus, group);
-        }
-        if (groupStausType === 'delete') {
-          await manager.createQueryBuilder()
-            .delete()
-            .from(GroupStatus)
-            .where('id = :groupId', { groupId })
-            .execute();
-        }
-        await Promise.all(promiese);
-      });
-    },
-  );
+  await AppDataSource.manager.transaction(async (manager) => {
+    const groupId = group.id;
+    await manager.save(GroupStatus, group);
+    const entities = [Comment, Counter, ImageFile, Notification, Post, Profile, StackedCounter, TrxSet];
+    const promiese = entities.map(async (v) => {
+      await manager.createQueryBuilder()
+        .delete()
+        .from(v)
+        .where('groupId = :groupId', { groupId })
+        .execute();
+    });
+    if (groupStausType === 'update') {
+      await manager.save(GroupStatus, group);
+    }
+    if (groupStausType === 'delete') {
+      await manager.createQueryBuilder()
+        .delete()
+        .from(GroupStatus)
+        .where('id = :groupId', { groupId })
+        .execute();
+    }
+    await Promise.all(promiese);
+  });
 };
 
 // const combineSeed = () => {

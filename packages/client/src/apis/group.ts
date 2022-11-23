@@ -74,3 +74,20 @@ export const update = async (params: UpdateGroupParams) => {
     }),
   );
 };
+
+export const repolling = async (params: AdminApiParams & { id: GroupStatus['id'] }) => {
+  const item = await request<{ status: 0 }>({
+    url: `${API_BASE_URL}/group/repolling`,
+    method: 'post',
+    data: params,
+  });
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      if (v.response?.status !== 404) {
+        snackbarService.networkError(v);
+      }
+      return null;
+    }),
+  );
+};
