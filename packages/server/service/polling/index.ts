@@ -54,6 +54,8 @@ const updateTask = async (group: GroupStatus) => {
     group.profileSeedUrl,
   ];
   seedUrls.filter((v) => v).forEach((u) => {
+    const seedGroup = QuorumLightNodeSDK.utils.seedUrlToGroup(u);
+    QuorumLightNodeSDK.cache.Group.remove(seedGroup.groupId);
     QuorumLightNodeSDK.cache.Group.add(u);
   });
   const task = new PollingTask(
