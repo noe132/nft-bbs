@@ -302,6 +302,7 @@ const post = {
         groupId: state.groupId,
         timestamp: Date.now(),
         commentCount: 0,
+        nonAuthorCommentCount: 0,
         likeCount: 0,
         dislikeCount: 0,
         hot: 0,

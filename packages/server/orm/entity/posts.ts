@@ -5,6 +5,7 @@ import {
 } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
+import { Comment } from './comment';
 import { Profile } from './profile';
 import { StackedCounter } from './stackedCounter';
 
@@ -45,6 +46,9 @@ export class Post {
   @Column({ type: 'int', nullable: false })
   public commentCount!: number;
 
+  @Column({ type: 'int', nullable: false, default: 0 })
+  public nonAuthorCommentCount!: number;
+
   @Column({ type: 'int', nullable: false })
   public likeCount!: number;
 
@@ -83,7 +87,7 @@ export class Post {
     await (manager || AppDataSource.manager).save(post);
   }
 
-  public static get(where: Pick<FindOptionsWhere<Post>, 'groupId' | 'trxId' >, manager?: EntityManager) {
+  public static get(where: Pick<FindOptionsWhere<Post>, 'groupId' | 'trxId'>, manager?: EntityManager) {
     return (manager || AppDataSource.manager).findOneBy(Post, where);
   }
 
@@ -144,7 +148,7 @@ export class Post {
   }
 
   public static getHot(post: Post) {
-    return post.likeCount * 2 + post.commentCount - post.dislikeCount * 2;
+    return post.likeCount * 2 + post.nonAuthorCommentCount - post.dislikeCount * 2;
   }
 
   public static async appendExtra(items: Post, options?: { viewer?: string }): Promise<Post>;

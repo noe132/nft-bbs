@@ -95,8 +95,11 @@ export class Comment {
     return (manager || AppDataSource.manager).findBy(Comment, trxIds.map((trxId) => ({ trxId })));
   }
 
-  public static async list(params: { limit: number, offset: number } & Pick<FindOptionsWhere<Comment>, 'groupId' | 'postId'>) {
-    return AppDataSource.manager.createQueryBuilder()
+  public static async list(
+    params: { limit: number, offset: number } & Pick<FindOptionsWhere<Comment>, 'groupId' | 'postId'>,
+    manager?: EntityManager,
+  ) {
+    return (manager || AppDataSource.manager).createQueryBuilder()
       .select('comment')
       .from(Comment, 'comment')
       .where({

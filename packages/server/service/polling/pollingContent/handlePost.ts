@@ -21,6 +21,7 @@ export const handlePost: TrxHandler = (item, groupStatus, transactionManager, qu
       userAddress,
       timestamp,
       commentCount: 0,
+      nonAuthorCommentCount: 0,
       likeCount: 0,
       dislikeCount: 0,
       hot: 0,

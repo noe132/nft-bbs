@@ -66,11 +66,14 @@ export const handleComment: TrxHandler = (item, groupStatus, transactionManager,
       data: { trxId },
     });
 
-
     post.commentCount += 1;
+    if (comment.userAddress !== post.userAddress) {
+      post.nonAuthorCommentCount += 1;
+    }
     if (threadComment) {
       threadComment.commentCount += 1;
     }
+
     post.hot = Post.getHot(post);
 
     await Promise.all([
