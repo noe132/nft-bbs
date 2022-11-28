@@ -5,14 +5,14 @@ import { parse } from 'query-string';
 import { toUint8Array } from 'js-base64';
 import { either, taskEither, function as fp, task } from 'fp-ts';
 import {
-  Button, Checkbox, CircularProgress, Dialog, FormControl,
+  Button, Checkbox, Dialog, FormControl,
   FormControlLabel, IconButton, InputLabel, OutlinedInput, Tooltip,
 } from '@mui/material';
 import { Close, Delete, Visibility, VisibilityOff } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 
-import { getLoginState, runLoading, setLoginState, ThemeLight, useWiderThan } from '~/utils';
-import { dialogService, keyService, snackbarService } from '~/service';
+import { runLoading, ThemeLight, useWiderThan } from '~/utils';
+import { keyService, loginStateService, snackbarService } from '~/service';
 import { VaultApi } from '~/apis';
 
 export const AdminLogin = observer(() => {
@@ -31,40 +31,51 @@ export const AdminLogin = observer(() => {
     keystoreLoginLoading: false,
   }));
   const isPC = useWiderThan(960);
+  const loginState = loginStateService.state.groups.admin;
+  const keystore = loginState?.keystore;
+  const mixin = loginState?.mixin;
 
-  const handleLoginBySaved = (type: 'keystore' | 'mixin') => {
-    const mixin = keyService.state.saved.mixin?.data;
-    if (type === 'mixin' && mixin) {
-      keyService.useMixin(mixin);
-      setLoginState({ autoLogin: 'mixin' });
-    }
-
-    const keystore = keyService.state.saved.keystore?.data;
-    if (type === 'keystore' && keystore) {
+  const handleLoginBySavedKeystore = () => {
+    if (keystore) {
       keyService.useKeystore(keystore);
-      setLoginState({ autoLogin: 'keystore' });
     }
   };
 
-  const handleClearSavedLogin = async (type: 'keystore' | 'mixin') => {
-    const confirm = await dialogService.open({
-      title: '清除保存的登录',
-      content: '确实要清除保存的登录状态吗',
-    });
-    if (confirm === 'cancel') { return; }
-    if (type === 'mixin') {
-      setLoginState({
-        mixinJWT: '',
-      });
+  const handleClearSavedKeystore = () => {
+    const item = loginStateService.state.groups.admin;
+    if (item) {
+      delete item.keystore;
     }
+  };
 
-    if (type === 'keystore') {
-      setLoginState({
-        keystore: '',
-        password: '',
-        privateKey: '',
-        address: '',
-      });
+  const handleLoginBySavedMixin = async () => {
+    if (!mixin) { return; }
+    const jwt = mixin.mixinJWT;
+    await fp.pipe(
+      () => VaultApi.getOrCreateAppUser(jwt),
+      taskEither.matchW(
+        () => {
+          snackbarService.error('登录失败');
+          runInAction(() => { state.mixinLogin = false; });
+        },
+        action((data) => {
+          if (!loginStateService.state.groups.admin) {
+            loginStateService.state.groups.admin = {};
+          }
+          loginStateService.state.groups.admin.mixin = {
+            mixinJWT: jwt,
+            userName: data.user.display_name,
+          };
+          keyService.useMixin(data);
+        }),
+      ),
+    )();
+  };
+
+  const handleClearSavedMixin = () => {
+    const item = loginStateService.state.groups.admin;
+    if (item) {
+      delete item.mixin;
     }
   };
 
@@ -115,18 +126,24 @@ export const AdminLogin = observer(() => {
     )();
 
     if (!userResult) { return; }
-    setLoginState({
-      autoLogin: 'mixin',
-      mixinJWT: userResult.jwt,
+
+    runInAction(() => {
+      if (!loginStateService.state.groups.admin) {
+        loginStateService.state.groups.admin = {};
+      }
+      loginStateService.state.groups.admin.mixin = {
+        mixinJWT: userResult.jwt,
+        userName: userResult.user.display_name,
+      };
     });
     keyService.useMixin(userResult);
   };
 
   const handleShowKeystoreDialog = action(() => {
-    const loginState = getLoginState();
+    const loginState = loginStateService.state.groups.admin?.keystore;
     state.keystorePopup = true;
-    state.keystore = loginState.keystore;
-    state.password = loginState.password;
+    state.keystore = loginState?.keystore ?? '';
+    state.password = loginState?.password ?? '';
     state.rememberPassword = false;
   });
 
@@ -143,15 +160,13 @@ export const AdminLogin = observer(() => {
         const data = result.right;
         keyService.useKeystore(data);
 
-
-        setLoginState({
-          autoLogin: state.rememberPassword ? 'keystore' : null,
-          ...state.rememberPassword ? data : {
-            keystore: '',
-            password: '',
-            privateKey: '',
-            address: '',
-          },
+        runInAction(() => {
+          if (!loginStateService.state.groups.admin) {
+            loginStateService.state.groups.admin = {};
+          }
+          loginStateService.state.groups.admin.keystore = {
+            ...data,
+          };
         });
       },
     );
@@ -188,9 +203,6 @@ export const AdminLogin = observer(() => {
     };
   }, []);
 
-  const keystore = keyService.state.saved.keystore;
-  const mixin = keyService.state.saved.mixin;
-
   return (<>
     <div className="flex flex-center bg-black/70 h-[100vh]">
       <div className="flex-col items-stertch mt-4 gap-y-4 min-w-[200px]">
@@ -201,23 +213,22 @@ export const AdminLogin = observer(() => {
                 className="text-link-soft rounded-full text-14 px-8 py-2 normal-case flex-1 max-w-[350px]"
                 color="inherit"
                 variant="outlined"
-                disabled={keystore.loading}
-                onClick={() => handleLoginBySaved('keystore')}
+                onClick={handleLoginBySavedKeystore}
               >
                 <span className="truncate">
                   上次使用的 keystore{' '}
-                  {keystore.data?.address ? `(${keystore.data.address.slice(0, 10)})` : ''}
+                  ({keystore.address.slice(0, 10)})
                 </span>
-                {keystore.loading && (
+                {/* {keystore.loading && (
                   <CircularProgress className="ml-2 flex-none text-white/70" size={16} thickness={5} />
-                )}
+                )} */}
               </Button>
             </Tooltip>
             <Tooltip title="清除保存的keystore" placement="right">
               <IconButton
                 className="absolute right-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
                 color="inherit"
-                onClick={() => handleClearSavedLogin('keystore')}
+                onClick={handleClearSavedKeystore}
               >
                 <Delete />
               </IconButton>
@@ -232,23 +243,23 @@ export const AdminLogin = observer(() => {
                 className="text-link-soft rounded-full text-14 px-8 py-2 normal-case flex-1 max-w-[350px]"
                 color="inherit"
                 variant="outlined"
-                disabled={mixin.loading}
-                onClick={() => handleLoginBySaved('mixin')}
+                // disabled={mixin.loading}
+                onClick={handleLoginBySavedMixin}
               >
                 <span className="truncate">
                   上次使用的 mixin 账号{' '}
-                  {mixin.data?.user.display_name ? `(${mixin.data?.user.display_name})` : ''}
+                  ({mixin.userName})
                 </span>
-                {mixin.loading && (
+                {/* {mixin.loading && (
                   <CircularProgress className="ml-2 flex-none text-white/70" size={16} thickness={5} />
-                )}
+                )} */}
               </Button>
             </Tooltip>
             <Tooltip title="清除保存的 mixin 账号" placement="right">
               <IconButton
                 className="absolute right-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
                 color="inherit"
-                onClick={() => handleClearSavedLogin('mixin')}
+                onClick={handleClearSavedMixin}
               >
                 <Delete />
               </IconButton>
@@ -285,123 +296,88 @@ export const AdminLogin = observer(() => {
         open={state.keystorePopup}
         onClose={action(() => { if (!state.keystoreLoginLoading) { state.keystorePopup = false; } })}
       >
-        {true && (
-          <div className="flex-col relative text-black w-[400px]">
-            <IconButton
-              className="absolute top-2 right-2"
-              onClick={action(() => { if (!state.keystoreLoginLoading) { state.keystorePopup = false; } })}
-              disabled={state.keystoreLoginLoading}
-            >
-              <Close />
-            </IconButton>
-            <div className="flex-col flex-1 justify-between items-center p-6 gap-y-6">
-              <div className="text-18">
-                注册/登录
-              </div>
-              <div className="flex-col gap-y-4 w-[250px] items-stretch">
-                <FormControl size="small">
-                  <InputLabel>keystore</InputLabel>
-                  <OutlinedInput
-                    size="small"
-                    label="keystore"
-                    type="text"
-                    multiline
-                    rows={5}
-                    value={state.keystore}
-                    onChange={action((e) => { state.keystore = e.target.value; })}
-                    disabled={state.keystoreLoginLoading}
-                  />
-                </FormControl>
-                <FormControl size="small">
-                  <InputLabel>密码</InputLabel>
-                  <OutlinedInput
-                    size="small"
-                    label="密码"
-                    type={state.passwordVisibility ? 'text' : 'password'}
-                    value={state.password}
-                    onChange={action((e) => { state.password = e.target.value; })}
-                    disabled={state.keystoreLoginLoading}
-                    endAdornment={(
-                      <IconButton
-                        className="-mr-2"
-                        size="small"
-                        onClick={action(() => { state.passwordVisibility = !state.passwordVisibility; })}
-                      >
-                        {state.passwordVisibility && (<Visibility className="text-20" />)}
-                        {!state.passwordVisibility && (<VisibilityOff className="text-20" />)}
-                      </IconButton>
-                    )}
-                  />
-                </FormControl>
-                <FormControlLabel
-                  className="flex-center"
-                  label="记住 keystore 和 密码"
-                  control={(
-                    <Checkbox
-                      checked={state.rememberPassword}
-                      onChange={action((_, v) => { state.rememberPassword = v; })}
-                      disabled={state.keystoreLoginLoading}
-                    />
-                  )}
-                />
-              </div>
-              <div className="flex gap-x-4">
-                <LoadingButton
-                  className="rounded-full text-16 px-10 py-2"
-                  color="primary"
-                  variant="outlined"
-                  onClick={handleCreateNewWallet}
-                  loading={state.createWalletLoading}
-                  disabled={state.keystoreLoginLoading}
-                >
-                  创建新钱包
-                </LoadingButton>
-                <LoadingButton
-                  className="rounded-full text-16 px-10 py-2"
-                  color="link"
-                  variant="outlined"
-                  onClick={handleLoginConfirm}
-                  loading={state.keystoreLoginLoading}
-                >
-                  确定
-                </LoadingButton>
-              </div>
+        <div className="flex-col relative text-black w-[400px]">
+          <IconButton
+            className="absolute top-2 right-2"
+            onClick={action(() => { if (!state.keystoreLoginLoading) { state.keystorePopup = false; } })}
+            disabled={state.keystoreLoginLoading}
+          >
+            <Close />
+          </IconButton>
+          <div className="flex-col flex-1 justify-between items-center p-6 gap-y-6">
+            <div className="text-18">
+              注册/登录
             </div>
-          </div>
-        )}
-        {false && (
-          <div className="flex-col relative w-[400px] h-[350px]">
-            <IconButton
-              className="absolute top-2 right-2"
-              onClick={action(() => { state.keystorePopup = false; })}
-            >
-              <Close />
-            </IconButton>
-            <div className="flex-col flex-1 justify-between items-center p-6 pt-10 gap-y-4">
-              <div className="text-16 font-medium">
-                编辑身份资料
-              </div>
-              <div className="w-20 h-20 bg-black/20" />
+            <div className="flex-col gap-y-4 w-[250px] items-stretch">
               <FormControl size="small">
-                <InputLabel>昵称</InputLabel>
+                <InputLabel>keystore</InputLabel>
                 <OutlinedInput
-                  label="昵称"
                   size="small"
+                  label="keystore"
+                  type="text"
+                  multiline
+                  rows={5}
+                  value={state.keystore}
+                  onChange={action((e) => { state.keystore = e.target.value; })}
+                  disabled={state.keystoreLoginLoading}
                 />
               </FormControl>
-              <button className="text-gray-9c rounded-full text-14">
-                暂时跳过
-              </button>
-              <Button
+              <FormControl size="small">
+                <InputLabel>密码</InputLabel>
+                <OutlinedInput
+                  size="small"
+                  label="密码"
+                  type={state.passwordVisibility ? 'text' : 'password'}
+                  value={state.password}
+                  onChange={action((e) => { state.password = e.target.value; })}
+                  disabled={state.keystoreLoginLoading}
+                  endAdornment={(
+                    <IconButton
+                      className="-mr-2"
+                      size="small"
+                      onClick={action(() => { state.passwordVisibility = !state.passwordVisibility; })}
+                    >
+                      {state.passwordVisibility && (<Visibility className="text-20" />)}
+                      {!state.passwordVisibility && (<VisibilityOff className="text-20" />)}
+                    </IconButton>
+                  )}
+                />
+              </FormControl>
+              <FormControlLabel
+                className="flex-center"
+                label="记住 keystore 和 密码"
+                control={(
+                  <Checkbox
+                    checked={state.rememberPassword}
+                    onChange={action((_, v) => { state.rememberPassword = v; })}
+                    disabled={state.keystoreLoginLoading}
+                  />
+                )}
+              />
+            </div>
+            <div className="flex gap-x-4">
+              <LoadingButton
+                className="rounded-full text-16 px-10 py-2"
+                color="primary"
+                variant="outlined"
+                onClick={handleCreateNewWallet}
+                loading={state.createWalletLoading}
+                disabled={state.keystoreLoginLoading}
+              >
+                创建新钱包
+              </LoadingButton>
+              <LoadingButton
                 className="rounded-full text-16 px-10 py-2"
                 color="link"
                 variant="outlined"
+                onClick={handleLoginConfirm}
+                loading={state.keystoreLoginLoading}
               >
                 确定
-              </Button>
+              </LoadingButton>
             </div>
           </div>
-        )}
+        </div>
       </Dialog>
       <Dialog
         classes={{
@@ -411,71 +387,25 @@ export const AdminLogin = observer(() => {
         open={state.mixinLogin}
         onClose={action(() => { state.mixinLogin = false; })}
       >
-        {true && (
-          <div className="flex-col relative text-black h-full">
-            <IconButton
-              className="absolute top-2 right-2"
-              onClick={action(() => { state.mixinLogin = false; })}
-            >
-              <Close />
-            </IconButton>
-            <div className="flex-col flex-1 justify-between items-center p-6 gap-y-6">
-              <div className="text-18">
-                Mixin
-              </div>
-              <div className="flex-col flex-1 gap-y-4 items-stretch">
-                <iframe
-                  className="w-[450px] h-full"
-                  src={`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${state.keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`}
-                  // src="https://vault.rumsystem.net/v1/user"
-                />
-              </div>
-              {/* <div className="flex gap-x-4">
-                <Button
-                  className="rounded-full text-16 px-10 py-2"
-                  color="link"
-                  variant="outlined"
-                  onClick={action(() => { state.mixinLogin = false; })}
-                >
-                  取消
-                </Button>
-              </div> */}
+        <div className="flex-col relative text-black h-full">
+          <IconButton
+            className="absolute top-2 right-2"
+            onClick={action(() => { state.mixinLogin = false; })}
+          >
+            <Close />
+          </IconButton>
+          <div className="flex-col flex-1 justify-between items-center p-6 gap-y-6">
+            <div className="text-18">
+              Mixin
+            </div>
+            <div className="flex-col flex-1 gap-y-4 items-stretch">
+              <iframe
+                className="w-[450px] h-full"
+                src={`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${state.keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`}
+              />
             </div>
           </div>
-        )}
-        {false && (
-          <div className="flex-col relative w-[400px] h-[350px]">
-            <IconButton
-              className="absolute top-2 right-2"
-              onClick={action(() => { state.keystorePopup = false; })}
-            >
-              <Close />
-            </IconButton>
-            <div className="flex-col flex-1 justify-between items-center p-6 pt-10 gap-y-4">
-              <div className="text-16 font-medium">
-                编辑身份资料
-              </div>
-              <div className="w-20 h-20 bg-black/20" />
-              <FormControl size="small">
-                <InputLabel>昵称</InputLabel>
-                <OutlinedInput
-                  label="昵称"
-                  size="small"
-                />
-              </FormControl>
-              <button className="text-gray-9c rounded-full text-14">
-                暂时跳过
-              </button>
-              <Button
-                className="rounded-full text-16 px-10 py-2"
-                color="link"
-                variant="outlined"
-              >
-                确定
-              </Button>
-            </div>
-          </div>
-        )}
+        </div>
       </Dialog>
     </ThemeLight>
   </>);

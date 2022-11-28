@@ -5,9 +5,8 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import { Logout, MoreVert } from '@mui/icons-material';
 import { IconButton, Menu, MenuItem } from '@mui/material';
 
-import { setLoginState, ThemeLight } from '~/utils';
+import { ThemeLight } from '~/utils';
 import { SiteLogo } from '~/components';
-
 
 export const AdminHeader = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -16,9 +15,8 @@ export const AdminHeader = observer((props: { className?: string }) => {
 
   const menuButton = useRef<HTMLButtonElement>(null);
 
-  const handleBackToLogin = action((jumpToLogin = false) => {
+  const handleBackToLogin = action(() => {
     state.menu = false;
-    setLoginState({ autoLogin: null, jumpToLogin });
     window.location.href = '/admin';
   });
 
@@ -65,7 +63,7 @@ export const AdminHeader = observer((props: { className?: string }) => {
         {([
           {
             text: '退出',
-            onClick: () => handleBackToLogin(true),
+            onClick: handleBackToLogin,
             icon: <Logout className="text-22 text-amber-500/90" />,
           },
         ] as const).filter(<T extends unknown>(v: T | false): v is T => !!v).map((v, i) => (

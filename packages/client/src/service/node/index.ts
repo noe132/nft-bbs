@@ -8,11 +8,12 @@ import { v4 } from 'uuid';
 import type { Post, Comment, Profile, Notification, GroupStatus, GroupConfig } from 'nft-bbs-server';
 import { CommentType, DislikeType, ImageType, LikeType, PostDeleteType, PostType, ProfileType } from 'nft-bbs-types';
 
-import { getLoginState, runLoading, routeUrlPatterns, matchRoutePatterns, getPageStateByPageName, constructRoutePath } from '~/utils';
+import { runLoading, routeUrlPatterns, matchRoutePatterns, getPageStateByPageName, constructRoutePath } from '~/utils';
 import { CommentApi, ConfigApi, GroupApi, NotificationApi, PostApi, ProfileApi, TrxApi } from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
 import type { createPostlistState } from '~/views/Main/PostList';
+import { loginStateService } from '../loginState';
 
 const state = observable({
   groups: [] as Array<GroupStatus>,
@@ -803,12 +804,103 @@ const init = () => {
       }
     },
   );
+
   const initCheck = async () => {
     const toPage = action((v: 'join' | 'main') => { state.init.page = v; });
-    const loginState = getLoginState();
+
+    interface AutoLoginGroup {
+      groupItem: GroupStatus
+      useShortName: boolean
+    }
+
+    const getAutoLoginGroup = (): option.Option<AutoLoginGroup> => {
+      if (window.location.pathname === '/') {
+        return fp.pipe(
+          option.fromNullable(loginStateService.state.autoLoginGroupId),
+          option.chain((autoLoginGroupId) => fp.pipe(
+            option.fromNullable(
+              state.groups.find((v) => v.id === autoLoginGroupId),
+            ),
+            option.map((groupItem) => ({
+              groupItem,
+              useShortName: true,
+            })),
+          )),
+        );
+      }
+
+      return fp.pipe(
+        option.fromNullable(matchRoutePatterns(window.location.pathname)),
+        option.chain((groupIdOrShortName) => {
+          const groupId = parseInt(groupIdOrShortName, 10);
+          const groupItem = state.groups.find((v) => [
+            v.id === groupId,
+            v.shortName === groupIdOrShortName,
+            QuorumLightNodeSDK.utils.restoreSeedFromUrl(v.mainSeedUrl).group_id === groupIdOrShortName,
+          ].some((v) => v));
+          return fp.pipe(
+            option.fromNullable(groupItem),
+            option.map((groupItem) => ({
+              groupItem,
+              useShortName: groupIdOrShortName !== groupItem.id.toString(),
+            })),
+          );
+        }),
+        (v) => {
+          if (option.isNone(v)) {
+            window.location.href = '/';
+          }
+          return v;
+        },
+      );
+    };
+
+    const loginByAutoGroup = (v: option.Option<AutoLoginGroup>): taskEither.TaskEither<unknown, boolean> => {
+      if (option.isNone(v)) { return taskEither.of(false); }
+      const { groupItem, useShortName } = v.value;
+      const login = (): taskEither.TaskEither<unknown, boolean> => {
+        const groupConfig = config.get(groupItem.id);
+        const loginStateItem = loginStateService.state.groups[groupItem.id];
+        if (loginStateItem?.lastLogin === 'mixin' && groupConfig.mixin && loginStateItem?.mixin) {
+          const jwt = loginStateItem.mixin.mixinJWT;
+          return fp.pipe(
+            () => keyService.validateMixin(jwt),
+            taskEither.chain((v) => taskEither.fromIO(() => keyService.useMixin(v))),
+            taskEither.map(() => true),
+          );
+        }
+
+        if (loginStateItem?.lastLogin === 'keystore' && groupConfig.keystore && loginStateItem?.keystore) {
+          const keystore = loginStateItem.keystore;
+          return fp.pipe(
+            taskEither.fromIO(() => keyService.useKeystore(keystore)),
+            taskEither.map(() => true),
+          );
+        }
+
+        if (groupConfig.anonymous) {
+          return taskEither.of(true);
+        }
+
+        return taskEither.of(false);
+      };
+
+      return fp.pipe(
+        login(),
+        taskEither.chainW((logined) => {
+          if (logined) {
+            return fp.pipe(
+              taskEither.fromEither(group.join(groupItem, useShortName)),
+              taskEither.map(() => true),
+            );
+          }
+          return taskEither.of(false);
+        }),
+      );
+    };
+
     const run = fp.pipe(
-      taskEither.of(null),
-      taskEither.map(action(() => { state.init.step = 'config'; })),
+      taskEither.fromIO(action(() => { state.init.step = 'config'; })),
       taskEither.chainW(() => taskEither.sequenceArray([
         fp.pipe(
           () => config.load(),
@@ -825,71 +917,19 @@ const init = () => {
           })),
         ),
       ])),
-      taskEither.map(action(() => { state.init.step = 'parse-keys'; })),
-      taskEither.chainW(() => taskEither.fromTask(keyService.parseSavedLoginState)),
-      taskEither.chainW(() => taskEither.fromIO(() => {
-        if (window.location.pathname === '/') {
-          if (!(loginState.groupId && loginState.autoLogin)) {
-            return option.none;
-          }
-          const groupItem = state.groups.find((v) => v.id === loginState.groupId);
-          if (!groupItem) {
-            return option.none;
-          }
-          return option.some({
-            groupItem,
-            useShortName: true,
-          });
+      taskEither.chainW(() => taskEither.fromIO(getAutoLoginGroup)),
+      taskEither.chainW(loginByAutoGroup),
+      taskEither.map((logined) => {
+        if (logined) {
+          toPage('main');
+        } else {
+          toPage('join');
         }
-        const groupIdOrShortName = matchRoutePatterns(window.location.pathname);
-        if (!groupIdOrShortName) {
-          window.location.href = '/';
-          return option.none;
-        }
-        const groupId = parseInt(groupIdOrShortName, 10);
-        const groupItem = state.groups.find((v) => [
-          v.id === groupId,
-          v.shortName === groupIdOrShortName,
-          QuorumLightNodeSDK.utils.restoreSeedFromUrl(v.mainSeedUrl).group_id === groupIdOrShortName,
-        ].some((v) => v));
-        if (!groupItem) {
-          window.location.href = '/';
-          return option.none;
-        }
-        return option.some({
-          groupItem,
-          useShortName: groupIdOrShortName !== groupItem.id.toString(),
-        });
-      })),
-      taskEither.chainW((v): taskEither.TaskEither<unknown, option.Option<unknown>> => {
-        if (option.isNone(v)) { return taskEither.of(option.none); }
-        const { groupItem, useShortName } = v.value;
-        const groupConfig = config.get(groupItem.id);
-        const canMixin = loginState.autoLogin === 'mixin' && !!keyService.state.saved.mixin?.data;
-        const canKeystore = loginState.autoLogin === 'keystore' && !!keyService.state.saved.keystore?.data;
-        const canAutoLogin = canMixin || canKeystore;
-        if (!groupConfig.anonymous && !canAutoLogin) { return taskEither.of(option.none); }
-        if (canAutoLogin) {
-          keyService.loginBySavedState(loginState.autoLogin!);
-        }
-        return taskEither.of(fp.pipe(
-          group.join(groupItem, useShortName),
-          either.matchW(
-            () => option.none,
-            () => option.some(null),
-          ),
-        ));
       }),
-      taskEither.map((v) => fp.pipe(
-        v,
-        option.matchW(
-          () => toPage('join'),
-          () => toPage('main'),
-        ),
-      )),
     );
     await run();
   };
+
   initCheck();
 
   return () => {

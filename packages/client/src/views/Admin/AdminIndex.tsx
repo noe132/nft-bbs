@@ -20,8 +20,6 @@ export const AdminIndex = observer(() => {
 
   const init = async () => {
     await nodeService.config.load();
-    await keyService.parseSavedLoginState();
-    keyService.loginBySavedState();
   };
 
   useEffect(() => {

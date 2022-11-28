@@ -2,7 +2,6 @@ import { useCallback, useRef, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
-import { CircularProgress } from '@mui/material';
 
 import bgImg1x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash.jpg';
 import bgImg2x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@2x.jpg';
@@ -44,14 +43,6 @@ export const Main = observer(() => {
           backgroundImage: `url('${chooseImgByPixelRatio({ x1: bgImg1x, x2: bgImg2x, x3: bgImg3x })}')`,
         }}
       />
-      {false && (
-        <div className="flex-col flex-1 flex-center">
-          <CircularProgress />
-          <div className="text-white mt-6">
-            数据加载中 ...
-          </div>
-        </div>
-      )}
       <Header />
 
       <Scrollable

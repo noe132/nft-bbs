@@ -1,6 +1,5 @@
 import React from 'react';
 import classNames from 'classnames';
-import { useLocalObservable } from 'mobx-react-lite';
 import { nodeService } from '~/service';
 
 interface AvatarProps {
@@ -15,15 +14,10 @@ interface AvatarProps {
 }
 
 export const GroupAvatar = (props: AvatarProps) => {
-  const state = useLocalObservable(() => ({
-    get firstLetter() {
-      return (props.groupName || nodeService.state.groupName).at(0) ?? '';
-    },
-  }));
-
   const avatar = props.avatar || nodeService.state.groupInfo.avatar;
   const size = props.size ?? 100;
   const fontSize = props.fontSize ?? Math.floor((size / 10) * 4);
+  const firstLetter = (props.groupName || nodeService.state.groupName).at(0) ?? '';
 
   return (
     <div
@@ -49,7 +43,7 @@ export const GroupAvatar = (props: AvatarProps) => {
             fontFamily: "Varela Round, Nunito Sans, PingFang SC, Hiragino Sans GB, Heiti SC, '幼圆', '圆体-简', sans-serif",
           }}
         >
-          {state.firstLetter}
+          {firstLetter}
         </div>
       )}
       {props.children}

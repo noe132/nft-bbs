@@ -9,19 +9,21 @@ import {
   PersonOutline, Search,
 } from '@mui/icons-material';
 import {
-  Badge, Button, Fade, FormControl, IconButton, Input, InputBase,
+  Badge, Button, Divider, Fade, FormControl, IconButton, Input, InputBase,
   InputLabel, Menu, MenuItem, OutlinedInput, Popover, Portal, Tab, Tabs,
 } from '@mui/material';
 
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
-import { routeUrlPatterns, setLoginState, ThemeLight, usePageState, useWiderThan } from '~/utils';
-import { nodeService, keyService, dialogService, routerService } from '~/service';
+import { routeUrlPatterns, ThemeLight, usePageState, useWiderThan } from '~/utils';
+import { nodeService, keyService, dialogService, routerService, loginStateService } from '~/service';
 import { editProfile } from '~/modals';
 import { GroupAvatar, GroupCard, NFTSideBox, SiteLogo, UserAvatar } from '~/components';
 
 import { createPostlistState } from '../PostList';
+import { utils } from 'quorum-light-node-sdk';
+import { GroupStatus } from 'nft-bbs-server';
 
 export const Header = observer((props: { className?: string }) => {
   const routeParams = useParams();
@@ -175,7 +177,10 @@ export const Header = observer((props: { className?: string }) => {
   const handleBackToLogin = action((jumpToLogin = false) => {
     state.userDropdown = false;
     state.menu = false;
-    setLoginState({ autoLogin: null, jumpToLogin });
+    if (jumpToLogin) {
+      loginStateService.state.autoOpenGroupId = nodeService.state.groupId;
+    }
+    loginStateService.state.autoLoginGroupId = null;
     window.location.href = '/';
   });
 
@@ -195,12 +200,45 @@ export const Header = observer((props: { className?: string }) => {
     };
   });
 
+  const handleOpenAdmin = action(() => {
+    if (!loginStateService.state.groups.admin) {
+      loginStateService.state.groups.admin = {};
+    }
+    if (keyService.state.keys) {
+      if (keyService.state.keys.type === 'keystore') {
+        const { type, ...rest } = keyService.state.keys;
+        loginStateService.state.groups.admin.keystore = { ...rest };
+      }
+      if (keyService.state.keys.type === 'mixin') {
+        const { type, ...rest } = keyService.state.keys;
+        loginStateService.state.groups.admin.mixin = {
+          mixinJWT: rest.jwt,
+          userName: rest.user.display_name,
+        };
+      }
+    }
+    window.open('/admin');
+  });
+
+  const handleOpenGroup = action((v: GroupStatus) => {
+    window.open(`/${v.shortName || v.id}`);
+    state.menu = false;
+  });
+
   const notificationLink = useMemo(() => {
     const match = matchPath(routeUrlPatterns.notification, routeLocation.pathname);
     return match
       ? routerService.getPath({ page: 'postlist' })
       : routerService.getPath({ page: 'notification' });
   }, [routeLocation.pathname]);
+
+  const loginedPorts = nodeService.state.groups
+  // .filter((v) => v.id !== nodeService.state.groupId)
+    .filter((v) => loginStateService.state.groups[v.id]?.lastLogin)
+    .map((v) => ({
+      group: v,
+      loginState: loginStateService.state.groups[v.id]!,
+    }));
 
   const computedMobileTab = postlistState?.mode.type === 'search'
     ? 2
@@ -598,7 +636,7 @@ export const Header = observer((props: { className?: string }) => {
           <Button
             className="rounded-none w-full border-solid border-t border-black/10 mt-6 h-12 font-normal text-14"
             variant="text"
-            onClick={() => handleBackToLogin()}
+            onClick={() => handleBackToLogin(true)}
           >
             退出登录
           </Button>
@@ -627,33 +665,61 @@ export const Header = observer((props: { className?: string }) => {
             </div>
           </div>
         </MenuItem> */}
-        {([
-          keyService.state.keys?.type === 'keystore' && {
-            text: '我的账号信息',
-            onClick: handleShowAccountInfo,
-            icon: <PersonOutline className="text-22 text-blue-500/90" />,
-          },
-          state.isAdmin && {
-            text: '管理后台',
-            onClick: () => window.open('/admin'),
-            icon: <AdminPanelSettings className="text-22 text-red-500/90" />,
-          },
-          // process.env.NODE_ENV === 'development' && { text: '使用新号', onClick: () => handleChangeAccount('new') },
-          {
-            text: '退出',
-            onClick: () => handleBackToLogin(true),
-            icon: <Logout className="text-22 text-amber-500/90" />,
-          },
-        ] as const).filter(<T extends unknown>(v: T | false): v is T => !!v).map((v, i) => (
-          <MenuItem onClick={v.onClick} key={i}>
+        {keyService.state.keys?.type === 'keystore' && (
+          <MenuItem onClick={handleShowAccountInfo}>
             <div className="flex gap-x-2 mr-2">
               <div className="flex flex-center w-5">
-                {v.icon}
+                <PersonOutline className="text-22 text-blue-500/90" />
               </div>
-              {v.text}
+              我的账号信息
+            </div>
+          </MenuItem>
+        )}
+        <MenuItem onClick={handleOpenAdmin}>
+          <div className="flex gap-x-2 mr-2">
+            <div className="flex flex-center w-5">
+              <AdminPanelSettings className="text-22 text-red-500/90" />
+            </div>
+            管理后台
+          </div>
+        </MenuItem>
+        <Divider />
+        <div className="text-center text-12 text-gray-9c pt-1 pb-2">
+          我可以去的论坛
+        </div>
+        {loginedPorts.map((v) => (
+          <MenuItem
+            className="flex justify-start items-center gap-4 px-4 py-[5px] normal-case font-normal hover:bg-black/5 rounded-none font-default max-w-[300px]"
+            key={v.group.id}
+            onClick={() => handleOpenGroup(v.group)}
+          >
+            <GroupAvatar
+              className="shadow-1 flex-none"
+              groupName={utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
+              size={30}
+            />
+            <div className="flex-col items-start overflow-hidden">
+              <div className="text-link text-14 w-full truncate">
+                {utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
+              </div>
+              <div className="text-gray-9c text-12 truncate">
+                {v.loginState.lastLogin === 'keystore' && `Keystore: ${v.loginState.keystore?.address.slice(0, 10)}`}
+                {v.loginState.lastLogin === 'mixin' && `Mixin: ${v.loginState.mixin?.userName}`}
+              </div>
             </div>
           </MenuItem>
         ))}
+        <Divider />
+        <MenuItem onClick={() => handleBackToLogin()}>
+          <div className="flex gap-x-2 mr-2">
+            <div className="flex flex-center w-5">
+              <Logout className="text-22 text-amber-500/90" />
+            </div>
+            <span className="text-rum-orange">
+              退出当前论坛
+            </span>
+          </div>
+        </MenuItem>
       </Menu>
 
       {/* <Menu

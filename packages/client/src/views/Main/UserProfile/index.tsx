@@ -17,6 +17,7 @@ import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon } from '~/
 import { imageZoomService, keyService, nftService, nodeService, routerService } from '~/service';
 import { ago, runLoading, ThemeLight, usePageState, useWiderThan } from '~/utils';
 import { editProfile } from '~/modals';
+import { PortList } from './PortList';
 
 export const UserProfile = observer((props: { className?: string }) => {
   const routeParams = useParams<{ groupId: string, userAddress: string }>();
@@ -498,6 +499,9 @@ export const UserProfile = observer((props: { className?: string }) => {
             />
           )}
           {!!nodeService.state.config.currentGroup.nft && nftCardBox}
+          {state.selfProfile && (
+            <PortList className="mt-6" />
+          )}
         </div>
       )}
     </div>

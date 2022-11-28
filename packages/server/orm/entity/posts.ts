@@ -5,7 +5,6 @@ import {
 } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
-import { Comment } from './comment';
 import { Profile } from './profile';
 import { StackedCounter } from './stackedCounter';
 

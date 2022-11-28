@@ -1,11 +1,10 @@
-import { action, observable, runInAction, when } from 'mobx';
+import { action, observable } from 'mobx';
 import { ethers, utils } from 'ethers';
-import { taskEither, function as fp, task, option, taskOption, monoid } from 'fp-ts';
+import { taskEither, function as fp } from 'fp-ts';
 import { Base64 } from 'js-base64';
 import * as QuorumLightNodeSdk from 'quorum-light-node-sdk';
 
 import { VaultApi } from '~/apis';
-import { getLoginState, setLoginState } from '~/utils';
 
 export interface KeystoreData {
   privateKey: string
@@ -22,19 +21,6 @@ export interface MixinData {
 
 const state = observable({
   keys: null as null | (KeystoreData & { type: 'keystore' }) | (MixinData & { type: 'mixin' }),
-
-  saved: {
-    keystore: null as null | {
-      loading: boolean
-      skipWaiting: boolean
-      data: null | KeystoreData
-    },
-    mixin: null as null | {
-      loading: boolean
-      skipWaiting: boolean
-      data: null | MixinData
-    },
-  },
 
   get address() {
     if (this.keys?.type === 'keystore') {
@@ -62,6 +48,8 @@ const validate = async (keystore: string, password: string) => {
   );
   return doValidate();
 };
+
+const validateMixin = async (jwt: string) => VaultApi.getOrCreateAppUser(jwt);
 
 const useKeystore = action((data: KeystoreData) => {
   state.keys = {
@@ -133,117 +121,6 @@ const getAdminSignParam = async () => {
   return { address, nonce, sign: signInHex };
 };
 
-const parseSavedLoginState = () => {
-  const loginState = getLoginState();
-  const parseKeystore = fp.pipe(
-    monoid.concatAll(task.getRaceMonoid<unknown>())([
-      () => when(() => !!state.saved.keystore?.skipWaiting),
-      fp.pipe(
-        task.fromIO(() => {
-          runInAction(() => {
-            state.saved.keystore = {
-              loading: true,
-              skipWaiting: false,
-              data: null,
-            };
-          });
-          if (loginState.keystore && loginState.password && loginState.address && loginState.privateKey) {
-            return option.some({
-              keystore: loginState.keystore,
-              password: loginState.password,
-              address: loginState.address,
-              privateKey: loginState.privateKey,
-            });
-          }
-          return option.none;
-        }),
-        taskOption.map(action((v) => {
-          state.saved.keystore = {
-            loading: false,
-            skipWaiting: false,
-            data: v,
-          };
-        })),
-        taskOption.matchW(
-          () => null,
-          () => null,
-        ),
-        task.chain(() => task.fromIO(action(() => {
-          if (state.saved.keystore) {
-            state.saved.keystore.loading = false;
-          }
-        }))),
-      ),
-    ]),
-  );
-  const parseMixin = fp.pipe(
-    monoid.concatAll(task.getRaceMonoid<unknown>())([
-      () => when(() => !!state.saved.mixin?.skipWaiting),
-      fp.pipe(
-        taskEither.fromIO(() => {
-          runInAction(() => {
-            state.saved.mixin = {
-              loading: true,
-              skipWaiting: false,
-              data: null,
-            };
-          });
-        }),
-        taskEither.chainW(() => () => VaultApi.getOrCreateAppUser(loginState.mixinJWT)),
-        taskEither.matchW(
-          () => {
-            setLoginState({
-              mixinJWT: '',
-              autoLogin: null,
-            });
-          },
-          action((v) => {
-            state.saved.mixin = {
-              loading: false,
-              skipWaiting: false,
-              data: v,
-            };
-          }),
-        ),
-        task.chain(() => task.fromIO(action(() => {
-          if (state.saved.mixin) {
-            state.saved.mixin.loading = false;
-          }
-        }))),
-      ),
-    ]),
-  );
-
-  return fp.pipe(
-    task.sequenceArray([parseKeystore, parseMixin]),
-    task.map(() => null),
-  )();
-};
-
-const skipSavedLoginStateParse = action(() => {
-  if (state.saved.keystore) {
-    state.saved.keystore.skipWaiting = true;
-  }
-  if (state.saved.mixin) {
-    state.saved.mixin.skipWaiting = true;
-  }
-});
-
-const loginBySavedState = action((type?: 'keystore' | 'mixin') => {
-  if (!type) {
-    const loginState = getLoginState();
-    if (loginState.autoLogin) {
-      loginBySavedState(loginState.autoLogin);
-    }
-  }
-  if (type === 'keystore' && state.saved.keystore?.data) {
-    useKeystore(state.saved.keystore.data);
-  }
-  if (type === 'mixin' && state.saved.mixin?.data) {
-    useMixin(state.saved.mixin.data);
-  }
-});
-
 export const keyService = {
   state,
 
@@ -252,10 +129,8 @@ export const keyService = {
   createRandom,
   logout,
   validate,
+  validateMixin,
   getTrxCreateParam,
   getAdminSignParam,
   sign,
-  parseSavedLoginState,
-  skipSavedLoginStateParse,
-  loginBySavedState,
 };

@@ -1,5 +1,4 @@
 import { runInAction } from 'mobx';
-import store from 'store2';
 
 export * from './ago';
 export * from './compressImage';
@@ -107,35 +106,3 @@ export const chooseImgByPixelRatio = (params: { x1: string, x2?: string, x3?: st
 };
 
 export const notNullFilter = <T>(v: T | undefined | null): v is T => v !== undefined && v !== null;
-
-
-export interface LoginState {
-  groupId: number
-  mixinJWT: string
-  keystore: string
-  privateKey: string
-  address: string
-  password: string
-  autoLogin: null | 'keystore' | 'mixin'
-  jumpToLogin: boolean
-}
-
-export const getLoginState = () => {
-  const loginState: LoginState = store('login_state') || {
-    groupId: 0,
-    mixinJWT: '',
-    keystore: '',
-    privateKey: '',
-    password: '',
-    autoLogin: null as null | 'keystore' | 'mixin',
-  };
-
-  return loginState;
-};
-
-export const setLoginState = (v: Partial<LoginState>) => {
-  store('login_state', {
-    ...getLoginState(),
-    ...v,
-  });
-};

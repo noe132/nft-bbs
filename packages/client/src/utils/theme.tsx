@@ -10,6 +10,7 @@ declare module '@mui/material' {
     link: Palette['primary']
     'dark-blue': Palette['primary']
     dark: Palette['primary']
+    'link-soft': Palette['primary']
   }
   interface PaletteOptions {
     rum: PaletteOptions['primary']
@@ -17,6 +18,7 @@ declare module '@mui/material' {
     link: PaletteOptions['primary']
     'dark-blue': PaletteOptions['primary']
     dark: PaletteOptions['primary']
+    'link-soft': PaletteOptions['primary']
   }
   interface ColorOverrides {
     rum: true
@@ -24,6 +26,7 @@ declare module '@mui/material' {
     link: true
     'dark-blue': true
     dark: true
+    'link-soft': true
   }
   interface ButtonPropsColorOverrides extends ColorOverrides {}
   interface InputBasePropsColorOverrides extends ColorOverrides {}
@@ -35,6 +38,7 @@ const themeOption: ThemeOptions = {
     secondary: { main: '#1880b8' },
     rum: { main: '#ff931e' },
     link: { main: '#0080ff' },
+    'link-soft': { main: '#98bfff' },
     'dark-blue': { main: '#576d91' },
     light: { main: '#fff' },
     dark: { main: '#000', contrastText: '#fff' },
