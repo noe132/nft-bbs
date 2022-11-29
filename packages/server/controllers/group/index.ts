@@ -138,11 +138,15 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
     }
 
     const needToRePolling = [
-      body.mainSeedUrl !== group.mainSeedUrl,
-      body.commentSeedUrl !== group.commentSeedUrl,
-      body.counterSeedUrl !== group.counterSeedUrl,
-      body.profileSeedUrl !== group.profileSeedUrl,
-    ].some((v) => v);
+      [body.mainSeedUrl, group.mainSeedUrl],
+      [body.commentSeedUrl, group.commentSeedUrl],
+      [body.counterSeedUrl, group.counterSeedUrl],
+      [body.profileSeedUrl, group.profileSeedUrl],
+    ].some(([seed1, seed2]) => {
+      const groupId1 = QuorumLightNodeSDK.utils.restoreSeedFromUrl(seed1).group_id;
+      const groupId2 = QuorumLightNodeSDK.utils.restoreSeedFromUrl(seed2).group_id;
+      return groupId1 !== groupId2;
+    });
 
     group.shortName = body.shortName;
     group.mainSeedUrl = body.mainSeedUrl;
@@ -237,7 +241,8 @@ const validateSeed = (seedUrl: string) => fp.pipe(
     () => new Error(`invalid seedurl ${seedUrl}`),
   ),
   either.chainW((v) => {
-    if (!v.chainAPIs.length) {
+    const apis = v.chainAPIs.filter((v) => v);
+    if (!apis.length) {
       return either.left(new Error(`no chianAPI in seedurl ${seedUrl}`));
     }
     return either.right(v);

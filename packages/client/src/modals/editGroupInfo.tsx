@@ -54,7 +54,7 @@ interface Props {
   className?: string
   onClose?: () => unknown
 }
-export const EditGroupInfoView = observer((props: Props) => {
+const EditGroupInfoView = observer((props: Props) => {
   const state = useLocalObservable(() => ({
     avatar: '',
     desc: '',

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { either, function as fp, taskEither } from 'fp-ts';
-import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip } from '@mui/material';
+import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, TextField, Tooltip } from '@mui/material';
 import type { GroupStatus } from 'nft-bbs-server/orm';
 
 import { GroupApi } from '~/apis';
@@ -10,6 +10,8 @@ import { runLoading, ThemeLight } from '~/utils';
 import { dialogService, keyService, snackbarService } from '~/service';
 import { utils } from 'quorum-light-node-sdk';
 import { LoadingButton } from '@mui/lab';
+import { Edit } from '@mui/icons-material';
+import { editSeedUrl } from '~/modals';
 
 export const GroupPage = observer(() => {
   const state = useLocalObservable(() => ({
@@ -81,7 +83,8 @@ export const GroupPage = observer(() => {
       () => new Error(`invalid seedurl ${seedUrl}`),
     ),
     either.chainW((v) => {
-      if (!v.chainAPIs.length) {
+      const apis = v.chainAPIs.filter((v) => v);
+      if (!apis.length) {
         return either.left(new Error(`no chianAPI in seedurl ${seedUrl}`));
       }
       return either.right(v);
@@ -113,7 +116,11 @@ export const GroupPage = observer(() => {
       if (either.isLeft(result)) {
         dialogService.open({
           title: '检验错误',
-          content: `${seed[1]} 种子解析错误 ${result.left.message}`,
+          content: (
+            <div className="break-all">
+              {seed[1]} 种子解析错误 {result.left.message}
+            </div>
+          ),
         });
         return;
       }
@@ -127,15 +134,19 @@ export const GroupPage = observer(() => {
     if (state.addGroupDialog.id) {
       const originalGroup = state.groups.find((v) => v.id === state.addGroupDialog.id);
       if (!originalGroup) { return; }
-      const needToRePolling = [
-        state.addGroupDialog.mainSeedUrl !== originalGroup.mainSeedUrl,
-        state.addGroupDialog.commentSeedUrl !== originalGroup.commentSeedUrl,
-        state.addGroupDialog.counterSeedUrl !== originalGroup.counterSeedUrl,
-        state.addGroupDialog.profileSeedUrl !== originalGroup.profileSeedUrl,
-      ].some((v) => v);
+      const needToRePolling = ([
+        [state.addGroupDialog.mainSeedUrl, originalGroup.mainSeedUrl],
+        [state.addGroupDialog.commentSeedUrl, originalGroup.commentSeedUrl],
+        [state.addGroupDialog.counterSeedUrl, originalGroup.counterSeedUrl],
+        [state.addGroupDialog.profileSeedUrl, originalGroup.profileSeedUrl],
+      ] as const).some(([seed1, seed2]) => {
+        const groupId1 = utils.restoreSeedFromUrl(seed1).group_id;
+        const groupId2 = utils.restoreSeedFromUrl(seed2).group_id;
+        return groupId1 !== groupId2;
+      });
       if (needToRePolling) {
         const result = await dialogService.open({
-          content: '确定要编辑这个论坛吗？（需要重新索引一遍数据）',
+          content: '确定要编辑这个论坛吗？（种子网络 groupId 发生了变化，需要重新索引一遍数据）',
         });
         if (result === 'cancel') { return; }
       }
@@ -381,24 +392,92 @@ export const GroupPage = observer(() => {
               value={state.addGroupDialog.mainSeedUrl}
               onChange={action((e) => { state.addGroupDialog.mainSeedUrl = e.target.value; })}
               size="small"
+              InputProps={{
+                className: '!pr-0',
+                endAdornment: (
+                  <IconButton
+                    className="mx-2"
+                    size="small"
+                    onClick={async () => {
+                      const seedUrl = await editSeedUrl(state.addGroupDialog.mainSeedUrl);
+                      if (seedUrl) {
+                        runInAction(() => { state.addGroupDialog.mainSeedUrl = seedUrl; });
+                      }
+                    }}
+                  >
+                    <Edit className="text-20" />
+                  </IconButton>
+                ),
+              }}
             />
             <TextField
               label="评论种子网络"
               value={state.addGroupDialog.commentSeedUrl}
               onChange={action((e) => { state.addGroupDialog.commentSeedUrl = e.target.value; })}
               size="small"
+              InputProps={{
+                className: '!pr-0',
+                endAdornment: (
+                  <IconButton
+                    className="mx-2"
+                    size="small"
+                    onClick={async () => {
+                      const seedUrl = await editSeedUrl(state.addGroupDialog.commentSeedUrl);
+                      if (seedUrl) {
+                        runInAction(() => { state.addGroupDialog.commentSeedUrl = seedUrl; });
+                      }
+                    }}
+                  >
+                    <Edit className="text-20" />
+                  </IconButton>
+                ),
+              }}
             />
             <TextField
               label="点赞种子网络"
               value={state.addGroupDialog.counterSeedUrl}
               onChange={action((e) => { state.addGroupDialog.counterSeedUrl = e.target.value; })}
               size="small"
+              InputProps={{
+                className: '!pr-0',
+                endAdornment: (
+                  <IconButton
+                    className="mx-2"
+                    size="small"
+                    onClick={async () => {
+                      const seedUrl = await editSeedUrl(state.addGroupDialog.counterSeedUrl);
+                      if (seedUrl) {
+                        runInAction(() => { state.addGroupDialog.counterSeedUrl = seedUrl; });
+                      }
+                    }}
+                  >
+                    <Edit className="text-20" />
+                  </IconButton>
+                ),
+              }}
             />
             <TextField
               label="个人资料种子网络"
               value={state.addGroupDialog.profileSeedUrl}
               onChange={action((e) => { state.addGroupDialog.profileSeedUrl = e.target.value; })}
               size="small"
+              InputProps={{
+                className: '!pr-0',
+                endAdornment: (
+                  <IconButton
+                    className="mx-2"
+                    size="small"
+                    onClick={async () => {
+                      const seedUrl = await editSeedUrl(state.addGroupDialog.profileSeedUrl);
+                      if (seedUrl) {
+                        runInAction(() => { state.addGroupDialog.profileSeedUrl = seedUrl; });
+                      }
+                    }}
+                  >
+                    <Edit className="text-20" />
+                  </IconButton>
+                ),
+              }}
             />
           </div>
         </DialogContent>
