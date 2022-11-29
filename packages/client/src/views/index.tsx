@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 
 import { nodeService } from '~/service/node';
 import { lang } from '~/utils/lang';
-import { initService } from '~/service';
+import { initService, initServiceAdmin } from '~/service';
 
 import { Join } from './Join';
 import { Init } from './Init';
@@ -25,6 +25,9 @@ export const UserViewRoot = observer(() => {
 
 export const ViewRoot = () => {
   const routeLocation = useLocation();
+
+  useEffect(() => initServiceAdmin(), []);
+
   if (routeLocation.pathname.startsWith('/admin')) {
     return <Admin />;
   }

@@ -30,6 +30,17 @@ export const initService = () => {
   };
 };
 
+export const initServiceAdmin = () => {
+  const disposes = [
+    loginStateService.init(),
+    langService.init(),
+  ];
+
+  return () => {
+    disposes.forEach((v) => v());
+  };
+};
+
 export const ServiceViews = () => (<>
   <ImageZoomView />
   <SnackbarContainer />

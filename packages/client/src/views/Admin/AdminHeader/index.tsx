@@ -7,6 +7,7 @@ import { IconButton, Menu, MenuItem } from '@mui/material';
 
 import { ThemeLight } from '~/utils';
 import { SiteLogo } from '~/components';
+import { keyService, loginStateService } from '~/service';
 
 export const AdminHeader = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -17,7 +18,10 @@ export const AdminHeader = observer((props: { className?: string }) => {
 
   const handleBackToLogin = action(() => {
     state.menu = false;
-    window.location.href = '/admin';
+    keyService.logout();
+    if (loginStateService.state.groups.admin) {
+      loginStateService.state.groups.admin.lastLogin = null;
+    }
   });
 
   return (<>

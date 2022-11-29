@@ -5,8 +5,8 @@ import { parse } from 'query-string';
 import { toUint8Array } from 'js-base64';
 import { either, taskEither, function as fp, task } from 'fp-ts';
 import {
-  Button, Checkbox, Dialog, FormControl,
-  FormControlLabel, IconButton, InputLabel, OutlinedInput, Tooltip,
+  Button, Checkbox, CircularProgress, Dialog, FormControl,
+  FormControlLabel, IconButton, InputLabel, Modal, OutlinedInput, Tooltip,
 } from '@mui/material';
 import { Close, Delete, Visibility, VisibilityOff } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
@@ -28,6 +28,8 @@ export const AdminLogin = observer(() => {
     crpytoKey: null as CryptoKey | null,
     keyInHex: '',
 
+    loading: false,
+
     keystoreLoginLoading: false,
   }));
   const isPC = useWiderThan(960);
@@ -35,16 +37,24 @@ export const AdminLogin = observer(() => {
   const keystore = loginState?.keystore;
   const mixin = loginState?.mixin;
 
-  const handleLoginBySavedKeystore = () => {
+  const handleLoginBySavedKeystore = action(() => {
     if (keystore) {
       keyService.useKeystore(keystore);
+      loginStateService.state.groups.admin = {
+        ...loginStateService.state.groups.admin,
+        keystore: { ...keystore },
+        lastLogin: 'keystore',
+      };
     }
-  };
+  });
 
   const handleClearSavedKeystore = () => {
     const item = loginStateService.state.groups.admin;
     if (item) {
       delete item.keystore;
+      if (item.lastLogin === 'keystore') {
+        item.lastLogin = null;
+      }
     }
   };
 
@@ -59,12 +69,13 @@ export const AdminLogin = observer(() => {
           runInAction(() => { state.mixinLogin = false; });
         },
         action((data) => {
-          if (!loginStateService.state.groups.admin) {
-            loginStateService.state.groups.admin = {};
-          }
-          loginStateService.state.groups.admin.mixin = {
-            mixinJWT: jwt,
-            userName: data.user.display_name,
+          loginStateService.state.groups.admin = {
+            ...loginStateService.state.groups.admin,
+            mixin: {
+              mixinJWT: jwt,
+              userName: data.user.display_name,
+            },
+            lastLogin: 'mixin',
           };
           keyService.useMixin(data);
         }),
@@ -76,6 +87,9 @@ export const AdminLogin = observer(() => {
     const item = loginStateService.state.groups.admin;
     if (item) {
       delete item.mixin;
+      if (item.lastLogin === 'mixin') {
+        item.lastLogin = null;
+      }
     }
   };
 
@@ -128,12 +142,13 @@ export const AdminLogin = observer(() => {
     if (!userResult) { return; }
 
     runInAction(() => {
-      if (!loginStateService.state.groups.admin) {
-        loginStateService.state.groups.admin = {};
-      }
-      loginStateService.state.groups.admin.mixin = {
-        mixinJWT: userResult.jwt,
-        userName: userResult.user.display_name,
+      loginStateService.state.groups.admin = {
+        ...loginStateService.state.groups.admin,
+        mixin: {
+          mixinJWT: userResult.jwt,
+          userName: userResult.user.display_name,
+        },
+        lastLogin: 'mixin',
       };
     });
     keyService.useMixin(userResult);
@@ -161,11 +176,10 @@ export const AdminLogin = observer(() => {
         keyService.useKeystore(data);
 
         runInAction(() => {
-          if (!loginStateService.state.groups.admin) {
-            loginStateService.state.groups.admin = {};
-          }
-          loginStateService.state.groups.admin.keystore = {
-            ...data,
+          loginStateService.state.groups.admin = {
+            ...loginStateService.state.groups.admin,
+            keystore: { ...data },
+            lastLogin: 'keystore',
           };
         });
       },
@@ -192,6 +206,22 @@ export const AdminLogin = observer(() => {
   };
 
   useEffect(() => {
+    runLoading(
+      (l) => { state.loading = l; },
+      async () => {
+        const loginState = loginStateService.state.groups.admin;
+        if (loginState?.lastLogin === 'keystore' && loginState.keystore) {
+          keyService.useKeystore(loginState.keystore);
+        }
+        if (loginState?.lastLogin === 'mixin' && loginState.mixin) {
+          const jwt = loginState.mixin.mixinJWT;
+          return fp.pipe(
+            () => keyService.validateMixin(jwt),
+            taskEither.chain((v) => taskEither.fromIO(() => keyService.useMixin(v))),
+          )();
+        }
+      },
+    );
     const handleStorageEvent = (e: StorageEvent) => {
       if (e.key === 'mixin-login-callback' && e.newValue) {
         handleMixinLoginCallback(e.newValue);
@@ -205,6 +235,9 @@ export const AdminLogin = observer(() => {
 
   return (<>
     <div className="flex flex-center bg-black/70 h-[100vh]">
+      <Modal className="flex flex-center" open={state.loading}>
+        <CircularProgress />
+      </Modal>
       <div className="flex-col items-stertch mt-4 gap-y-4 min-w-[200px]">
         {!!keystore && (
           <div className="relative flex items-center gap-x-2">
