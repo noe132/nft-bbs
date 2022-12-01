@@ -1,6 +1,6 @@
 import { either, taskEither, function as fp } from 'fp-ts';
 import { Type } from 'io-ts';
-import QuorumLightNodeSDK, { IContent } from 'quorum-light-node-sdk-nodejs';
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
 import { postType, commentType, likeType, dislikeType, imageType, profileType, postDeleteType } from 'nft-bbs-types';
 
 import { AppDataSource } from '~/orm/data-source';
@@ -30,7 +30,7 @@ const handlers: Array<{ type: Type<any>, handler: TrxHandler, trxType: TrxTypes 
 
 interface HandleContentParams {
   taskItem?: TaskItem
-  content: IContent
+  content: QuorumLightNodeSDK.IContent
   pendingId?: number
   groupStatus: GroupStatus
   queueSocket: SendFn
@@ -160,7 +160,7 @@ const handleContent = async (params: HandleContentParams) => {
   return result;
 };
 
-export const pollingTask = async (groupStatusId: number) => {
+export const pollingContentTask = async (groupStatusId: number) => {
   const groupStatus = await GroupStatus.get(groupStatusId);
   if (!groupStatus) { return; }
   const taskGroups = getMergedTaskGroup(groupStatus);
@@ -171,7 +171,7 @@ export const pollingTask = async (groupStatusId: number) => {
   // handle pending trx
   await fp.pipe(
     taskEither.tryCatch(
-      () => PendingContent.list(groupStatusId),
+      () => PendingContent.list(groupStatus.id),
       (e) => e as Error,
     ),
     taskEither.chainW((items) => taskEither.fromTask(async () => {

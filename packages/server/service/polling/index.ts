@@ -1,10 +1,15 @@
-import QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
 import { GroupStatus } from '~/orm/entity';
 import { PollingTask } from '~/utils';
-import { pollingTask } from './pollingContent';
+import { pollingAppConfigTask, pollingContentTask } from './pollingTask';
+
+export const INTERVAL = {
+  APPCONFIG: 60000,
+  CONTENT: 2000,
+};
 
 const state = {
-  map: new Map<number, PollingTask>(),
+  map: new Map<number, Array<PollingTask>>(),
 };
 
 const updatePollingTasks = async () => {
@@ -22,26 +27,35 @@ const updatePollingTasks = async () => {
       QuorumLightNodeSDK.cache.Group.add(u);
     });
 
-    const task = new PollingTask(
-      () => pollingTask(group.id),
-      2000,
-    );
-    state.map.set(group.id, task);
+    state.map.set(group.id, [
+      new PollingTask(
+        () => pollingAppConfigTask(group.id),
+        INTERVAL.APPCONFIG,
+      ),
+      new PollingTask(
+        () => pollingContentTask(group.id),
+        INTERVAL.CONTENT,
+      ),
+    ]);
   });
 
   Array.from(state.map.keys())
     .filter((id) => groups.every((group) => group.id !== id))
     .forEach((id) => {
-      const task = state.map.get(id);
-      if (task) { task.stop(); }
+      const tasks = state.map.get(id);
+      if (tasks) {
+        tasks.map((v) => v.stop());
+      }
       state.map.delete(id);
     });
 };
 
 const deleteTask = async (group: GroupStatus) => {
-  const task = state.map.get(group.id);
-  if (!task) { return; }
-  await task.stop();
+  const tasks = state.map.get(group.id);
+  if (!tasks) { return; }
+  await Promise.all(
+    tasks.map((v) => v.stop()),
+  );
   state.map.delete(group.id);
 };
 
@@ -58,11 +72,16 @@ const updateTask = async (group: GroupStatus) => {
     QuorumLightNodeSDK.cache.Group.remove(seedGroup.groupId);
     QuorumLightNodeSDK.cache.Group.add(u);
   });
-  const task = new PollingTask(
-    () => pollingTask(group.id),
-    2000,
-  );
-  state.map.set(group.id, task);
+  state.map.set(group.id, [
+    new PollingTask(
+      () => pollingAppConfigTask(group.id),
+      INTERVAL.APPCONFIG,
+    ),
+    new PollingTask(
+      () => pollingContentTask(group.id),
+      INTERVAL.CONTENT,
+    ),
+  ]);
 };
 
 const init = () => {

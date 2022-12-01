@@ -1,6 +1,6 @@
 import { taskEither } from 'fp-ts';
 import { PostDeleteType } from 'nft-bbs-types';
-import QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
 import { Post } from '~/orm';
 import { TrxHandler } from './helper';
 

@@ -1,6 +1,6 @@
 import { taskEither } from 'fp-ts';
 import { CommentType } from 'nft-bbs-types';
-import QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
 
 import { Post, Comment, Notification, ImageFile } from '~/orm';
 import { parseQuorumTimestamp } from '~/utils';

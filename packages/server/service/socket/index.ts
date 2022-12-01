@@ -1,3 +1,4 @@
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
 import { FastifyInstance } from 'fastify';
 import { either } from 'fp-ts';
 import { number, string, type, TypeOf } from 'io-ts';
@@ -29,12 +30,16 @@ export interface SocketIOEventMap {
   postDelete: {
     trxId: string
   }
+  appconfig: {
+    groupId: GroupStatus['id']
+    data: Record<QuorumLightNodeSDK.IAppConfigItem['Name'], undefined | QuorumLightNodeSDK.IAppConfigItem>
+  }
 }
 
 type SendParams<T extends keyof SocketIOEventMap> = {
   event: T
   data: SocketIOEventMap[T]
-  groupId: GroupStatus['id']
+  groupId?: GroupStatus['id']
 } & ({
   userAddress: string
 } | {
@@ -57,7 +62,7 @@ const send = <T extends keyof SocketIOEventMap>(params: SendParams<T>) => {
     });
   } else if (params.broadcast) {
     if (!socketIo) { return; }
-    const sockets = socketArr.filter((v) => v.groupId === params.groupId);
+    const sockets = socketArr.filter((v) => (params.groupId ? v.groupId === params.groupId : true));
     sockets.forEach((v) => {
       v.socket.emit(params.event, params.data);
     });

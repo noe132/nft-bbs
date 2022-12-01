@@ -19,7 +19,7 @@ import bgImg3x from '~/assets/images/rum_barrel_bg@3x.jpg';
 import rumsystemLogo from '~/assets/icons/rumsystem.svg';
 
 import { chooseImgByPixelRatio, runLoading, ThemeLight, useWiderThan } from '~/utils';
-import { keyService, KeystoreData, loginStateService, nodeService, routerService, snackbarService } from '~/service';
+import { APPCONFIG_KEY_NAME, keyService, KeystoreData, loginStateService, nodeService, routerService, snackbarService } from '~/service';
 import { GroupAvatar, Scrollable } from '~/components';
 import { VaultApi } from '~/apis';
 
@@ -344,6 +344,7 @@ export const Join = observer(() => {
                         key={group.id}
                       >
                         <GroupAvatar
+                          groupId={group.id}
                           square
                           groupName={utils.restoreSeedFromUrl(group.mainSeedUrl).group_name}
                           size={44}
@@ -360,9 +361,14 @@ export const Join = observer(() => {
                           </Button>
                         )}
                         <div className="flex-col flex-1 justify-end items-stretch px-2 gap-y-2">
-                          <div className="flex flex-center flex-1 text-center truncate -mt-4 mb-2">
+                          <div className="flex flex-center text-center truncate -mt-4 mb-2">
                             {utils.restoreSeedFromUrl(group.mainSeedUrl).group_name}
                           </div>
+                          {!!nodeService.state.appConfigMap[group.id]?.[APPCONFIG_KEY_NAME.DESC]?.Value && (
+                            <div className="text-12 text-gray-9c truncate-2 -mt-2 mb-1">
+                              {nodeService.state.appConfigMap[group.id]?.[APPCONFIG_KEY_NAME.DESC]?.Value}
+                            </div>
+                          )}
                           {loginButton === 'saved-mixin' && (
                             <Tooltip title="用上次使用的 Mixin 登录" placement="right">
                               <Button
@@ -445,6 +451,7 @@ export const Join = observer(() => {
               </Scrollable>
             </div>
           )}
+
           {!!state.selectedGroup && (
             <div className="relative flex-col items-stretch gap-y-7 bg-black/80 w-[720px] rounded-[10px] p-7">
               <Button
@@ -459,6 +466,7 @@ export const Join = observer(() => {
 
               <GroupAvatar
                 className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3"
+                groupId={state.selectedGroup.id}
                 groupName={utils.restoreSeedFromUrl(state.selectedGroup.mainSeedUrl).group_name}
                 size={100}
               />

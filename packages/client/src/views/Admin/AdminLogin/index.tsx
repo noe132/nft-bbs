@@ -236,7 +236,7 @@ export const AdminLogin = observer(() => {
   return (<>
     <div className="flex flex-center bg-black/70 h-[100vh]">
       <Modal className="flex flex-center" open={state.loading}>
-        <CircularProgress />
+        <CircularProgress className="outline-none" />
       </Modal>
       <div className="flex-col items-stertch mt-4 gap-y-4 min-w-[200px]">
         {!!keystore && (

@@ -59,6 +59,7 @@ export const PortList = observer((props: Props) => {
             >
               <GroupAvatar
                 className="shadow-1 flex-none"
+                groupId={v.group.id}
                 groupName={utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
                 size={40}
               />
@@ -88,6 +89,7 @@ export const PortList = observer((props: Props) => {
             >
               <GroupAvatar
                 className="shadow-1"
+                groupId={v.id}
                 groupName={utils.restoreSeedFromUrl(v.mainSeedUrl).group_name}
                 size={40}
               />

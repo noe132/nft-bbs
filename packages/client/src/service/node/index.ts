@@ -1,19 +1,39 @@
 import { matchPath } from 'react-router-dom';
 import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
 import { action, observable, reaction, runInAction } from 'mobx';
-import { either, function as fp, option, taskEither } from 'fp-ts';
+import { either, function as fp, option, task, taskEither } from 'fp-ts';
 import { constantDelay, limitRetries, Monoid } from 'retry-ts';
 import { retrying } from 'retry-ts/Task';
 import { v4 } from 'uuid';
-import type { Post, Comment, Profile, Notification, GroupStatus, GroupConfig } from 'nft-bbs-server';
-import { CommentType, DislikeType, ImageType, LikeType, PostDeleteType, PostType, ProfileType } from 'nft-bbs-types';
+import type {
+  Post, Comment, Profile, Notification,
+  GroupStatus, GroupConfig, IAppConfigItem,
+} from 'nft-bbs-server';
+import {
+  CommentType, DislikeType, ImageType, LikeType,
+  PostDeleteType, PostType, ProfileType,
+} from 'nft-bbs-types';
 
-import { runLoading, routeUrlPatterns, matchRoutePatterns, getPageStateByPageName, constructRoutePath } from '~/utils';
-import { CommentApi, ConfigApi, GroupApi, NotificationApi, PostApi, ProfileApi, TrxApi } from '~/apis';
+import {
+  runLoading, routeUrlPatterns, matchRoutePatterns,
+  getPageStateByPageName, constructRoutePath,
+} from '~/utils';
+import {
+  AppConfigApi,
+  CommentApi, ConfigApi, GroupApi, NotificationApi,
+  PostApi, ProfileApi, TrxApi,
+} from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
 import type { createPostlistState } from '~/views/Main/PostList';
+
 import { loginStateService } from '../loginState';
+
+export const APPCONFIG_KEY_NAME = {
+  DESC: 'group_desc',
+  ANNOUNCEMENT: 'group_announcement',
+  ICON: 'group_icon',
+};
 
 const state = observable({
   groups: [] as Array<GroupStatus>,
@@ -98,6 +118,7 @@ const state = observable({
     avatar: '',
     desc: '',
   },
+  appConfigMap: {} as Record<number, undefined | Record<IAppConfigItem['Name'], undefined | IAppConfigItem>>,
   get myProfile() {
     return profile.getComputedProfile(keyService.state.address);
   },
@@ -106,6 +127,15 @@ const state = observable({
   },
   get groupName() {
     return (this.groupMap?.main?.groupName || this.groupMap?.main.groupId) ?? '';
+  },
+  get groupDesc() {
+    return this.appConfigMap[state.groupId]?.[APPCONFIG_KEY_NAME.DESC]?.Value ?? null;
+  },
+  get groupAnnouncement() {
+    return this.appConfigMap[state.groupId]?.[APPCONFIG_KEY_NAME.ANNOUNCEMENT]?.Value ?? null;
+  },
+  get groupIcon() {
+    return this.appConfigMap[state.groupId]?.[APPCONFIG_KEY_NAME.ICON]?.Value ?? null;
   },
   get logined() {
     return !!keyService.state.address;
@@ -690,7 +720,14 @@ const group = {
     () => GroupApi.list(),
     taskEither.map(action((v) => {
       state.groups = v;
+      return v;
     })),
+    taskEither.chainW((groups) => {
+      const tasks = groups
+        .map((v) => v.id)
+        .map((v) => () => appconfig.load(v));
+      return taskEither.fromTask(task.sequenceArray(tasks));
+    }),
   ),
   setDocumentTitle: (title?: string) => {
     document.title = [
@@ -735,6 +772,15 @@ const config = {
       keystore: false,
       mixin: false,
     };
+  },
+};
+
+const appconfig = {
+  load: async (groupId: GroupStatus['id']) => {
+    const record = await AppConfigApi.get(groupId);
+    if (record) {
+      state.appConfigMap[groupId] = record;
+    }
   },
 };
 
@@ -787,6 +833,9 @@ const socketEventHandler: Partial<SocketEventListeners> = {
     }
   },
   profile: (v) => profile.save(v),
+  appconfig: (v) => {
+    state.appConfigMap[v.groupId] = v.data;
+  },
 };
 
 const init = () => {
@@ -949,4 +998,5 @@ export const nodeService = {
   counter,
   group,
   config,
+  appconfig,
 };

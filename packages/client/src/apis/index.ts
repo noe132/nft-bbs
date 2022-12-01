@@ -1,3 +1,4 @@
+export * as AppConfigApi from './appconfig';
 export * as CommentApi from './comment';
 export * as ConfigApi from './config';
 export * as GroupApi from './group';

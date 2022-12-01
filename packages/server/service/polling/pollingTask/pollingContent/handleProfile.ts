@@ -1,39 +1,35 @@
 import { taskEither } from 'fp-ts';
-import { PostType } from 'nft-bbs-types';
-import QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
-import { Post } from '~/orm';
+import { ProfileType } from 'nft-bbs-types';
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import { Profile } from '~/orm';
 import { parseQuorumTimestamp } from '~/utils';
 import { TrxHandler } from './helper';
 
-export const handlePost: TrxHandler = (item, groupStatus, transactionManager, queueSocket) => taskEither.tryCatch(
+export const handleProfile: TrxHandler = (item, groupStatus, transactionManager, queueSocket) => taskEither.tryCatch(
   async () => {
-    const data = item.Data as PostType;
+    const data = item.Data as ProfileType;
     const userAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey);
     const groupId = groupStatus.id;
     const trxId = item.TrxId;
     const timestamp = parseQuorumTimestamp(item.TimeStamp);
 
-    await Post.add({
-      trxId,
+    const profile = await Profile.add({
       groupId,
-      title: data.name,
-      content: data.content,
+      trxId,
       userAddress,
+      name: data.name,
+      avatar: data.image
+        ? `data:${data.image.mediaType};base64,${data.image.content}`
+        : '',
       timestamp,
-      commentCount: 0,
-      nonAuthorCommentCount: 0,
-      likeCount: 0,
-      dislikeCount: 0,
-      hot: 0,
     }, transactionManager);
 
     queueSocket({
       broadcast: true,
-      event: 'post',
+      event: 'profile',
       groupId,
-      data: { trxId },
+      data: profile,
     });
-
     return true;
   },
   (e) => e as Error,

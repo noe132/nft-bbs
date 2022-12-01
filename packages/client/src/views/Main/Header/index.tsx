@@ -683,35 +683,40 @@ export const Header = observer((props: { className?: string }) => {
             管理后台
           </div>
         </MenuItem>
-        {!!loginedPorts.length && (<>
+        {!!loginedPorts.length && (
           <Divider />
+        )}
+        {!!loginedPorts.length && (
           <div className="text-center text-12 text-gray-9c pt-1 pb-2">
             我可以去的论坛
           </div>
-          {loginedPorts.map((v) => (
-            <MenuItem
-              className="flex justify-start items-center gap-4 px-4 py-[5px] normal-case font-normal hover:bg-black/5 rounded-none font-default max-w-[300px]"
-              key={v.group.id}
-              onClick={() => handleOpenGroup(v.group)}
-            >
-              <GroupAvatar
-                className="shadow-1 flex-none"
-                groupName={utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
-                size={30}
-              />
-              <div className="flex-col items-start overflow-hidden">
-                <div className="text-link text-14 w-full truncate">
-                  {utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
-                </div>
-                <div className="text-gray-9c text-12 truncate">
-                  {v.loginState.lastLogin === 'keystore' && `Keystore: ${v.loginState.keystore?.address.slice(0, 10)}`}
-                  {v.loginState.lastLogin === 'mixin' && `Mixin: ${v.loginState.mixin?.userName}`}
-                </div>
+        )}
+        {!!loginedPorts.length && loginedPorts.map((v) => (
+          <MenuItem
+            className="flex justify-start items-center gap-4 px-4 py-[5px] normal-case font-normal hover:bg-black/5 rounded-none font-default max-w-[300px]"
+            key={v.group.id}
+            onClick={() => handleOpenGroup(v.group)}
+          >
+            <GroupAvatar
+              className="shadow-1 flex-none"
+              groupId={v.group.id}
+              groupName={utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
+              size={30}
+            />
+            <div className="flex-col items-start overflow-hidden">
+              <div className="text-link text-14 w-full truncate">
+                {utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
               </div>
-            </MenuItem>
-          ))}
+              <div className="text-gray-9c text-12 truncate">
+                {v.loginState.lastLogin === 'keystore' && `Keystore: ${v.loginState.keystore?.address.slice(0, 10)}`}
+                {v.loginState.lastLogin === 'mixin' && `Mixin: ${v.loginState.mixin?.userName}`}
+              </div>
+            </div>
+          </MenuItem>
+        ))}
+        {!!loginedPorts.length && (
           <Divider />
-        </>)}
+        )}
         <MenuItem onClick={() => handleBackToLogin()}>
           <div className="flex gap-x-2 mr-2">
             <div className="flex flex-center w-5">

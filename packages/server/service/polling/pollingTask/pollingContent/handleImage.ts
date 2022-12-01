@@ -1,6 +1,6 @@
 import { taskEither } from 'fp-ts';
 import { ImageType } from 'nft-bbs-types';
-import QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
 import { ImageFile } from '~/orm';
 import { parseQuorumTimestamp } from '~/utils';
 import { TrxHandler } from './helper';

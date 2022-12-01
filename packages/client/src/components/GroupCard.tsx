@@ -76,9 +76,9 @@ export const GroupCard = observer((props: Props) => {
       >
         {nodeService.state.groupName}
       </div>
-      {!!nodeService.state.groupInfo.desc && (
-        <div className="border-t border-white/60 text-14 text-white mt-5 mx-5 pt-5">
-          {nodeService.state.groupInfo.desc}
+      {!!nodeService.state.groupDesc && (
+        <div className="text-14 text-white/70 mt-4 mx-5">
+          {nodeService.state.groupDesc}
         </div>
       )}
 

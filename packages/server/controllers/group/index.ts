@@ -2,7 +2,7 @@ import { FastifyRegister } from 'fastify';
 import { either, function as fp } from 'fp-ts';
 import { number, string, type } from 'io-ts';
 import { BadRequest } from 'http-errors';
-import QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
 
 import { Comment, Counter, GroupStatus, ImageFile, Notification, Post, Profile, StackedCounter, TrxSet } from '~/orm/entity';
 import { assertAdmin, assertValidation, assertVerifySign, runLoading } from '~/utils';

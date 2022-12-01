@@ -1,9 +1,10 @@
 import React from 'react';
 import classNames from 'classnames';
-import { nodeService } from '~/service';
+import { APPCONFIG_KEY_NAME, nodeService } from '~/service';
 
 interface AvatarProps {
   className?: string
+  groupId?: number
   size?: number
   fontSize?: number
   children?: React.ReactNode
@@ -14,7 +15,9 @@ interface AvatarProps {
 }
 
 export const GroupAvatar = (props: AvatarProps) => {
-  const avatar = props.avatar || nodeService.state.groupInfo.avatar;
+  const avatar = props.avatar
+    || (props.groupId ? nodeService.state.appConfigMap[props.groupId]?.[APPCONFIG_KEY_NAME.ICON]?.Value : undefined)
+    || nodeService.state.groupIcon;
   const size = props.size ?? 100;
   const fontSize = props.fontSize ?? Math.floor((size / 10) * 4);
   const firstLetter = (props.groupName || nodeService.state.groupName).at(0) ?? '';
