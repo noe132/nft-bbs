@@ -176,7 +176,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         <PostImageZoomButton className="text-24 -mt-2 ml-2 text-white" />
         <div
           className={classNames(
-            'post-detail-box text-white pt-2',
+            'rendered-markdown text-white pt-2',
             isPC && 'mx-16',
             !isPC && 'mx-4',
           )}

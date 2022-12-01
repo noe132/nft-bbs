@@ -317,7 +317,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
 
         <div
           className={classNames(
-            'post-detail-box flex-none text-white',
+            'rendered-markdown flex-none text-white',
             !state.preview && 'hidden',
           )}
           dangerouslySetInnerHTML={{ __html: state.previewHTML }}

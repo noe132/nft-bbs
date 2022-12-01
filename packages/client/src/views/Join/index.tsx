@@ -5,7 +5,7 @@ import { parse } from 'query-string';
 import { toUint8Array } from 'js-base64';
 import { either, taskEither, function as fp } from 'fp-ts';
 import { utils } from 'quorum-light-node-sdk';
-import type { GroupStatus } from 'nft-bbs-server';
+import type { GroupStatus, IAppConfigItem } from 'nft-bbs-server';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl,
   FormControlLabel, IconButton, InputLabel, Modal, OutlinedInput, Tooltip,
@@ -22,6 +22,7 @@ import { chooseImgByPixelRatio, runLoading, ThemeLight, useWiderThan } from '~/u
 import { APPCONFIG_KEY_NAME, keyService, KeystoreData, loginStateService, nodeService, routerService, snackbarService } from '~/service';
 import { GroupAvatar, Scrollable } from '~/components';
 import { VaultApi } from '~/apis';
+import RemoveMarkdown from 'remove-markdown';
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
@@ -290,6 +291,11 @@ export const Join = observer(() => {
     state.selectedGroup = group;
   });
 
+  const renderDesc = (text?: IAppConfigItem['Value']) => {
+    if (!text) { return ''; }
+    return RemoveMarkdown(text.toString());
+  };
+
   useEffect(() => {
     if (loginStateService.state.autoOpenGroupId) {
       const groupItem = nodeService.state.groups.find((v) => v.id === loginStateService.state.autoOpenGroupId);
@@ -300,6 +306,7 @@ export const Join = observer(() => {
         loginStateService.state.autoOpenGroupId = null;
       });
     }
+
     // TODO: load group info when app config is available
     const handleStorageEvent = (e: StorageEvent) => {
       if (e.key === 'mixin-login-callback' && e.newValue) {
@@ -325,12 +332,12 @@ export const Join = observer(() => {
       >
         <div className="flex flex-center flex-1 h-0 p-8 text-white mb:p-0">
           {!state.selectedGroup && (
-            <div className="relative flex-col items-stretch gap-y-7 bg-black/80 rounded-[10px] p-7 mb:px-0 max-h-full">
+            <div className="relative flex-col items-stretch gap-y-7 bg-black/80 rounded-[10px] p-7 mb:px-0 max-h-full mb:w-full">
               <div className="text-18 text-center my-3">
                 登录 Port 论坛
               </div>
               <Scrollable hideTrackOnMobile light>
-                <div className="flex flex-wrap justify-center gap-6 max-w-[720px] px-4">
+                <div className="flex flex-wrap justify-center gap-6 pc:w-[720px] px-4">
                   {state.groups.map(({ group, config, loginState }) => {
                     const loginButton = [
                       config.mixin && !!loginState?.mixin && 'saved-mixin',
@@ -340,7 +347,7 @@ export const Join = observer(() => {
                     ].find((v) => v);
                     return (
                       <div
-                        className="flex-col items-stretch relative border border-gray-4a w-[320px] p-4 rounded-md"
+                        className="flex-col items-stretch relative border border-gray-4a w-[320px] mb:w-full p-4 rounded-md"
                         key={group.id}
                       >
                         <GroupAvatar
@@ -360,15 +367,14 @@ export const Join = observer(() => {
                             <ChevronRight className="text-26 -mt-px -mr-2" />
                           </Button>
                         )}
-                        <div className="flex-col flex-1 justify-end items-stretch px-2 gap-y-2">
+                        <div className="flex-col flex-1 justify-start items-stretch px-2 gap-y-2">
                           <div className="flex flex-center text-center truncate -mt-4 mb-2">
                             {utils.restoreSeedFromUrl(group.mainSeedUrl).group_name}
                           </div>
-                          {!!nodeService.state.appConfigMap[group.id]?.[APPCONFIG_KEY_NAME.DESC]?.Value && (
-                            <div className="text-12 text-gray-9c truncate-2 -mt-2 mb-1">
-                              {nodeService.state.appConfigMap[group.id]?.[APPCONFIG_KEY_NAME.DESC]?.Value}
-                            </div>
-                          )}
+                          <div className="text-12 text-gray-9c truncate-2 -mt-2 mb-1">
+                            {renderDesc(nodeService.state.appConfigMap[group.id]?.[APPCONFIG_KEY_NAME.DESC]?.Value)}
+                          </div>
+                          <div className="flex-1" />
                           {loginButton === 'saved-mixin' && (
                             <Tooltip title="用上次使用的 Mixin 登录" placement="right">
                               <Button
@@ -474,8 +480,8 @@ export const Join = observer(() => {
                 {utils.restoreSeedFromUrl(state.selectedGroup.mainSeedUrl).group_name}
               </div>
 
-              <div className="!hidden mt-2 text-gray-f2 text-14 truncate-3 max-w-[400px]">
-                desc
+              <div className="hidden mt-2 text-gray-f2 text-14 truncate-3 max-w-[400px] self-center">
+                {renderDesc(nodeService.state.appConfigMap[state.selectedGroup.id]?.[APPCONFIG_KEY_NAME.DESC]?.Value)}
               </div>
 
               <div className="flex-col self-center items-stertch mt-4 gap-y-4 min-w-[200px]">

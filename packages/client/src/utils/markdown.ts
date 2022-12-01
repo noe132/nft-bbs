@@ -93,7 +93,18 @@ export const createBaseRenderer = (options?: Options) => {
 };
 
 export const defaultRenderer = createBaseRenderer();
-export const renderPostMarkdown = (md: string) => {
+
+export const renderMarkdown = (md: string, options?: { skipPurify: boolean }) => {
+  const rendered = defaultRenderer.render(md);
+  if (options?.skipPurify) {
+    return rendered;
+  }
+  return DOMPurify.sanitize(rendered, {
+    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|blob|rum):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
+  });
+};
+
+export const renderPostMarkdown = (md: string, options?: { skipPurify: boolean }) => {
   let id = 0;
   const replaceMap = new Map<string, string>();
   let processedMD = md.replaceAll(/(```[\s\S]+?```)/g, (sub) => {
@@ -103,7 +114,5 @@ export const renderPostMarkdown = (md: string) => {
     return placeholder;
   });
   processedMD = processedMD.replaceAll(/(\$\$\$\$####!!!!\d+!!!!####\$\$\$\$)/g, (sub) => replaceMap.get(sub) ?? '');
-  return DOMPurify.sanitize(defaultRenderer.render(processedMD), {
-    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|blob|rum):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
-  });
+  return renderMarkdown(processedMD, options);
 };

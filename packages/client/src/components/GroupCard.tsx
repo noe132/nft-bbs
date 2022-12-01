@@ -7,7 +7,7 @@ import HomeIcon from 'boxicons/svg/regular/bx-home-alt-2.svg?fill-icon';
 
 // import { editGroupInfo } from '~/modals/editGroupInfo';
 import { keyService, nftService, nodeService, routerService } from '~/service';
-import { routeUrlPatterns, useWiderThan } from '~/utils';
+import { renderMarkdown, routeUrlPatterns, useWiderThan } from '~/utils';
 
 import { GroupAvatar } from './GroupAvatar';
 
@@ -77,10 +77,14 @@ export const GroupCard = observer((props: Props) => {
         {nodeService.state.groupName}
       </div>
       {!!nodeService.state.groupDesc && (
-        <div className="text-14 text-white/70 mt-4 mx-5">
-          {nodeService.state.groupDesc}
-        </div>
+        <div
+          className="text-14 text-white/70 mt-4 mx-5 rendered-markdown group-card-desc"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(nodeService.state.groupDesc.toString(), { skipPurify: true }) }}
+        />
       )}
+      <style>
+        {'.group-card-desc br { margin-top: 0.25em !important; }'}
+      </style>
 
       <div className="flex-col gap-y-4 mt-8">
         {!isPC && props.showPostlist && (

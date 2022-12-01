@@ -1,5 +1,5 @@
 import { either } from 'fp-ts';
-import { action, observable, reaction, runInAction } from 'mobx';
+import { observable, reaction, runInAction } from 'mobx';
 import { MVMApi } from '~/apis';
 import { keyService } from '~/service/key';
 import { BigNumber, ethers } from 'ethers';
@@ -146,12 +146,11 @@ const hasPermissionAndTip = (type: 'main' | 'comment' | 'counter' | 'profile') =
 export const init = () => {
   const disposes = [
     reaction(
-      () => nodeService.state.group,
-      action(() => state.tokenIdMap.clear()),
-    ),
-    reaction(
       () => [nodeService.state.group, nodeService.state.config.loaded, keyService.state.address],
-      (items) => {
+      (items, old) => {
+        if (old[0] !== items[0]) {
+          state.tokenIdMap.clear();
+        }
         if (items.some((v) => !v)) {
           state.tokenIdMap.delete(keyService.state.address);
         }

@@ -779,7 +779,9 @@ const appconfig = {
   load: async (groupId: GroupStatus['id']) => {
     const record = await AppConfigApi.get(groupId);
     if (record) {
-      state.appConfigMap[groupId] = record;
+      runInAction(() => {
+        state.appConfigMap[groupId] = record;
+      });
     }
   },
 };
@@ -833,9 +835,9 @@ const socketEventHandler: Partial<SocketEventListeners> = {
     }
   },
   profile: (v) => profile.save(v),
-  appconfig: (v) => {
+  appconfig: action((v) => {
     state.appConfigMap[v.groupId] = v.data;
-  },
+  }),
 };
 
 const init = () => {
