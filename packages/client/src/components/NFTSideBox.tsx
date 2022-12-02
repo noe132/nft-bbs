@@ -185,7 +185,7 @@ export const NFTSideBox = observer((props: Props) => {
               )}
             </div>
 
-            {!state.loading && !nftService.state.tokenIds.length && (
+            {!state.loading && !nftService.state.tokenIds.length && !!keyService.state.address && (
               <div className="self-stretch flex flex-col items-stretch">
                 <div className="px-4">
                   <div className={classNames(

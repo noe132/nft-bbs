@@ -675,14 +675,16 @@ export const Header = observer((props: { className?: string }) => {
             </div>
           </MenuItem>
         )}
-        <MenuItem onClick={handleOpenAdmin}>
-          <div className="flex gap-x-2 mr-2">
-            <div className="flex flex-center w-5">
-              <AdminPanelSettings className="text-22 text-red-500/90" />
+        {state.isAdmin && (
+          <MenuItem onClick={handleOpenAdmin}>
+            <div className="flex gap-x-2 mr-2">
+              <div className="flex flex-center w-5">
+                <AdminPanelSettings className="text-22 text-red-500/90" />
+              </div>
+              管理后台
             </div>
-            管理后台
-          </div>
-        </MenuItem>
+          </MenuItem>
+        )}
         {!!loginedPorts.length && (
           <Divider />
         )}
