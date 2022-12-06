@@ -921,6 +921,15 @@ const init = () => {
           );
         }
 
+        if (loginStateItem?.lastLogin === 'metamask' && groupConfig.mixin && loginStateItem?.metamask) {
+          const jwt = loginStateItem.metamask.mixinJWT;
+          return fp.pipe(
+            () => keyService.validateMixin(jwt),
+            taskEither.chain((v) => taskEither.fromIO(() => keyService.useMixin(v))),
+            taskEither.map(() => true),
+          );
+        }
+
         if (loginStateItem?.lastLogin === 'keystore' && groupConfig.keystore && loginStateItem?.keystore) {
           const keystore = loginStateItem.keystore;
           return fp.pipe(

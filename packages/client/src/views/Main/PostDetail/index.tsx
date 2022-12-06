@@ -11,7 +11,7 @@ import { LoadingButton } from '@mui/lab';
 
 import CommentMinusIcon from 'boxicons/svg/regular/bx-comment-minus.svg?fill-icon';
 
-import { BackButton, ScrollToTopButton, UserAvatar, UserCard } from '~/components';
+import { BackButton, Scrollable, ScrollToTopButton, UserAvatar, UserCard } from '~/components';
 import { nftService, nodeService, routerService, snackbarService } from '~/service';
 import { runLoading, usePageState, useWiderThan } from '~/utils';
 
@@ -625,7 +625,15 @@ export const PostDetail = observer((props: { className?: string }) => {
 
       {isPC && (
         <div className="w-[280px]">
-          <UserCard className="mt-6" profile={state.profile} />
+          <div
+            className="fixed flex-col w-[280px]"
+            style={{ maxHeight: 'calc(100vh - 64px)' }}
+          >
+            <Scrollable className="flex-1 h-0" hideTrack>
+              <UserCard className="mt-6" profile={state.profile} />
+              <div className="h-[100px] w-full" />
+            </Scrollable>
+          </div>
         </div>
       )}
     </div>

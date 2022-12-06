@@ -17,6 +17,11 @@ interface TokenIdMapItem {
 
 const state = observable({
   tokenIdMap: new Map<string, TokenIdMapItem>(),
+  requestDialog: {
+    open: false,
+    memo: '',
+    loading: false,
+  },
   get tokenIds() {
     return this.tokenIdMap.get(keyService.state.address)?.ids ?? [];
   },

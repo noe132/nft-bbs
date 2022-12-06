@@ -6,7 +6,7 @@ import { AdminApiParams, API_BASE_URL } from './common';
 
 export interface SiteConfig {
   group: Record<GroupConfig['groupId'], GroupConfig>
-  defaultGroup: Pick<GroupConfig, 'keystore' | 'mixin' | 'anonymous'>
+  defaultGroup: Pick<GroupConfig, 'keystore' | 'mixin' | 'metamask' | 'anonymous'>
   admin: Array<string>
 }
 

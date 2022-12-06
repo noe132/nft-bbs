@@ -8,7 +8,12 @@ const loginState = t.intersection([
   t.type({
     groups: t.record(t.string, t.union([
       t.partial({
-        lastLogin: t.union([t.literal('keystore'), t.literal('mixin'), t.nullType]),
+        lastLogin: t.union([
+          t.literal('keystore'),
+          t.literal('mixin'),
+          t.literal('metamask'),
+          t.nullType,
+        ]),
         keystore: t.type({
           keystore: t.string,
           privateKey: t.string,
@@ -18,6 +23,10 @@ const loginState = t.intersection([
         mixin: t.type({
           mixinJWT: t.string,
           userName: t.string,
+        }),
+        metamask: t.type({
+          mixinJWT: t.string,
+          address: t.string,
         }),
       }),
       t.undefined,

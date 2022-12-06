@@ -15,9 +15,13 @@ import {
 
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
+import NFTIcon from '~/assets/icons/icon-nft.svg?fill-icon';
 // import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 import { routeUrlPatterns, ThemeLight, usePageState, useWiderThan } from '~/utils';
-import { nodeService, keyService, dialogService, routerService, loginStateService } from '~/service';
+import {
+  nodeService, keyService, dialogService,
+  routerService, loginStateService, nftService,
+} from '~/service';
 import { editProfile } from '~/modals';
 import { GroupAvatar, GroupCard, NFTSideBox, SiteLogo, UserAvatar } from '~/components';
 
@@ -43,6 +47,14 @@ export const Header = observer((props: { className?: string }) => {
     },
     get isAdmin() {
       return nodeService.state.config.admin.includes(keyService.state.address);
+    },
+    get showNftRequestButton() {
+      const conditions = [
+        !nftService.state.tokenIdMap.get(keyService.state.address)?.loading,
+        !nftService.state.tokenIds.length,
+        keyService.state.address,
+      ];
+      return conditions.every((v) => v);
     },
   }));
 
@@ -184,13 +196,9 @@ export const Header = observer((props: { className?: string }) => {
     window.location.href = '/';
   });
 
-  const handleClickLogo = () => {
-    if (isPostlistPage) {
-      postlistState?.loadPosts();
-    } else {
-      routerService.navigate({ page: 'postlist' });
-    }
-  };
+  const handleClickLogo = action(() => {
+    loginStateService.state.autoLoginGroupId = null;
+  });
 
   const handleOpenGroupCard = action(() => {
     state.mobileGroupCard = {
@@ -218,6 +226,10 @@ export const Header = observer((props: { className?: string }) => {
       }
     }
     window.open('/admin');
+  });
+
+  const handleNftRequest = action(() => {
+    nftService.state.requestDialog.open = true;
   });
 
   const handleOpenGroup = action((v: GroupStatus) => {
@@ -253,20 +265,22 @@ export const Header = observer((props: { className?: string }) => {
           props.className,
         )}
       >
-        <button
+        <a
           className="s1360:hidden block absolute left-5 flex-none h-auto"
-          onClick={handleClickLogo}
+          href="/"
+          onMouseUp={handleClickLogo}
         >
           <SiteLogo />
-        </button>
+        </a>
         <div className="flex w-[1100px] justify-between self-stretch gap-x-4">
           <div className="flex items-center flex-1">
-            <button
+            <a
               className="s1360:block hidden flex-none h-auto mr-4"
+              href="/"
               onClick={handleClickLogo}
             >
               <SiteLogo />
-            </button>
+            </a>
             {isPostlistPage && !!postlistState && !postlistState.header.searchMode && (
               <div className="flex gap-x-4">
                 <Tabs
@@ -626,15 +640,48 @@ export const Header = observer((props: { className?: string }) => {
             <EditAltIcon className="inline-block text-17" />
           </button>
           <Button
-            className="rounded-full font-normal pb-0 pt-px px-8 mt-4 text-12"
+            className="rounded-full font-normal py-px pt-[2px] px-8 mt-4 text-12"
             variant="outlined"
             color="link"
             onClick={handleOpenUserProfile}
           >
-            我的主页
+            我的发布
           </Button>
+
+          {!!loginedPorts.length && (
+            <div className="mt-4 w-full -mb-2">
+              <Divider />
+              <div className="text-center text-12 text-gray-9c mt-3 pb-2">
+                我可以去的论坛
+              </div>
+              {loginedPorts.map((v) => (
+                <MenuItem
+                  className="flex justify-start items-center gap-4 px-4 py-[5px] font-normal hover:bg-black/5 font-default"
+                  key={v.group.id}
+                  onClick={() => handleOpenGroup(v.group)}
+                >
+                  <GroupAvatar
+                    className="shadow-1 flex-none"
+                    groupId={v.group.id}
+                    groupName={utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
+                    size={30}
+                  />
+                  <div className="flex-col items-start overflow-hidden">
+                    <div className="text-link text-14 w-full truncate">
+                      {utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
+                    </div>
+                    <div className="text-gray-9c text-12 w-full truncate">
+                      {v.loginState.lastLogin === 'keystore' && `Keystore: ${v.loginState.keystore?.address.slice(0, 10)}`}
+                      {v.loginState.lastLogin === 'mixin' && `Mixin: ${v.loginState.mixin?.userName}`}
+                    </div>
+                  </div>
+                </MenuItem>
+              ))}
+            </div>
+          )}
+
           <Button
-            className="rounded-none w-full border-solid border-t border-black/10 mt-6 h-12 font-normal text-14"
+            className="rounded-none w-full border-solid border-t border-black/10 mt-4 h-12 font-normal text-14"
             variant="text"
             onClick={() => handleBackToLogin(true)}
           >
@@ -665,70 +712,63 @@ export const Header = observer((props: { className?: string }) => {
             </div>
           </div>
         </MenuItem> */}
-        {keyService.state.keys?.type === 'keystore' && (
-          <MenuItem onClick={handleShowAccountInfo}>
-            <div className="flex gap-x-2 mr-2">
-              <div className="flex flex-center w-5">
-                <PersonOutline className="text-22 text-blue-500/90" />
+        {[
+          keyService.state.keys?.type === 'keystore' && {
+            content: (
+              <div className="flex gap-x-2 mr-2">
+                <div className="flex flex-center w-5">
+                  <PersonOutline className="text-22 text-blue-500/90" />
+                </div>
+                我的账号信息
               </div>
-              我的账号信息
-            </div>
-          </MenuItem>
-        )}
-        {state.isAdmin && (
-          <MenuItem onClick={handleOpenAdmin}>
-            <div className="flex gap-x-2 mr-2">
-              <div className="flex flex-center w-5">
-                <AdminPanelSettings className="text-22 text-red-500/90" />
+            ),
+            onClick: handleShowAccountInfo,
+          },
+          state.isAdmin && {
+            content: (
+              <div className="flex gap-x-2 mr-2">
+                <div className="flex flex-center w-5">
+                  <AdminPanelSettings className="text-22 text-red-500/90" />
+                </div>
+                管理后台
               </div>
-              管理后台
-            </div>
-          </MenuItem>
-        )}
-        {!!loginedPorts.length && (
-          <Divider />
-        )}
-        {!!loginedPorts.length && (
-          <div className="text-center text-12 text-gray-9c pt-1 pb-2">
-            我可以去的论坛
-          </div>
-        )}
-        {!!loginedPorts.length && loginedPorts.map((v) => (
+            ),
+            onClick: handleOpenAdmin,
+          },
+          state.showNftRequestButton && {
+            content: (
+              <div className="flex gap-x-2 mr-2">
+                <div className="flex flex-center w-5">
+                  <NFTIcon className="text-22 text-black" />
+                </div>
+                申请 NFT
+              </div>
+            ),
+            onClick: handleNftRequest,
+          },
+          {
+            content: (
+              <div className="flex gap-x-2 mr-2">
+                <div className="flex flex-center w-5">
+                  <Logout className="text-22 text-amber-500/90" />
+                </div>
+                <span className="text-rum-orange">
+                  退出当前论坛
+                </span>
+              </div>
+            ),
+            onClick: () => handleBackToLogin(),
+          },
+        ].filter(<T extends unknown>(v: T | boolean): v is T => !!v).flatMap((v, i) => [
+          i !== 0 && <Divider key={`${i}-divide`} />,
           <MenuItem
-            className="flex justify-start items-center gap-4 px-4 py-[5px] normal-case font-normal hover:bg-black/5 rounded-none font-default max-w-[300px]"
-            key={v.group.id}
-            onClick={() => handleOpenGroup(v.group)}
+            className="py-2 px-6"
+            onClick={v.onClick}
+            key={i}
           >
-            <GroupAvatar
-              className="shadow-1 flex-none"
-              groupId={v.group.id}
-              groupName={utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
-              size={30}
-            />
-            <div className="flex-col items-start overflow-hidden">
-              <div className="text-link text-14 w-full truncate">
-                {utils.restoreSeedFromUrl(v.group.mainSeedUrl).group_name}
-              </div>
-              <div className="text-gray-9c text-12 truncate">
-                {v.loginState.lastLogin === 'keystore' && `Keystore: ${v.loginState.keystore?.address.slice(0, 10)}`}
-                {v.loginState.lastLogin === 'mixin' && `Mixin: ${v.loginState.mixin?.userName}`}
-              </div>
-            </div>
-          </MenuItem>
-        ))}
-        {!!loginedPorts.length && (
-          <Divider />
-        )}
-        <MenuItem onClick={() => handleBackToLogin()}>
-          <div className="flex gap-x-2 mr-2">
-            <div className="flex flex-center w-5">
-              <Logout className="text-22 text-amber-500/90" />
-            </div>
-            <span className="text-rum-orange">
-              退出当前论坛
-            </span>
-          </div>
-        </MenuItem>
+            {v.content}
+          </MenuItem>,
+        ].filter((v) => v))}
       </Menu>
 
       {/* <Menu

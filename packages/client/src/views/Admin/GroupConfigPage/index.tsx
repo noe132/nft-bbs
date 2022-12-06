@@ -28,6 +28,7 @@ export const GroupConfigPage = observer(() => {
       groupId: 0,
       keystore: false,
       mixin: false,
+      metamask: false,
       anonymous: false,
       nft: '',
     },
@@ -83,6 +84,7 @@ export const GroupConfigPage = observer(() => {
       groupId: group.id,
       keystore: config?.keystore ?? false,
       mixin: config?.mixin ?? false,
+      metamask: config?.metamask ?? false,
       anonymous: config?.anonymous ?? false,
       nft: config?.nft ?? '',
     };
@@ -114,6 +116,7 @@ export const GroupConfigPage = observer(() => {
       groupId,
       keystore,
       mixin,
+      metamask,
       nft,
     } = state.setGroupConfigDialog;
     if (!groupId) { return; }
@@ -130,6 +133,7 @@ export const GroupConfigPage = observer(() => {
           groupId,
           keystore,
           mixin,
+          metamask,
           nft,
         });
         snackbarService.show(`${groupId ? '修改' : '添加'}成功`);
@@ -170,8 +174,9 @@ export const GroupConfigPage = observer(() => {
             </div>
             {!v.config && '默认配置'}
             {!!v.config && (<>
-              <FormControlLabel control={<Checkbox checked={v.config.keystore} />} label="keystore登录" />
-              <FormControlLabel control={<Checkbox checked={v.config.mixin} />} label="mixin登录" />
+              <FormControlLabel control={<Checkbox checked={v.config.keystore} />} label="Keystore登录" />
+              <FormControlLabel control={<Checkbox checked={v.config.mixin} />} label="Mixin登录" />
+              <FormControlLabel control={<Checkbox checked={v.config.metamask} />} label="MetaMask登录" />
               <FormControlLabel control={<Checkbox checked={v.config.anonymous} />} label="游客登录" />
               <div className="truncate">
                 nft: {v.config.nft || '无'}
@@ -225,20 +230,28 @@ export const GroupConfigPage = observer(() => {
         </DialogTitle>
         <DialogContent className="overflow-visible">
           <div className="flex-col w-[400px]">
-            <Tooltip title="允许 keystore 登录" disableInteractive placement="bottom-start">
+            <Tooltip title="允许 Keystore 登录" disableInteractive placement="bottom-start">
               <FormControlLabel
                 control={<Checkbox />}
-                label="keystore"
+                label="Keystore"
                 checked={state.setGroupConfigDialog.keystore}
                 onChange={action((_, v) => { state.setGroupConfigDialog.keystore = v; })}
               />
             </Tooltip>
-            <Tooltip title="允许 mixin 登录" disableInteractive placement="bottom-start">
+            <Tooltip title="允许 Mixin 登录" disableInteractive placement="bottom-start">
               <FormControlLabel
                 control={<Checkbox />}
-                label="mixin"
+                label="Mixin"
                 checked={state.setGroupConfigDialog.mixin}
                 onChange={action((_, v) => { state.setGroupConfigDialog.mixin = v; })}
+              />
+            </Tooltip>
+            <Tooltip title="允许 MetaMask 登录" disableInteractive placement="bottom-start">
+              <FormControlLabel
+                control={<Checkbox />}
+                label="MetaMask"
+                checked={state.setGroupConfigDialog.metamask}
+                onChange={action((_, v) => { state.setGroupConfigDialog.metamask = v; })}
               />
             </Tooltip>
             <Tooltip title="允许 游客 登录" disableInteractive placement="bottom-start">

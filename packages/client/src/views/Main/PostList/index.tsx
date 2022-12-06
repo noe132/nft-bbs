@@ -12,7 +12,7 @@ import { Button, CircularProgress, Fab, Tooltip } from '@mui/material';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
-import { ScrollToTopButton, GroupCard, NFTSideBox, UserAvatar } from '~/components';
+import { ScrollToTopButton, GroupCard, NFTSideBox, UserAvatar, Scrollable } from '~/components';
 import { keyService, nftService, nodeService, routerService } from '~/service';
 import { ago, notNullFilter, runLoading, usePageState, useWiderThan } from '~/utils';
 import { showTrxDetail } from '~/modals';
@@ -335,9 +335,15 @@ export const PostList = observer((props: { className?: string }) => {
 
       {isPC && (
         <div className="w-[280px]">
-          <div className="fixed w-[280px]">
-            <GroupCard className="mt-16" showNewPost />
-            <NFTSideBox />
+          <div
+            className="fixed flex-col w-[280px]"
+            style={{ maxHeight: 'calc(100vh - 64px)' }}
+          >
+            <Scrollable className="flex-1 h-0" hideTrack>
+              <GroupCard className="mt-16" showNewPost />
+              <NFTSideBox />
+              <div className="h-[100px] w-full" />
+            </Scrollable>
           </div>
         </div>
       )}

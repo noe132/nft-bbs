@@ -17,6 +17,7 @@ interface Props {
   onScroll?: () => unknown
   light?: boolean
   hideTrackOnMobile?: boolean
+  hideTrack?: boolean
   autoHideMode?: boolean
   size?: 'small' | 'normal' | 'large' | {
     thumb: number
@@ -219,6 +220,8 @@ export const Scrollable = observer((props: Props) => {
     ? props.size
     : widthMap[props.size ?? 'normal'];
 
+  const showTrack = !props.hideTrack && !(!state.scrollbarWidth && props.hideTrackOnMobile);
+
   return (
     <div
       className={classNames(
@@ -228,7 +231,7 @@ export const Scrollable = observer((props: Props) => {
       onMouseEnter={action(() => { if (props.autoHideMode) { state.hide = false; } })}
       onMouseLeave={action(() => { if (props.autoHideMode) { state.hide = true; } })}
     >
-      {!(!state.scrollbarWidth && props.hideTrackOnMobile) && (
+      {showTrack && (
         <div
           className={classNames(
             'scroll-bar-track absolute top-[3px] right-0 bottom-[3px] z-[200]',

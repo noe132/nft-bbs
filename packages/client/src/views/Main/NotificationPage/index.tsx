@@ -13,7 +13,7 @@ import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
-import { UserAvatar, BackButton, ScrollToTopButton, GroupCard, NFTSideBox } from '~/components';
+import { UserAvatar, BackButton, ScrollToTopButton, GroupCard, NFTSideBox, Scrollable } from '~/components';
 import { nodeService, routerService } from '~/service';
 import { ago, useWiderThan } from '~/utils';
 
@@ -276,9 +276,15 @@ export const NotificationPage = observer((props: { className?: string }) => {
 
       {isPC && (
         <div className="w-[280px]">
-          <div className="fixed w-[280px]">
-            <GroupCard className="mt-16" showNewPost />
-            <NFTSideBox />
+          <div
+            className="fixed flex-col w-[280px]"
+            style={{ maxHeight: 'calc(100vh - 64px)' }}
+          >
+            <Scrollable className="flex-1 h-0" hideTrack>
+              <GroupCard className="mt-16" showNewPost />
+              <NFTSideBox />
+              <div className="h-[100px] w-full" />
+            </Scrollable>
           </div>
         </div>
       )}

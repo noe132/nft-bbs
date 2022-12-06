@@ -1,5 +1,6 @@
 export * from './BackButton';
 export * from './Foldable';
+export * from './Footer';
 export * from './GroupAvatar';
 export * from './GroupCard';
 export * from './ImgBox';

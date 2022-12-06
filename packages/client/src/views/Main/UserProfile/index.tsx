@@ -13,7 +13,7 @@ import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-i
 import EditIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
-import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon } from '~/components';
+import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon, Scrollable } from '~/components';
 import { imageZoomService, keyService, nftService, nodeService, routerService } from '~/service';
 import { ago, runLoading, ThemeLight, usePageState, useWiderThan } from '~/utils';
 import { editProfile } from '~/modals';
@@ -491,17 +491,25 @@ export const UserProfile = observer((props: { className?: string }) => {
 
       {isPC && (
         <div className="w-[280px]">
-          {!nodeService.state.config.currentGroup.nft && (
-            <UserCard
-              className="mt-6"
-              profile={state.profile}
-              disableClickAction
-            />
-          )}
-          {!!nodeService.state.config.currentGroup.nft && nftCardBox}
-          {state.selfProfile && (
-            <PortList className="mt-6" />
-          )}
+          <div
+            className="fixed flex-col w-[280px]"
+            style={{ maxHeight: 'calc(100vh - 64px)' }}
+          >
+            <Scrollable className="flex-1 h-0" hideTrack>
+              {!nodeService.state.config.currentGroup.nft && (
+                <UserCard
+                  className="mt-6"
+                  profile={state.profile}
+                  disableClickAction
+                />
+              )}
+              {!!nodeService.state.config.currentGroup.nft && nftCardBox}
+              {state.selfProfile && (
+                <PortList className="mt-6" />
+              )}
+              <div className="h-[100px] w-full" />
+            </Scrollable>
+          </div>
         </div>
       )}
     </div>

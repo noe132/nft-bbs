@@ -24,11 +24,6 @@ export const NFTSideBox = observer((props: Props) => {
     selectedTokenId: null as null | number,
     expand: false,
     hover: false,
-    requestDialog: {
-      open: false,
-      memo: '',
-      loading: false,
-    },
     get contractAddress() {
       return nodeService.state.config.currentGroup.nft ?? '';
     },
@@ -49,25 +44,25 @@ export const NFTSideBox = observer((props: Props) => {
   };
 
   const handleApplyNFT = action(() => {
-    state.requestDialog.open = true;
+    nftService.state.requestDialog.open = true;
   });
 
   const handleSubmitNftRequest = async () => {
-    if (!state.requestDialog.memo) {
+    if (!nftService.state.requestDialog.memo) {
       snackbarService.show('请输入申请理由');
       return;
     }
     await runLoading(
-      (l) => { state.requestDialog.loading = l; },
+      (l) => { nftService.state.requestDialog.loading = l; },
       async () => {
         await NftRequestApi.submitRequest({
           ...await keyService.getAdminSignParam(),
           groupId: nodeService.state.groupId,
-          memo: state.requestDialog.memo,
+          memo: nftService.state.requestDialog.memo,
         });
         snackbarService.show('提交成功');
         runInAction(() => {
-          state.requestDialog.open = false;
+          nftService.state.requestDialog.open = false;
         });
       },
     );
@@ -216,8 +211,8 @@ export const NFTSideBox = observer((props: Props) => {
             'w-full max-w-[400px]',
           ),
         }}
-        open={state.requestDialog.open}
-        onClose={action(() => { state.requestDialog.open = false; })}
+        open={nftService.state.requestDialog.open}
+        onClose={action(() => { nftService.state.requestDialog.open = false; })}
       >
         <DialogTitle>申请该论坛 NFT</DialogTitle>
         <DialogContent className="overflow-visible">
@@ -227,8 +222,8 @@ export const NFTSideBox = observer((props: Props) => {
             maxRows={6}
             label="申请理由"
             multiline
-            value={state.requestDialog.memo}
-            onChange={action((e) => { state.requestDialog.memo = e.target.value; })}
+            value={nftService.state.requestDialog.memo}
+            onChange={action((e) => { nftService.state.requestDialog.memo = e.target.value; })}
           />
         </DialogContent>
         <DialogActions className="p-4">
@@ -236,7 +231,7 @@ export const NFTSideBox = observer((props: Props) => {
             className="text-gray-88"
             color="inherit"
             variant="outlined"
-            onClick={action(() => { state.requestDialog.open = false; })}
+            onClick={action(() => { nftService.state.requestDialog.open = false; })}
           >
             取消
           </Button>
@@ -248,7 +243,6 @@ export const NFTSideBox = observer((props: Props) => {
             提交
           </Button>
         </DialogActions>
-
       </Dialog>
     </ThemeLight>
   );

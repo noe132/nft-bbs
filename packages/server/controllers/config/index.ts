@@ -45,6 +45,7 @@ export const configController: Parameters<FastifyRegister>[0] = (fastify, _opts,
       keystore: boolean,
       mixin: boolean,
       anonymous: boolean,
+      metamask: boolean,
       nft: string,
     }));
 
@@ -56,6 +57,7 @@ export const configController: Parameters<FastifyRegister>[0] = (fastify, _opts,
       keystore: body.keystore,
       mixin: body.mixin,
       anonymous: body.anonymous,
+      metamask: body.metamask,
       nft: body.nft,
     });
 

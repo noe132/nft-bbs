@@ -3,8 +3,10 @@ import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { parse } from 'query-string';
 import { toUint8Array } from 'js-base64';
+import { providers, utils } from 'ethers';
 import { either, taskEither, function as fp } from 'fp-ts';
-import { utils } from 'quorum-light-node-sdk';
+import { utils as quorumUtils } from 'quorum-light-node-sdk';
+import RemoveMarkdown from 'remove-markdown';
 import type { GroupStatus, IAppConfigItem } from 'nft-bbs-server';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl,
@@ -13,16 +15,17 @@ import {
 import { ChevronLeft, ChevronRight, Close, Delete, Visibility, VisibilityOff } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 
-import bgImg1x from '~/assets/images/rum_barrel_bg.jpg';
-import bgImg2x from '~/assets/images/rum_barrel_bg@2x.jpg';
-import bgImg3x from '~/assets/images/rum_barrel_bg@3x.jpg';
-import rumsystemLogo from '~/assets/icons/rumsystem.svg';
+import bgImg1x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash.jpg';
+import bgImg2x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@2x.jpg';
+import bgImg3x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@3x.jpg';
 
 import { chooseImgByPixelRatio, runLoading, ThemeLight, useWiderThan } from '~/utils';
-import { APPCONFIG_KEY_NAME, keyService, KeystoreData, loginStateService, nodeService, routerService, snackbarService } from '~/service';
-import { GroupAvatar, Scrollable } from '~/components';
+import {
+  APPCONFIG_KEY_NAME, dialogService, keyService, KeystoreData,
+  loginStateService, nodeService, routerService, snackbarService,
+} from '~/service';
+import { GroupAvatar, Scrollable, Footer } from '~/components';
 import { VaultApi } from '~/apis';
-import RemoveMarkdown from 'remove-markdown';
 
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
@@ -50,7 +53,6 @@ export const Join = observer(() => {
       },
     },
 
-    expandKeystoreLogin: false,
     globalLoading: false,
 
     get selectedGroupConfig() {
@@ -175,6 +177,116 @@ export const Join = observer(() => {
     joinGroup(group);
   });
 
+  const handleLoginByNewMetaMask = async (group: GroupStatus) => {
+    if (!(window as any).ethereum) {
+      const result = await dialogService.open({
+        content: '请先安装 MetaMask 插件',
+        cancel: '我知道了',
+        confirm: '去安装',
+      });
+      if (result === 'confirm') {
+        window.open('https://metamask.io');
+      }
+      return;
+    }
+
+    const run = fp.pipe(
+      taskEither.tryCatch(
+        async () => {
+          const PREFIX = '\x19Ethereum Signed Message:\n';
+          const message = `Rum 身份认证 | ${Math.round(Date.now() / 1000)}`;
+          const provider = new providers.Web3Provider((window as any).ethereum);
+          const accounts = await provider.send('eth_requestAccounts', []);
+          const address = accounts[0];
+          const messageBytes = utils.toUtf8Bytes(message);
+          const msg = `0x${quorumUtils.typeTransform.uint8ArrayToHex(messageBytes)}`;
+          const signatureFromProvider = await provider.send('personal_sign', [msg, address]);
+          const signature = utils.joinSignature(signatureFromProvider);
+          const prefixBytes = utils.toUtf8Bytes(`${PREFIX}${messageBytes.length}`);
+          const bytes = utils.concat([prefixBytes, messageBytes]);
+          const rawMsg = utils.toUtf8String(bytes);
+          const hash = utils.keccak256(bytes).toString();
+          const digest = quorumUtils.typeTransform.hexToUint8Array(hash);
+          const recoveredAddress = utils.recoverAddress(digest, signature);
+          if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
+            throw new Error('加解密的 address 不匹配');
+          }
+          return {
+            address: recoveredAddress,
+            data: rawMsg,
+            signature: signature.replace('0x', ''),
+          };
+        },
+        (e) => e as Error,
+      ),
+      taskEither.chainW((data) => fp.pipe(
+        taskEither.fromTask(() => VaultApi.createUserBySignature(
+          data.address,
+          data.data,
+          data.signature,
+        )),
+        taskEither.chainNullableK(new Error('failed to create user'))(fp.identity),
+        taskEither.chain((v) => () => VaultApi.getOrCreateAppUser(v.token)),
+        taskEither.map((v) => ({
+          address: data.address,
+          token: v.jwt,
+          user: v.user,
+          appUser: v.appUser,
+        })),
+      )),
+      taskEither.map(action((v) => {
+        loginStateService.state.groups[group.id] = {
+          ...loginStateService.state.groups[group.id],
+          lastLogin: 'metamask',
+          metamask: {
+            address: v.address,
+            mixinJWT: v.token,
+          },
+        };
+        keyService.useMetaMask({
+          jwt: v.token,
+          user: v.user,
+          appUser: v.appUser,
+        });
+        loginStateService.state.autoLoginGroupId = group.id;
+        joinGroup(group);
+      })),
+      taskEither.mapLeft((e) => {
+        snackbarService.error(e.message);
+      }),
+    );
+    runLoading(
+      (l) => { state.globalLoading = l; },
+      () => run(),
+    );
+  };
+
+  const handleLoginBySavedMetaMask = (group: GroupStatus, jwt: string) => {
+    const run = fp.pipe(
+      () => VaultApi.getOrCreateAppUser(jwt),
+      taskEither.map(action((v) => {
+        loginStateService.state.groups[group.id] = {
+          ...loginStateService.state.groups[group.id],
+          lastLogin: 'metamask',
+        };
+        keyService.useMetaMask({
+          jwt,
+          user: v.user,
+          appUser: v.appUser,
+        });
+        loginStateService.state.autoLoginGroupId = group.id;
+        joinGroup(group);
+      })),
+      taskEither.mapLeft((e) => {
+        snackbarService.error(e.message);
+      }),
+    );
+    runLoading(
+      (l) => { state.globalLoading = l; },
+      () => run(),
+    );
+  };
+
   const handleLoginAnonymous = action((group: GroupStatus) => {
     loginStateService.state.autoLoginGroupId = null;
     joinGroup(group);
@@ -192,19 +304,10 @@ export const Join = observer(() => {
     joinGroup(group);
   };
 
-  const handleClearSavedKeystoreLogin = (group: GroupStatus) => {
+  const handleClearSavedLogin = (group: GroupStatus, type: 'keystore' | 'mixin' | 'metamask') => {
     if (loginStateService.state.groups[group.id]) {
-      delete loginStateService.state.groups[group.id]!.keystore;
-      if (loginStateService.state.groups[group.id]?.lastLogin === 'keystore') {
-        loginStateService.state.groups[group.id]!.lastLogin = null;
-      }
-    }
-  };
-
-  const handleClearSavedMixinLogin = (group: GroupStatus) => {
-    if (loginStateService.state.groups[group.id]) {
-      delete loginStateService.state.groups[group.id]!.mixin;
-      if (loginStateService.state.groups[group.id]?.lastLogin === 'mixin') {
+      delete loginStateService.state.groups[group.id]![type];
+      if (loginStateService.state.groups[group.id]?.lastLogin === type) {
         loginStateService.state.groups[group.id]!.lastLogin = null;
       }
     }
@@ -282,12 +385,6 @@ export const Join = observer(() => {
   });
 
   const handleOpenGroup = action((group: GroupStatus) => {
-    const groupConfig = nodeService.config.get(group.id);
-    if (groupConfig.mixin && groupConfig.keystore) {
-      state.expandKeystoreLogin = false;
-    } else {
-      state.expandKeystoreLogin = true;
-    }
     state.selectedGroup = group;
   });
 
@@ -340,10 +437,12 @@ export const Join = observer(() => {
                 <div className="flex flex-wrap justify-center gap-6 pc:w-[720px] px-4">
                   {state.groups.map(({ group, config, loginState }) => {
                     const loginButton = [
-                      config.mixin && !!loginState?.mixin && 'saved-mixin',
+                      loginState?.lastLogin === 'mixin' && config.mixin && !!loginState?.mixin && 'saved-mixin',
+                      loginState?.lastLogin === 'keystore' && config.keystore && !!loginState?.keystore && 'saved-keystore',
+                      loginState?.lastLogin === 'metamask' && config.metamask && !!loginState?.metamask && 'saved-metamask',
                       config.mixin && !loginState?.mixin && 'mixin',
-                      config.keystore && !!loginState?.keystore && 'saved-keystore',
                       config.keystore && !loginState?.keystore && 'keystore',
+                      config.metamask && !loginState?.metamask && 'metamask',
                     ].find((v) => v);
                     return (
                       <div
@@ -353,11 +452,11 @@ export const Join = observer(() => {
                         <GroupAvatar
                           groupId={group.id}
                           square
-                          groupName={utils.restoreSeedFromUrl(group.mainSeedUrl).group_name}
+                          groupName={quorumUtils.restoreSeedFromUrl(group.mainSeedUrl).group_name}
                           size={44}
                           fontSize={20}
                         />
-                        {config.anonymous && (!!config.mixin || !!config.keystore) && (
+                        {config.anonymous && (!!config.mixin || !!config.keystore || !!config.metamask) && (
                           <Button
                             className="flex flex-center absolute text-14 right-1 py-1 top-1 text-gray-9c"
                             variant="text"
@@ -369,7 +468,7 @@ export const Join = observer(() => {
                         )}
                         <div className="flex-col flex-1 justify-start items-stretch px-2 gap-y-2">
                           <div className="flex flex-center text-center truncate -mt-4 mb-2">
-                            {utils.restoreSeedFromUrl(group.mainSeedUrl).group_name}
+                            {quorumUtils.restoreSeedFromUrl(group.mainSeedUrl).group_name}
                           </div>
                           <div className="text-12 text-gray-9c truncate-2 -mt-2 mb-1">
                             {renderDesc(nodeService.state.appConfigMap[group.id]?.[APPCONFIG_KEY_NAME.DESC]?.Value)}
@@ -384,7 +483,9 @@ export const Join = observer(() => {
                                 variant="outlined"
                                 onClick={() => handleLoginByMixin(group, loginState!.mixin!.mixinJWT)}
                               >
-                                上次的 Mixin 账号登录: {loginState!.mixin!.userName}
+                                <span className="truncate">
+                                  上次的 Mixin 账号登录: {loginState!.mixin!.userName}
+                                </span>
                               </Button>
                             </Tooltip>
                           )}
@@ -397,7 +498,24 @@ export const Join = observer(() => {
                                 variant="outlined"
                                 onClick={() => handleLoginBySavedKeystore(group, loginState!.keystore!)}
                               >
-                                上次使用的 keystore: {loginState!.keystore!.address.slice(0, 10)}
+                                <span className="truncate">
+                                  上次使用的 keystore: {loginState!.keystore!.address.slice(0, 10)}
+                                </span>
+                              </Button>
+                            </Tooltip>
+                          )}
+                          {loginButton === 'saved-metamask' && (
+                            <Tooltip title="用上次使用的 MetaMask 账号登录" placement="right">
+                              <Button
+                                className="text-link-soft text-14 w-full py-[3px] normal-case truncate"
+                                size="small"
+                                color="link-soft"
+                                variant="outlined"
+                                onClick={() => handleLoginBySavedMetaMask(group, loginState!.metamask!.mixinJWT)}
+                              >
+                                <span className="truncate">
+                                  上次的 MetaMask 账号: {loginState!.metamask!.address.slice(0, 10).toLowerCase()}
+                                </span>
                               </Button>
                             </Tooltip>
                           )}
@@ -410,7 +528,9 @@ export const Join = observer(() => {
                                 variant="outlined"
                                 onClick={() => handleOpenMixinLogin(group)}
                               >
-                                使用 Mixin 扫码登录
+                                <span className="truncate">
+                                  使用 Mixin 扫码登录
+                                </span>
                               </Button>
                             </Tooltip>
                           )}
@@ -423,11 +543,28 @@ export const Join = observer(() => {
                                 variant="outlined"
                                 onClick={() => handleShowKeystoreDialog(group)}
                               >
-                                输入 Keystore
+                                <span className="truncate">
+                                  输入 Keystore
+                                </span>
                               </Button>
                             </Tooltip>
                           )}
-                          {(!!config.mixin || !!config.keystore) && (
+                          {loginButton === 'metamask' && (
+                            <Tooltip title="输入 Keystore 和 密码" placement="right" disableInteractive>
+                              <Button
+                                className="text-rum-orange text-14 w-full py-[3px] normal-case"
+                                size="small"
+                                color="rum"
+                                variant="outlined"
+                                onClick={() => handleLoginByNewMetaMask(group)}
+                              >
+                                <span className="truncate">
+                                  MetaMask 登录
+                                </span>
+                              </Button>
+                            </Tooltip>
+                          )}
+                          {(!!config.mixin || !!config.keystore || !!config.metamask) && (
                             <Button
                               className="text-gray-9c text-14 w-full py-[3px] normal-case"
                               size="small"
@@ -435,10 +572,12 @@ export const Join = observer(() => {
                               variant="text"
                               onClick={() => handleOpenGroup(group)}
                             >
-                              更多登录方式
+                              <span className="truncate">
+                                更多登录方式
+                              </span>
                             </Button>
                           )}
-                          {(!config.mixin && !config.keystore) && (
+                          {(!config.mixin && !config.keystore && !config.metamask) && (
                             <Button
                               className="text-gray-9c text-14 w-full py-[3px] normal-case"
                               size="small"
@@ -459,7 +598,7 @@ export const Join = observer(() => {
           )}
 
           {!!state.selectedGroup && (
-            <div className="relative flex-col items-stretch gap-y-7 bg-black/80 w-[720px] rounded-[10px] p-7">
+            <div className="relative flex-col items-stretch gap-y-7 bg-black/80 pc:w-[720px] mb:w-full rounded-[10px] p-7">
               <Button
                 className="flex flex-center absolute left-2 top-2 text-14 font-normal text-gray-9c"
                 variant="text"
@@ -473,18 +612,18 @@ export const Join = observer(() => {
               <GroupAvatar
                 className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3"
                 groupId={state.selectedGroup.id}
-                groupName={utils.restoreSeedFromUrl(state.selectedGroup.mainSeedUrl).group_name}
+                groupName={quorumUtils.restoreSeedFromUrl(state.selectedGroup.mainSeedUrl).group_name}
                 size={100}
               />
               <div className="mt-12 text-gray-f2 text-18 truncate text-center">
-                {utils.restoreSeedFromUrl(state.selectedGroup.mainSeedUrl).group_name}
+                {quorumUtils.restoreSeedFromUrl(state.selectedGroup.mainSeedUrl).group_name}
               </div>
 
               <div className="hidden mt-2 text-gray-f2 text-14 truncate-3 max-w-[400px] self-center">
                 {renderDesc(nodeService.state.appConfigMap[state.selectedGroup.id]?.[APPCONFIG_KEY_NAME.DESC]?.Value)}
               </div>
 
-              <div className="flex-col self-center items-stertch mt-4 gap-y-4 min-w-[200px]">
+              <div className="flex-col self-center items-stertch mt-4 gap-y-4 min-w-[200px] mb:w-full">
                 {!!state.selectedGroupConfig?.keystore && !!state.selectedGroupLoginState?.keystore && (
                   <div className="relative flex items-center gap-x-2">
                     <Tooltip title="用上次使用的 Keystore 登录" placement="right" disableInteractive>
@@ -506,9 +645,9 @@ export const Join = observer(() => {
                     </Tooltip>
                     <Tooltip title="清除保存的 Keystore" placement="right" disableInteractive>
                       <IconButton
-                        className="absolute right-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
+                        className="absolute right-0 mb:static mb:mr-0 mb:translate-x-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
                         color="inherit"
-                        onClick={() => handleClearSavedKeystoreLogin(state.selectedGroup!)}
+                        onClick={() => handleClearSavedLogin(state.selectedGroup!, 'keystore')}
                       >
                         <Delete />
                       </IconButton>
@@ -537,9 +676,40 @@ export const Join = observer(() => {
                     </Tooltip>
                     <Tooltip title="清除保存的 Mixin 账号" placement="right" disableInteractive>
                       <IconButton
-                        className="absolute right-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
+                        className="absolute right-0 mb:static mb:mr-0 mb:translate-x-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
                         color="inherit"
-                        onClick={() => handleClearSavedMixinLogin(state.selectedGroup!)}
+                        onClick={() => handleClearSavedLogin(state.selectedGroup!, 'mixin')}
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Tooltip>
+                  </div>
+                )}
+
+                {!!state.selectedGroupConfig?.metamask && !!state.selectedGroupLoginState?.metamask && (
+                  <div className="relative flex items-center gap-x-2">
+                    <Tooltip title="用上次使用的 MetaMask 登录" placement="right" disableInteractive>
+                      <Button
+                        className="text-link-soft rounded-full text-16 px-8 py-2 normal-case flex-1 max-w-[350px]"
+                        color="link-soft"
+                        variant="outlined"
+                        // disabled={mixin.loading}
+                        onClick={() => handleLoginBySavedMetaMask(state.selectedGroup!, state.selectedGroupLoginState!.metamask!.mixinJWT)}
+                      >
+                        <span className="truncate">
+                          上次的 MetaMask 账号{' '}
+                          ({state.selectedGroupLoginState.metamask.address.slice(0, 10).toLowerCase()})
+                        </span>
+                        {/* {mixin.loading && (
+                          <CircularProgress className="ml-2 flex-none text-white/70" size={16} thickness={5} />
+                        )} */}
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="清除保存的 MetaMask 账号" placement="right" disableInteractive>
+                      <IconButton
+                        className="absolute right-0 mb:static mb:mr-0 mb:translate-x-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
+                        color="inherit"
+                        onClick={() => handleClearSavedLogin(state.selectedGroup!, 'metamask')}
                       >
                         <Delete />
                       </IconButton>
@@ -559,7 +729,19 @@ export const Join = observer(() => {
                     </Button>
                   </Tooltip>
                 )}
-                {!!state.selectedGroupConfig?.keystore && state.expandKeystoreLogin && (
+                {!!state.selectedGroupConfig?.metamask && (
+                  <Tooltip title="使用 MetaMask 登录" placement="right" disableInteractive>
+                    <Button
+                      className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
+                      color="rum"
+                      variant="outlined"
+                      onClick={() => handleLoginByNewMetaMask(state.selectedGroup!)}
+                    >
+                      MetaMask 登录
+                    </Button>
+                  </Tooltip>
+                )}
+                {!!state.selectedGroupConfig?.keystore && (
                   <Tooltip title="创建一个随机账号" placement="right" disableInteractive>
                     <Button
                       className="text-rum-orange rounded-full text-16 px-8 py-2"
@@ -571,7 +753,7 @@ export const Join = observer(() => {
                     </Button>
                   </Tooltip>
                 )}
-                {!!state.selectedGroupConfig?.keystore && state.expandKeystoreLogin && (
+                {!!state.selectedGroupConfig?.keystore && (
                   <Tooltip title="输入 Keystore 和 密码" placement="right" disableInteractive>
                     <Button
                       className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
@@ -583,57 +765,24 @@ export const Join = observer(() => {
                     </Button>
                   </Tooltip>
                 )}
-                <div className="flex flex-center">
-                  {!!state.selectedGroupConfig?.anonymous && (
-                    <Button
-                      className="text-link-soft text-14 px-2 py-1 normal-case"
-                      size="small"
-                      color="inherit"
-                      variant="text"
-                      onClick={() => handleLoginAnonymous(state.selectedGroup!)}
-                    >
-                      随便看看(游客模式)
-                    </Button>
-                  )}
-                  {!state.expandKeystoreLogin && (
-                    <Button
-                      className="text-gray-9c text-14 px-2 py-1 normal-case"
-                      size="small"
-                      color="inherit"
-                      variant="text"
-                      onClick={action(() => { state.expandKeystoreLogin = true; })}
-                    >
-                      更多登录方式
-                    </Button>
-                  )}
-                </div>
+                {!!state.selectedGroupConfig?.anonymous && (
+                  <Button
+                    className="text-link-soft text-14 px-2 py-1 normal-case"
+                    size="small"
+                    color="inherit"
+                    variant="text"
+                    onClick={() => handleLoginAnonymous(state.selectedGroup!)}
+                  >
+                    随便看看(游客模式)
+                  </Button>
+                )}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex items-center px-10 h-12 bg-white">
-        <img src={rumsystemLogo} alt="" />
-        <span className="px-2">·</span>
-        <div className="flex flex-center gap-x-12 text-14">
-          {[
-            ['https://rumsystem.net/', '关于'],
-            // ['https://rumsystem.net/developers', '文档'],
-            // ['https://rumsystem.net/faq/howtocreateseednet', '怎样创建 RumPot 种子网络？'],
-          ].map((v, i) => (
-            <a
-              className="text-black"
-              target="_blank"
-              rel="noopener"
-              href={v[0]}
-              key={i}
-            >
-              {v[1]}
-            </a>
-          ))}
-        </div>
-      </div>
+      <Footer />
 
       <ThemeLight>
         <Dialog
@@ -650,7 +799,7 @@ export const Join = observer(() => {
             </IconButton>
             <div className="flex-col flex-1 justify-between items-center p-6 gap-y-6">
               <div className="text-18">
-                注册/登录 ({state.keystoreDialog.group ? utils.restoreSeedFromUrl(state.keystoreDialog.group.mainSeedUrl).group_name : ''})
+                注册/登录 ({state.keystoreDialog.group ? quorumUtils.restoreSeedFromUrl(state.keystoreDialog.group.mainSeedUrl).group_name : ''})
               </div>
               <div className="flex-col gap-y-4 w-[250px] items-stretch">
                 <FormControl size="small">

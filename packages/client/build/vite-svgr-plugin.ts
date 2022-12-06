@@ -11,8 +11,9 @@ export const svgrPlugin = (): Plugin => ({
       const filePath = match[1];
       const query = match[2];
       const svgContent = (await fs.readFile(filePath, 'utf8')).toString();
-      const width = /width="(\d+)"/.exec(svgContent)?.[1];
-      const height = /height="(\d+)"/.exec(svgContent)?.[1];
+      const width = /width="(.+?)"/.exec(svgContent)?.[1];
+      const height = /height="(.+?)"/.exec(svgContent)?.[1];
+      const heightEm = (Number(height) || 1) / (Number(width) || 1);
       const isIcon = query === 'icon' || query === 'fill-icon';
       const jsCode = await transform(
         svgContent,
@@ -22,10 +23,19 @@ export const svgrPlugin = (): Plugin => ({
               ? { fill: 'currentColor' }
               : {},
             ...width && height && isIcon
-              ? { viewBox: `0 0 ${width} ${height}` }
+              ? {
+                viewBox: `0 0 ${width} ${height}`,
+                ...heightEm < 1 ? {
+                  height: '1em',
+                  width: `${(1 / heightEm).toFixed(3)}em`,
+                } : {
+                  width: '1em',
+                  height: `${heightEm}em`,
+                },
+              }
               : {},
           },
-          icon: isIcon,
+          // icon: isIcon,
         },
         {
           componentName: 'ReactComponent',

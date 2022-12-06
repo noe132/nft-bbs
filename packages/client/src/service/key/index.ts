@@ -19,14 +19,30 @@ export interface MixinData {
   appUser: VaultApi.VaultAppUser
 }
 
+export interface MetaMaskData {
+  jwt: string
+  user: VaultApi.VaultUser
+  appUser: VaultApi.VaultAppUser
+}
+
+type KeysData = (KeystoreData & { type: 'keystore' })
+| (MixinData & { type: 'mixin' }
+| (MetaMaskData & { type: 'metamask' }));
+
 const state = observable({
-  keys: null as null | (KeystoreData & { type: 'keystore' }) | (MixinData & { type: 'mixin' }),
+  keys: null as null | KeysData,
 
   get address() {
     if (this.keys?.type === 'keystore') {
       return this.keys.address;
     }
-    return this.keys?.appUser.eth_address ?? '';
+    if (this.keys?.type === 'mixin') {
+      return this.keys?.appUser.eth_address ?? '';
+    }
+    if (this.keys?.type === 'metamask') {
+      return this.keys?.appUser.eth_address ?? this.keys?.user.eth_address_user?.address ?? '';
+    }
+    return '';
   },
   get logined() {
     return !!this.address;
@@ -68,6 +84,13 @@ const useMixin = action((data: MixinData) => {
   };
 });
 
+const useMetaMask = action((data: MetaMaskData) => {
+  state.keys = {
+    type: 'metamask',
+    ...data,
+  };
+});
+
 const logout = action(() => {
   state.keys = null;
 });
@@ -90,7 +113,7 @@ const getTrxCreateParam = () => {
       privateKey: state.keys.privateKey,
     };
   }
-  if (state.keys?.type === 'mixin') {
+  if (state.keys?.type === 'mixin' || state.keys?.type === 'metamask') {
     const jwt = state.keys.jwt;
     const compressedPublicKey = utils.arrayify(utils.computePublicKey(state.keys.appUser.eth_pub_key, true));
     const publicKey = Base64.fromUint8Array(compressedPublicKey, true);
@@ -126,6 +149,7 @@ export const keyService = {
 
   useKeystore,
   useMixin,
+  useMetaMask,
   createRandom,
   logout,
   validate,

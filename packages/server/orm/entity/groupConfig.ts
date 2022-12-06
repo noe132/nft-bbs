@@ -13,6 +13,9 @@ export class GroupConfig {
   @Column({ nullable: false })
   public mixin!: boolean;
 
+  @Column({ nullable: false, default: true })
+  public metamask!: boolean;
+
   @Column({ nullable: false })
   public anonymous!: boolean;
 
