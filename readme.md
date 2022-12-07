@@ -1,4 +1,4 @@
-# nft-bbs
+# Port
 
 ## dependencies
 - node lts-16 or greater
@@ -9,27 +9,26 @@
 run `yarn install` at project root
 
 ## run in docker
-To enable https (required), mount `fullchain.pem` and `key.pem` in `router` service at `/app/cert/` folder.  
-If using the default [`docker-compose.yml`](docker-compose.yml) at project root, place ssl keys under `/cert` folder
+By using the default [`docker-compose.yml`](docker-compose.yml) at project root, it'll run prebuilt images from remote docker hub.  
+Copy `packges/server/config.sample.yml` to `packges/server/config.yml`
+
 ```sh
-yarn build
 PORT=80 # optional
-TLS_PORT=443 # optional
-docker-compose up -d --build
+docker-compose up -d
 ```
+To build your own local images, build all packages running `yarn build` at project root, then use Dockerfiles in `docker` folder to build images.
 
 ## dev
 ### server
+Copy `packges/server/config.sample.yml` to `packges/server/config.yml` and make modification accordingly to your setup enviroment.
 ```sh
 cd packages/server
 yarn dev
 ```
 
 ### client
-To enable https in dev server, place `fullchain.pem` and `key.pem` under `/cert` folder
+[optional] To enable https, place `fullchain.pem` and `key.pem` under `/cert` folder 
 ```sh
-cp /path/to/fullchain.pem ./cert/fullchain.pem
-cp /path/to/key.pem ./cert/key.pem
 cd packages/client
 yarn dev
 ```

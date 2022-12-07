@@ -1,12 +1,19 @@
+# database connection configuration
 db:
   host: 127.0.0.1
   port: 5432
-  database: nft-bbs
+  database: port
   user: postgres
-  password: '123456'
+  password: 'e72a7e3456874163b3b715297be8a731'
   dialect: postgres
-group:
-  default:
-    mixin: true
-    keystore: true
-    anonymous: true
+
+# default login configuration
+defaultGroup:
+  mixin: true
+  keystore: true
+  anonymous: true
+  metamask: true
+
+# admin user eth addresses
+admin:
+  - '0xffffffffffffffffffffffffffffffffffffffff'

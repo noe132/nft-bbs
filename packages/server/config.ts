@@ -21,6 +21,7 @@ const configType = intersection([
       mixin: boolean,
       keystore: boolean,
       anonymous: boolean,
+      metamask: boolean,
     }),
     admin: array(string),
   }),
