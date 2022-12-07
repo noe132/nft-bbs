@@ -6,6 +6,7 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import { getScrollBarWidth } from './getScrollbarWdith';
 
 interface Props {
+  direction?: 'vertical' | 'horizontal'
   children?: React.ReactNode
   className?: string
   wrapperClassName?: string
@@ -45,22 +46,23 @@ const widthMap = {
 };
 
 export const Scrollable = observer((props: Props) => {
+  const horizontal = props.direction === 'horizontal';
   const state = useLocalObservable(() => ({
     hide: !!props.autoHideMode,
     hover: false,
     drag: {
       start: false,
-      startY: 0,
-      startScrollTop: 0,
+      startPosition: 0,
+      startScrollPosition: 0,
     },
     noScrollBar: true,
     scrollbar: {
       track: {
-        top: 0,
+        start: 0,
       },
       thumb: {
-        height: 0,
-        size: '0',
+        sizePixel: 0,
+        sizePercentage: '0',
         position: '0',
       },
     },
@@ -68,13 +70,13 @@ export const Scrollable = observer((props: Props) => {
 
     get thumbStyle() {
       return {
-        height: `${state.scrollbar.thumb.size}%`,
-        top: `${state.scrollbar.thumb.position}%`,
+        [horizontal ? 'width' : 'height']: `${state.scrollbar.thumb.sizePercentage}%`,
+        [horizontal ? 'left' : 'top']: `${state.scrollbar.thumb.position}%`,
       };
     },
     get scrollBoxStyle() {
       return {
-        'marginRight': `${-state.scrollbarWidth}px`,
+        [horizontal ? 'marginBottom' : 'marginRight']: `${-state.scrollbarWidth}px`,
       };
     },
   }));
@@ -87,14 +89,16 @@ export const Scrollable = observer((props: Props) => {
     state.scrollbarWidth = getScrollBarWidth();
   });
 
-  const handleScrollbarThumbClick = action((e: React.MouseEvent) => {
+  const handleScrollbarThumbMouseDown = action((e: React.MouseEvent) => {
     if (!containerRef.current) {
       return;
     }
     e.preventDefault();
     state.drag.start = true;
-    state.drag.startY = e.clientY;
-    state.drag.startScrollTop = containerRef.current.scrollTop;
+    state.drag.startPosition = horizontal ? e.clientX : e.clientY;
+    state.drag.startScrollPosition = horizontal
+      ? containerRef.current.scrollLeft
+      : containerRef.current.scrollTop;
   });
 
   const handleScrollbarThumbMousemove = action((e: MouseEvent) => {
@@ -106,24 +110,32 @@ export const Scrollable = observer((props: Props) => {
 
       const {
         scrollHeight,
+        scrollWidth,
         clientHeight,
+        clientWidth,
       } = containerRef.current;
+      const scrollSize = horizontal ? scrollWidth : scrollHeight;
+      const clientSize = horizontal ? clientWidth : clientHeight;
 
-      const scrollSpacePixel = scrollHeight - clientHeight;
-      const scrollWindowPixel = clientHeight * (1 - state.scrollbar.thumb.height);
-      const mouseMovePixel = e.clientY - state.drag.startY;
+      const scrollSpacePixel = scrollSize - clientSize;
+      const scrollWindowPixel = clientSize * (1 - state.scrollbar.thumb.sizePixel);
+      const mouseMovePixel = (horizontal ? e.clientX : e.clientY) - state.drag.startPosition;
       const movePercentage = mouseMovePixel / scrollWindowPixel;
       const scrollDeltaPixel = scrollSpacePixel * movePercentage;
 
-      let targetScrollTop = state.drag.startScrollTop + scrollDeltaPixel;
-      if (targetScrollTop > scrollSpacePixel) {
-        targetScrollTop = scrollSpacePixel;
+      let targetScrollPosition = state.drag.startScrollPosition + scrollDeltaPixel;
+      if (targetScrollPosition > scrollSpacePixel) {
+        targetScrollPosition = scrollSpacePixel;
       }
-      if (targetScrollTop < 0) {
-        targetScrollTop = 0;
+      if (targetScrollPosition < 0) {
+        targetScrollPosition = 0;
       }
 
-      containerRef.current.scrollTop = targetScrollTop;
+      if (horizontal) {
+        containerRef.current.scrollLeft = targetScrollPosition;
+      } else {
+        containerRef.current.scrollTop = targetScrollPosition;
+      }
     }
   });
 
@@ -135,17 +147,23 @@ export const Scrollable = observer((props: Props) => {
     if (!containerRef.current) { return; }
     if (e.target !== e.currentTarget) { return; }
     const rect = e.currentTarget.getBoundingClientRect();
-    const clickPosition = ((e.clientY - rect.top) / rect.height) * 100;
-    const isTop = clickPosition < Number(state.scrollbar.thumb.position);
-    const isBottom = clickPosition > (Number(state.scrollbar.thumb.position) + Number(state.scrollbar.thumb.height));
-    if (isTop) {
+    const clickPosition = horizontal
+      ? ((e.clientX - rect.left) / rect.width) * 100
+      : ((e.clientY - rect.top) / rect.height) * 100;
+    const isStart = clickPosition < Number(state.scrollbar.thumb.position);
+    const isEnd = clickPosition > (Number(state.scrollbar.thumb.position) + Number(state.scrollbar.thumb.sizePixel));
+    if (isStart) {
       containerRef.current.scrollTo({
-        top: containerRef.current.scrollTop - containerRef.current.clientHeight,
+        [horizontal ? 'left' : 'top']: horizontal
+          ? containerRef.current.scrollLeft - containerRef.current.clientWidth
+          : containerRef.current.scrollTop - containerRef.current.clientHeight,
       });
     }
-    if (isBottom) {
+    if (isEnd) {
       containerRef.current.scrollTo({
-        top: containerRef.current.scrollTop + containerRef.current.clientHeight,
+        [horizontal ? 'left' : 'top']: horizontal
+          ? containerRef.current.scrollLeft + containerRef.current.clientWidth
+          : containerRef.current.scrollTop + containerRef.current.clientHeight,
       });
     }
   };
@@ -156,13 +174,20 @@ export const Scrollable = observer((props: Props) => {
     }
     const {
       scrollTop,
+      scrollLeft,
       scrollHeight,
+      scrollWidth,
       clientHeight,
+      clientWidth,
     } = containerRef.current;
 
-    const sizePercentage = clientHeight / scrollHeight;
-    const scrollSpace = scrollHeight - clientHeight;
-    const scrollPercentage = scrollTop / scrollSpace;
+    const scrollSize = horizontal ? scrollWidth : scrollHeight;
+    const clientSize = horizontal ? clientWidth : clientHeight;
+    const scrollPosition = horizontal ? scrollLeft : scrollTop;
+
+    const sizePercentage = clientSize / scrollSize;
+    const scrollSpace = scrollSize - clientSize;
+    const scrollPercentage = scrollPosition / scrollSpace;
 
     const thumbHeight = Math.max(sizePercentage, 0.04);
     const thumbTop = (1 - thumbHeight) * scrollPercentage;
@@ -173,14 +198,14 @@ export const Scrollable = observer((props: Props) => {
     const thumbPosition = (thumbTop * 100).toFixed(4);
 
     // prevent infinite update
-    if (state.scrollbar.track.top !== scrollTop) {
-      state.scrollbar.track.top = scrollTop;
+    if (state.scrollbar.track.start !== scrollPosition) {
+      state.scrollbar.track.start = scrollPosition;
     }
-    if (state.scrollbar.thumb.height !== thumbHeight) {
-      state.scrollbar.thumb.height = thumbHeight;
+    if (state.scrollbar.thumb.sizePixel !== thumbHeight) {
+      state.scrollbar.thumb.sizePixel = thumbHeight;
     }
-    if (state.scrollbar.thumb.size !== thumbSize) {
-      state.scrollbar.thumb.size = thumbSize;
+    if (state.scrollbar.thumb.sizePercentage !== thumbSize) {
+      state.scrollbar.thumb.sizePercentage = thumbSize;
     }
     if (state.scrollbar.thumb.position !== thumbPosition) {
       state.scrollbar.thumb.position = thumbPosition;
@@ -221,6 +246,7 @@ export const Scrollable = observer((props: Props) => {
     : widthMap[props.size ?? 'normal'];
 
   const showTrack = !props.hideTrack && !(!state.scrollbarWidth && props.hideTrackOnMobile);
+  const SecAxisSizeProp = horizontal ? 'height' : 'width';
 
   return (
     <div
@@ -234,13 +260,15 @@ export const Scrollable = observer((props: Props) => {
       {showTrack && (
         <div
           className={classNames(
-            'scroll-bar-track absolute top-[3px] right-0 bottom-[3px] z-[200]',
+            'scroll-bar-track absolute z-[200]',
+            props.direction !== 'horizontal' && 'top-[3px] right-0 bottom-[3px]',
+            horizontal && 'left-[3px] bottom-0 right-[3px]',
             state.noScrollBar && 'no-scroll-bar',
             !!props.autoHideMode && 'duration-150',
             !!props.autoHideMode && state.hide && 'opacity-0',
             props.trackClassName,
           )}
-          style={{ width: `${sizes.track}px` }}
+          style={{ [SecAxisSizeProp]: `${sizes.track}px` }}
           onClick={handleTrackClick}
           onMouseEnter={action(() => { state.hover = true; })}
           onMouseLeave={action(() => { state.hover = false; })}
@@ -248,11 +276,13 @@ export const Scrollable = observer((props: Props) => {
           {!state.noScrollBar && (
             <div
               className={classNames(
-                'scroll-bar-thumb-box absolute flex justify-center h-0 left-0 right-0 cursor-pointer',
+                'scroll-bar-thumb-box absolute justify-center cursor-pointer',
+                props.direction !== 'horizontal' && 'flex h-0 left-0 right-0',
+                horizontal && 'flex-col w-0 left-0 right-0',
                 props.thumbClassName,
               )}
-              onMouseDown={handleScrollbarThumbClick}
-              style={{ width: `${sizes.track}px`, ...state.thumbStyle }}
+              onMouseDown={handleScrollbarThumbMouseDown}
+              style={{ [SecAxisSizeProp]: `${sizes.track}px`, ...state.thumbStyle }}
             >
               <div
                 className={classNames(
@@ -263,7 +293,7 @@ export const Scrollable = observer((props: Props) => {
                   props.light && state.drag.start && 'bg-white/40',
                 )}
                 ref={thumb}
-                style={{ width: `${state.hover || state.drag.start ? sizes.thumbHover : sizes.thumb}px` }}
+                style={{ [SecAxisSizeProp]: `${state.hover || state.drag.start ? sizes.thumbHover : sizes.thumb}px` }}
               />
             </div>
           )}
@@ -273,8 +303,10 @@ export const Scrollable = observer((props: Props) => {
         <div
           style={state.scrollBoxStyle}
           className={classNames(
-            'scroll-box flex-col flex-auto overflow-x-hidden overflow-y-scroll',
+            'scroll-box flex-col flex-auto ',
             state.noScrollBar && 'pr-0',
+            props.direction !== 'horizontal' && 'overflow-y-scroll overflow-x-hidden',
+            horizontal && 'overflow-y-hidden overflow-x-scroll',
             props.scrollBoxClassName,
           )}
           onScroll={() => {
@@ -294,7 +326,9 @@ export const Scrollable = observer((props: Props) => {
         >
           <div
             className={classNames(
-              'content-wrapper flex-1 w-full h-max',
+              'content-wrapper flex-1',
+              props.direction !== 'horizontal' && 'w-full h-max',
+              horizontal && 'h-full w-max',
               props.wrapperClassName,
             )}
             ref={contentWrapperRef}
