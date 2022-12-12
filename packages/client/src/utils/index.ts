@@ -5,6 +5,7 @@ import { utils } from 'quorum-light-node-sdk';
 export * from './ago';
 export * from './compressImage';
 export * from './constants';
+export * from './lang';
 export * from './markdown';
 export * from './pageState';
 export * from './setClipboard';

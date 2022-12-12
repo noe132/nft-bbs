@@ -7,7 +7,7 @@ import { Share, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from 
 import type { Post } from 'nft-bbs-server';
 import TrashIcon from 'boxicons/svg/regular/bx-trash.svg?fill-icon';
 
-import { ago, renderPostMarkdown, runLoading, setClipboard, useWiderThan } from '~/utils';
+import { ago, lang, renderPostMarkdown, runLoading, setClipboard, useWiderThan } from '~/utils';
 import { imageZoomService, nodeService, snackbarService, keyService, dialogService, nftService, routerService } from '~/service';
 import { UserAvatar, PostImageZoomButton } from '~/components';
 import { ImageApi } from '~/apis';
@@ -83,16 +83,16 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
   const handleDeletePost = async () => {
     if (!nftService.hasPermissionAndTip('main')) { return; }
     const result = await dialogService.open({
-      title: '删除帖子',
-      content: '确定要删除这个帖子吗？',
+      title: lang.post.deleteTitle,
+      content: lang.post.deleteContent,
       danger: true,
     });
     if (result === 'confirm') {
       nodeService.post.delete(props.post);
       routerService.navigate({ page: 'postlist' });
       dialogService.open({
-        title: '删除成功',
-        content: '帖子将会在数据同步后删除。',
+        title: lang.post.deleteSuccessTitle,
+        content: lang.post.deleteSuccessContent,
         cancel: null,
       });
     }
@@ -100,7 +100,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
 
   const handleShare = () => {
     setClipboard(window.location.href);
-    snackbarService.show('帖子地址已复制到剪切板');
+    snackbarService.show(lang.post.urlCopied);
   };
 
   return (
@@ -118,7 +118,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         )}
       >
         <div className="flex flex-1 text-20 text-white truncate-2">
-          {state.postStat.title || '无标题'}
+          {state.postStat.title || lang.common.untitled}
         </div>
         {state.isPostAuthor && (
           <div className="flex flex-center gap-x-2 flex-none -mr-2">
@@ -130,7 +130,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
                 <EditIcon className="text-20" />
               </IconButton>
             </Tooltip> */}
-            <Tooltip title="删除帖子">
+            <Tooltip title={lang.post.deleteButton}>
               <IconButton
                 className="text-white/70 hover:text-red-400"
                 onClick={handleDeletePost}
@@ -168,7 +168,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
           className="text-white/35 text-12"
           onClick={() => state.synced && showTrxDetail(props.post.trxId, 'main')}
         >
-          {state.synced ? '已同步' : '同步中'}
+          {state.synced ? lang.common.synced : lang.common.sycing}
         </button>
       </div>
 
@@ -208,7 +208,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
             {!!state.postStat.likeCount && (
               <ThumbUpAlt className="mr-2 text-22" />
             )}
-            {state.postStat.likeCount || '赞'}
+            {state.postStat.likeCount || lang.common.like}
           </Button>
           <Button
             className={classNames(
@@ -225,7 +225,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
             {!!state.postStat.dislikeCount && (
               <ThumbDownAlt className="mr-2 text-22" />
             )}
-            {state.postStat.dislikeCount || '踩'}
+            {state.postStat.dislikeCount || lang.common.dislike}
           </Button>
         </div>
 
@@ -234,7 +234,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
           variant="text"
           onClick={handleShare}
         >
-          <Share className="mr-2 text-22" />分享
+          <Share className="mr-2 text-22" />{lang.common.share}
         </Button>
       </div>
     </div>

@@ -14,7 +14,7 @@ import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
 import { ScrollToTopButton, GroupCard, NFTSideBox, UserAvatar, Scrollable } from '~/components';
 import { keyService, nftService, nodeService, routerService } from '~/service';
-import { ago, notNullFilter, runLoading, usePageState, useWiderThan } from '~/utils';
+import { ago, lang, notNullFilter, runLoading, usePageState, useWiderThan } from '~/utils';
 import { showTrxDetail } from '~/modals';
 
 export const createPostlistState = () => ({
@@ -203,7 +203,7 @@ export const PostList = observer((props: { className?: string }) => {
                   className="text-link-soft/50 text-12"
                   onClick={() => !nodeService.state.post.newPostCache.has(v.trxId) && showTrxDetail(v.trxId, 'main')}
                 >
-                  {nodeService.state.post.newPostCache.has(v.trxId) ? '同步中' : '已同步'}
+                  {nodeService.state.post.newPostCache.has(v.trxId) ? lang.common.sycing : lang.common.synced}
                 </button>
                 <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
                   <div className="text-12 text-link-soft">
@@ -233,7 +233,7 @@ export const PostList = observer((props: { className?: string }) => {
                       to={routerService.getPath({ page: 'postdetail', trxId: v.trxId })}
                       onClick={(e) => { e.preventDefault(); }}
                     >
-                      {stat.title || '无标题'}
+                      {stat.title || lang.common.untitled}
                     </Link>
                     {isPC && authorAvatarAndName}
                   </div>
@@ -245,7 +245,7 @@ export const PostList = observer((props: { className?: string }) => {
                       !isPC && 'truncate-4',
                     )}
                   >
-                    {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
+                    {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, lang.common.imagePlaceholder))}
                   </div>
                 </div>
 
@@ -254,7 +254,7 @@ export const PostList = observer((props: { className?: string }) => {
                   <div className="flex gap-x-6 -ml-2">
                     <Button
                       className={classNames(
-                        'text-14 px-2 min-w-0',
+                        'text-14 px-2 min-w-0 normal-case',
                         !stat.liked && 'text-link-soft',
                         stat.liked && 'text-rum-orange',
                       )}
@@ -268,11 +268,11 @@ export const PostList = observer((props: { className?: string }) => {
                       {!!stat.likeCount && (
                         <ThumbUpAlt className="mr-2 text-18" />
                       )}
-                      {stat.likeCount || '赞'}
+                      {stat.likeCount || lang.common.like}
                     </Button>
                     <Button
                       className={classNames(
-                        'text-14 px-2 min-w-0',
+                        'text-14 px-2 min-w-0 normal-case',
                         !stat.disliked && 'text-link-soft',
                         stat.disliked && 'text-rum-orange',
                       )}
@@ -286,7 +286,7 @@ export const PostList = observer((props: { className?: string }) => {
                       {!!stat.dislikeCount && (
                         <ThumbDownAlt className="mr-2 text-18" />
                       )}
-                      {stat.dislikeCount || '踩'}
+                      {stat.dislikeCount || lang.common.dislike}
                     </Button>
                     <Button
                       className="text-link-soft text-14 px-2 min-w-0"
@@ -295,7 +295,7 @@ export const PostList = observer((props: { className?: string }) => {
                       onClick={() => handleOpenPost(v, true)}
                     >
                       <CommentDetailIcon className="mr-2 -mb-px text-18" />
-                      {stat.commentCount || (isPC ? '我来写第一个评论' : '评论')}
+                      {stat.commentCount || (isPC ? lang.comment.writeAComment : lang.comment.comment)}
                     </Button>
                   </div>
                   {isPC && statusAndTime}
@@ -318,15 +318,15 @@ export const PostList = observer((props: { className?: string }) => {
                 variant="text"
                 onClick={() => state.loadPosts(true)}
               >
-                加载更多
+                {lang.common.loadMore}
                 <ExpandMore />
               </Button>
             )}
             {state.done && (
               <span className="text-white/60 text-14">
-                {!state.trxIds.length && state.mode.type !== 'search' && '暂无帖子'}
-                {state.trxIds.length > 10 && state.mode.type !== 'search' && '没有啦'}
-                {!state.trxIds.length && state.mode.type === 'search' && '没有找到搜索结果'}
+                {!state.trxIds.length && state.mode.type !== 'search' && lang.postlist.emptyTip}
+                {state.trxIds.length > 10 && state.mode.type !== 'search' && lang.common.noMore}
+                {!state.trxIds.length && state.mode.type === 'search' && lang.postlist.noSearchResult}
               </span>
             )}
           </div>

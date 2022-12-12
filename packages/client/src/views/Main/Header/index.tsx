@@ -2,9 +2,12 @@ import React, { useRef, useMemo } from 'react';
 import { useLocation, useParams, Link, matchPath } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
+import type { GroupStatus } from 'nft-bbs-server';
 import { observer, useLocalObservable } from 'mobx-react-lite';
+import { utils } from 'quorum-light-node-sdk';
 import {
   AdminPanelSettings,
+  Check,
   Close, Logout, MoreVert, NotificationsNone,
   PersonOutline, Search,
 } from '@mui/icons-material';
@@ -16,18 +19,16 @@ import {
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
 import EditAltIcon from 'boxicons/svg/regular/bx-edit-alt.svg?fill-icon';
 import NFTIcon from '~/assets/icons/icon-nft.svg?fill-icon';
-// import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
-import { routeUrlPatterns, ThemeLight, usePageState, useWiderThan } from '~/utils';
+import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
+import { lang, routeUrlPatterns, ThemeLight, usePageState, useWiderThan } from '~/utils';
 import {
   nodeService, keyService, dialogService,
-  routerService, loginStateService, nftService,
+  routerService, loginStateService, nftService, langService, langName, AllLanguages,
 } from '~/service';
 import { editProfile } from '~/modals';
 import { GroupAvatar, GroupCard, NFTSideBox, SiteLogo, UserAvatar } from '~/components';
 
 import { createPostlistState } from '../PostList';
-import { utils } from 'quorum-light-node-sdk';
-import { GroupStatus } from 'nft-bbs-server';
 
 export const Header = observer((props: { className?: string }) => {
   const routeParams = useParams();
@@ -151,7 +152,7 @@ export const Header = observer((props: { className?: string }) => {
     state.menu = false;
     if (keyService.state.keys?.type === 'keystore') {
       dialogService.open({
-        title: '账号信息',
+        title: lang.header.accountInfo,
         content: (
           <div className="flex-col gap-y-4 py-2 w-[400px]">
             <FormControl size="small">
@@ -237,6 +238,16 @@ export const Header = observer((props: { className?: string }) => {
     state.menu = false;
   });
 
+  const handleOpenLanguageMenu = action(() => {
+    state.menu = false;
+    state.langMenu = true;
+  });
+
+  const handleChangeLanguage = action((lang: AllLanguages) => {
+    langService.switchLang(lang);
+    state.langMenu = false;
+  });
+
   const notificationLink = useMemo(() => {
     const match = matchPath(routeUrlPatterns.notification, routeLocation.pathname);
     return match
@@ -287,7 +298,7 @@ export const Header = observer((props: { className?: string }) => {
                   value={postlistState.header.tab}
                   TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
                 >
-                  {['最新', '最热'].map((v, i) => (
+                  {[lang.postlist.latest, lang.postlist.hotest].map((v, i) => (
                     <Tab
                       className="text-gray-9c text-20 h-[60px] px-8"
                       classes={{ selected: '!text-rum-orange' }}
@@ -299,7 +310,12 @@ export const Header = observer((props: { className?: string }) => {
                 </Tabs>
                 {postlistState.header.tab === 1 && (
                   <div className="flex flex-center gap-x-2">
-                    {([['周', 'week'], ['月', 'month'], ['年', 'year'], ['一直', 'all']] as const).map(([t, v], i) => (
+                    {([
+                      [lang.postlist.week, 'week'],
+                      [lang.postlist.month, 'month'],
+                      [lang.postlist.year, 'year'],
+                      [lang.postlist.all, 'all'],
+                    ] as const).map(([t, v], i) => (
                       <Button
                         className={classNames(
                           'min-w-0 px-4',
@@ -331,7 +347,7 @@ export const Header = observer((props: { className?: string }) => {
                     '& .MuiInput-input::placeholder': { color: '#9c9c9c', opacity: 1 },
                   }}
                   startAdornment={<Search className="text-gray-9c mr-1 text-26" />}
-                  placeholder="搜索种子网络…"
+                  placeholder={lang.postlist.searchPlaceholder}
                   value={postlistState.header.searchTerm}
                   onChange={(action((e) => { postlistState.header.searchTerm = e.target.value; }))}
                   onKeyDown={handleSearchInputKeydown}
@@ -390,7 +406,7 @@ export const Header = observer((props: { className?: string }) => {
                 color="rum"
                 onClick={() => handleBackToLogin(true)}
               >
-                登录
+                {lang.header.login}
               </Button>
             )}
             <div
@@ -404,7 +420,7 @@ export const Header = observer((props: { className?: string }) => {
             >
               <UserAvatar profile={nodeService.state.myProfile} />
               <span className="text-white">
-                {nodeService.state.logined ? nodeService.state.profileName : '游客'}
+                {nodeService.state.logined ? nodeService.state.profileName : lang.header.anonymous}
               </span>
             </div>
             <IconButton
@@ -485,7 +501,7 @@ export const Header = observer((props: { className?: string }) => {
                 color="rum"
                 onClick={() => handleBackToLogin(true)}
               >
-                登录
+                {lang.header.login}
               </Button>
             )}
             {nodeService.state.logined && (
@@ -515,7 +531,11 @@ export const Header = observer((props: { className?: string }) => {
                 value={computedMobileTab}
                 TabIndicatorProps={{ className: '!bg-rum-orange h-[3px]' }}
               >
-                {['最新', '最热', postlistState.mode.type === 'search' ? '搜索' : ''].filter((v) => v).map((v, i) => (
+                {[
+                  lang.postlist.latest,
+                  lang.postlist.hotest,
+                  postlistState.mode.type === 'search' ? lang.postlist.search : '',
+                ].filter((v) => v).map((v, i) => (
                   <Tab
                     className="text-gray-9c text-20 h-[60px] px-8 !min-w-0 !px-6"
                     classes={{ selected: '!text-rum-orange' }}
@@ -527,7 +547,12 @@ export const Header = observer((props: { className?: string }) => {
               </Tabs>
               {computedMobileTab === 1 && (
                 <div className="flex items-stretch gap-x-0">
-                  {([['周', 'week'], ['月', 'month'], ['年', 'year'], ['一直', 'all']] as const).map(([t, v], i) => (
+                  {([
+                    [lang.postlist.week, 'week'],
+                    [lang.postlist.month, 'month'],
+                    [lang.postlist.year, 'year'],
+                    [lang.postlist.all, 'all'],
+                  ] as const).map(([t, v], i) => (
                     <Button
                       className={classNames(
                         'min-w-0 px-3',
@@ -590,7 +615,7 @@ export const Header = observer((props: { className?: string }) => {
                 inputRef={mobileSearchInput}
                 value={postlistState.header.searchTerm}
                 onChange={(action((e) => { postlistState.header.searchTerm = e.target.value; }))}
-                placeholder="搜索种子网络…"
+                placeholder={lang.postlist.searchPlaceholder}
                 multiline
                 maxRows={5}
                 onKeyDown={handleSearchInputKeydown}
@@ -645,14 +670,14 @@ export const Header = observer((props: { className?: string }) => {
             color="link"
             onClick={handleOpenUserProfile}
           >
-            我的发布
+            {lang.header.myPosts}
           </Button>
 
           {!!loginedPorts.length && (
             <div className="mt-4 w-full -mb-2">
               <Divider />
               <div className="text-center text-12 text-gray-9c mt-3 pb-2">
-                我可以去的论坛
+                {lang.portList.joinedPorts}
               </div>
               {loginedPorts.map((v) => (
                 <MenuItem
@@ -685,7 +710,7 @@ export const Header = observer((props: { className?: string }) => {
             variant="text"
             onClick={() => handleBackToLogin(true)}
           >
-            退出登录
+            {lang.header.logout}
           </Button>
         </div>
       </Popover>
@@ -699,19 +724,6 @@ export const Header = observer((props: { className?: string }) => {
         transformOrigin={{ horizontal: 'center', vertical: 'top' }}
         disableScrollLock
       >
-        {/* <MenuItem onClick={action(() => { state.menu = false; state.langMenu = true; })}>
-          <div className="flex gap-x-3 mr-2">
-            <LanguageIcon className="text-black text-20" />
-            <div className="flex-col gap-y-[2px]">
-              <div className="text-14">
-                Language
-              </div>
-              <div className="text-12 text-gray-9c">
-                {langService.state.langName}
-              </div>
-            </div>
-          </div>
-        </MenuItem> */}
         {[
           keyService.state.keys?.type === 'keystore' && {
             content: (
@@ -719,16 +731,32 @@ export const Header = observer((props: { className?: string }) => {
                 <div className="flex flex-center w-5">
                   <PersonOutline className="text-22 text-blue-500/90" />
                 </div>
-                我的账号信息
+                {lang.header.myAccountInfo}
               </div>
             ),
             onClick: handleShowAccountInfo,
+          },
+          {
+            content: (
+              <div className="flex items-center gap-x-2 mr-2">
+                <div className="flex flex-center w-5">
+                  <LanguageIcon className="text-black text-24" />
+                </div>
+                <span>
+                  Language
+                  <span className="text-gray-9c text-12 ml-4">
+                    {langService.state.langName}
+                  </span>
+                </span>
+              </div>
+            ),
+            onClick: handleOpenLanguageMenu,
           },
           state.isAdmin && {
             content: (
               <div className="flex gap-x-2 mr-2">
                 <div className="flex flex-center w-5">
-                  <AdminPanelSettings className="text-22 text-red-500/90" />
+                  <AdminPanelSettings className="text-22" />
                 </div>
                 管理后台
               </div>
@@ -741,7 +769,7 @@ export const Header = observer((props: { className?: string }) => {
                 <div className="flex flex-center w-5">
                   <NFTIcon className="text-22 text-black" />
                 </div>
-                申请 NFT
+                {lang.nftBox.request}
               </div>
             ),
             onClick: handleNftRequest,
@@ -753,7 +781,7 @@ export const Header = observer((props: { className?: string }) => {
                   <Logout className="text-22 text-amber-500/90" />
                 </div>
                 <span className="text-rum-orange">
-                  退出当前论坛
+                  {lang.header.exitCurrentPort}
                 </span>
               </div>
             ),
@@ -771,7 +799,7 @@ export const Header = observer((props: { className?: string }) => {
         ].filter((v) => v))}
       </Menu>
 
-      {/* <Menu
+      <Menu
         className="mt-1"
         open={state.langMenu}
         anchorEl={menuButton.current}
@@ -796,7 +824,7 @@ export const Header = observer((props: { className?: string }) => {
           </div>
           {langName['zh-cn']}
         </MenuItem>
-      </Menu> */}
+      </Menu>
     </ThemeLight>
   </>);
 });

@@ -2,11 +2,11 @@ import { Button } from '@mui/material';
 import classNames from 'classnames';
 import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import { GroupStatus } from 'nft-bbs-server';
+import type { GroupStatus } from 'nft-bbs-server';
 import { utils } from 'quorum-light-node-sdk';
 import { GroupAvatar } from '~/components';
 import { loginStateService, nodeService } from '~/service';
-import { ThemeLight } from '~/utils';
+import { lang, ThemeLight } from '~/utils';
 
 interface Props {
   className?: string
@@ -47,7 +47,7 @@ export const PortList = observer((props: Props) => {
         )}
       >
         <div className="text-center text-dark-blue my-2">
-          我可以去的论坛
+          {lang.portList.joinedPorts}
         </div>
         <div className="flex-col">
           {loginedPorts.map((v) => (
@@ -98,7 +98,7 @@ export const PortList = observer((props: Props) => {
                   {utils.restoreSeedFromUrl(v.mainSeedUrl).group_name}
                 </div>
                 <div className="text-gray-9c text-14">
-                  登录/注册 {'>'}
+                  {lang.portList.loginOrSignup}
                 </div>
               </div>
             </Button>
@@ -110,8 +110,8 @@ export const PortList = observer((props: Props) => {
               variant="text"
               onClick={action(() => { state.expand = !state.expand; })}
             >
-              {!state.expand && '查看全部'}
-              {state.expand && '收起未登录论坛'}
+              {!state.expand && lang.portList.expand}
+              {state.expand && lang.portList.shrink}
             </Button>
           )}
         </div>

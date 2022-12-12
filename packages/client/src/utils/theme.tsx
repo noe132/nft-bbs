@@ -45,6 +45,11 @@ const themeOption: ThemeOptions = {
   },
   components: {
     MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+        },
+      },
       defaultProps: {
         variant: 'contained',
         disableElevation: true,

@@ -9,7 +9,7 @@ import {
 import ExpandIcon from 'boxicons/svg/regular/bx-expand-alt.svg?fill-icon';
 import CollapseIcon from 'boxicons/svg/regular/bx-collapse-alt.svg?fill-icon';
 
-import { runLoading, ThemeLight, useWiderThan } from '~/utils';
+import { lang, runLoading, ThemeLight, useWiderThan } from '~/utils';
 import { keyService, nftService, nodeService, snackbarService } from '~/service';
 import { NftRequestApi } from '~/apis';
 import { NFTIcon } from './NFTIcon';
@@ -49,7 +49,7 @@ export const NFTSideBox = observer((props: Props) => {
 
   const handleSubmitNftRequest = async () => {
     if (!nftService.state.requestDialog.memo) {
-      snackbarService.show('请输入申请理由');
+      snackbarService.show(lang.nftBox.requestTip);
       return;
     }
     await runLoading(
@@ -60,7 +60,7 @@ export const NFTSideBox = observer((props: Props) => {
           groupId: nodeService.state.groupId,
           memo: nftService.state.requestDialog.memo,
         });
-        snackbarService.show('提交成功');
+        snackbarService.show(lang.nftBox.requestSuccess);
         runInAction(() => {
           nftService.state.requestDialog.open = false;
         });
@@ -140,7 +140,7 @@ export const NFTSideBox = observer((props: Props) => {
 
               {state.expand && !nftService.state.hasNFT && (
                 <div className="text-gray-9c text-center text-12">
-                  当前没有持有任何 NFT
+                  {lang.nftBox.noNFT}
                 </div>
               )}
 
@@ -196,7 +196,7 @@ export const NFTSideBox = observer((props: Props) => {
                   variant="text"
                   onClick={handleApplyNFT}
                 >
-                  申请该论坛 NFT
+                  {lang.nftBox.requestTitle}
                 </Button>
               </div>
             )}
@@ -214,13 +214,13 @@ export const NFTSideBox = observer((props: Props) => {
         open={nftService.state.requestDialog.open}
         onClose={action(() => { nftService.state.requestDialog.open = false; })}
       >
-        <DialogTitle>申请该论坛 NFT</DialogTitle>
+        <DialogTitle>{lang.nftBox.requestTitle}</DialogTitle>
         <DialogContent className="overflow-visible">
           <TextField
             className="w-full"
             minRows={4}
             maxRows={6}
-            label="申请理由"
+            label={lang.nftBox.reason}
             multiline
             value={nftService.state.requestDialog.memo}
             onChange={action((e) => { nftService.state.requestDialog.memo = e.target.value; })}
@@ -233,14 +233,14 @@ export const NFTSideBox = observer((props: Props) => {
             variant="outlined"
             onClick={action(() => { nftService.state.requestDialog.open = false; })}
           >
-            取消
+            {lang.common.cancel}
           </Button>
           <Button
             color="link"
             variant="outlined"
             onClick={handleSubmitNftRequest}
           >
-            提交
+            {lang.common.submit}
           </Button>
         </DialogActions>
       </Dialog>

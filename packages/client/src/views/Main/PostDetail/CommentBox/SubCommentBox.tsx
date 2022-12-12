@@ -5,7 +5,7 @@ import scrollIntoView from 'scroll-into-view-if-needed';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import type { Comment } from 'nft-bbs-server';
 import { Pagination } from '@mui/material';
-import { sleep, useWiderThan } from '~/utils';
+import { lang, sleep, useWiderThan } from '~/utils';
 
 import { commentContext } from './context';
 import { CommentItem } from './CommentItem';
@@ -112,7 +112,7 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
             count={state.totalPages}
           />
           <span className="text-white/35 text-14">
-            共 {state.comments.length} 条回复
+            {lang.comment.replyCount(state.comments.length)}
           </span>
         </div>
       )}

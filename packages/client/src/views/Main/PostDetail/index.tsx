@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import { action, reaction, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import scrollIntoView from 'scroll-into-view-if-needed';
-import { Comment, Profile } from 'nft-bbs-server';
+import type { Comment, Profile } from 'nft-bbs-server';
 import { Button, CircularProgress, ClickAwayListener, Fade, IconButton, InputBase, Portal, Tooltip } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
@@ -13,7 +13,7 @@ import CommentMinusIcon from 'boxicons/svg/regular/bx-comment-minus.svg?fill-ico
 
 import { BackButton, Scrollable, ScrollToTopButton, UserAvatar, UserCard } from '~/components';
 import { nftService, nodeService, routerService, snackbarService } from '~/service';
-import { runLoading, usePageState, useWiderThan } from '~/utils';
+import { lang, runLoading, usePageState, useWiderThan } from '~/utils';
 
 import { PostDetailBox } from './PostDetailBox';
 import { CommentBox } from './CommentBox';
@@ -154,11 +154,11 @@ export const PostDetail = observer((props: { className?: string }) => {
       ? state.commentInput
       : state.replyTo.content;
     if (!content) {
-      snackbarService.show('请输入评论');
+      snackbarService.show(lang.comment.emptyCommentTip);
       return;
     }
     if (content.length > COMMENT_LENGTH_LIMIT) {
-      snackbarService.show(`请输入少于${COMMENT_LENGTH_LIMIT}字`);
+      snackbarService.show(lang.comment.maxLengthTip(COMMENT_LENGTH_LIMIT));
       return;
     }
     const comment = await runLoading(
@@ -260,14 +260,13 @@ export const PostDetail = observer((props: { className?: string }) => {
     return (
       <div className="flex justify-center">
         <div className="flex-col items-start w-[800px] bg-black/80 text-white p-8">
-          404 帖子不存在
-
+          {lang.post.notFound}
           <Button
             className="mt-4 text-white"
             variant="outlined"
             onClick={() => routerService.navigate({ page: 'postlist' })}
           >
-            返回首页
+            {lang.post.backToPostList}
           </Button>
         </div>
       </div>
@@ -315,7 +314,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                   !nftService.state.permissionMap.comment && 'bg-white/20 cursor-not-allowed',
                 )}
                 classes={{ focused: 'outline outline-rum-orange -outline-offset-2' }}
-                placeholder={nftService.permissionTip('comment') || '在这里写下你的评论…'}
+                placeholder={nftService.permissionTip('comment') || lang.comment.commentInputPlaceholder}
                 value={state.commentInput}
                 onChange={action((e) => { state.commentInput = e.target.value; })}
                 disabled={!nftService.state.permissionMap.comment}
@@ -337,7 +336,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                     disabled={!nftService.state.permissionMap.comment}
                     loading={state.commentPosting}
                   >
-                    发布评论
+                    {lang.comment.postComment}
                   </LoadingButton>
                 </div>
               </Tooltip>
@@ -368,7 +367,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                 )}
                 onClick={action(() => { state.commentSort = 'latest'; })}
               >
-                最新在前
+                {lang.comment.sortByLatest}
               </button>
               <span className="text-gray-70 mx-2">
                 |
@@ -380,12 +379,12 @@ export const PostDetail = observer((props: { className?: string }) => {
                 )}
                 onClick={action(() => { state.commentSort = 'oldest'; })}
               >
-                最早在前
+                {lang.comment.sortByOldest}
               </button>
             </div>
             <div className="flex flex-center text-white text-14">
               <CommentMinusIcon className="mr-2 -mb-[3px] text-20" />
-              {state.commentTrxIds.length} 条评论
+              {lang.comment.commentCount(state.commentTrxIds.length)}
             </div>
           </div>
 
@@ -404,7 +403,7 @@ export const PostDetail = observer((props: { className?: string }) => {
               )}
               {!state.commentLoading && !state.sortedCommentTree.length && (
                 <div className="flex flex-center text-white/80 text-14 py-6 pb-4">
-                  暂无评论
+                  {lang.comment.noComment}
                 </div>
               )}
               {!!state.sortedCommentTree.length && (
@@ -445,7 +444,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                 )}
               >
                 <div className="text-white text-14">
-                  正在回复{' '}
+                  {lang.comment.replyingTo}{' '}
                   <span className="text-rum-orange">
                     @{state.replyToProfile.name || state.replyToProfile.userAddress.slice(0, 10)}
                   </span>
@@ -484,7 +483,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                     onClick={action(() => { state.replyTo.content = ''; })}
                     disabled={state.commentPosting}
                   >
-                    清除文本
+                    {lang.comment.clearText}
                   </Button>
                   <LoadingButton
                     className=" py-1"
@@ -494,7 +493,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                     onClick={() => handlePostComment('reply')}
                     loading={state.commentPosting}
                   >
-                    发表回复
+                    {lang.comment.submit}
                   </LoadingButton>
                 </div>
               </div>
@@ -530,7 +529,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                 value={state.commentInput}
                 onChange={action((e) => { state.commentInput = e.target.value; })}
                 disabled={!nftService.state.permissionMap.comment}
-                placeholder={nftService.permissionTip('comment') || '在这里写下你的评论…'}
+                placeholder={nftService.permissionTip('comment') || lang.comment.commentInputPlaceholder}
                 multiline
                 maxRows={5}
                 onFocus={action(() => { state.commentInputFocused = true; })}
@@ -574,7 +573,7 @@ export const PostDetail = observer((props: { className?: string }) => {
               )}
             >
               <div className="text-white text-14">
-                正在回复{' '}
+                {lang.comment.replyingTo}{' '}
                 <span className="text-rum-orange">
                   @{state.replyToProfile.name || state.replyToProfile.userAddress.slice(0, 10)}
                 </span>
@@ -605,7 +604,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                   onClick={action(() => { state.replyTo.content = ''; })}
                   disabled={state.commentPosting}
                 >
-                  清除文本
+                  {lang.comment.clearText}
                 </Button>
                 <LoadingButton
                   className=" py-1"
@@ -615,7 +614,7 @@ export const PostDetail = observer((props: { className?: string }) => {
                   onClick={() => handlePostComment('reply')}
                   loading={state.commentPosting}
                 >
-                  发表回复
+                  {lang.comment.submit}
                 </LoadingButton>
               </div>
             </div>

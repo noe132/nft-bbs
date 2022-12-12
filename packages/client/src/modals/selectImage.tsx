@@ -3,7 +3,7 @@ import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { Close } from '@mui/icons-material';
 import { Button, Dialog, IconButton } from '@mui/material';
-import { createPromise, ThemeLight } from '~/utils';
+import { createPromise, lang, ThemeLight } from '~/utils';
 import { modalViewState } from './helper/modalViewState';
 import { imageLib } from './imageLib';
 
@@ -69,7 +69,7 @@ const A = observer((props: { rs: (file: Blob) => unknown }) => {
     <input type="file" accept="image/*" hidden ref={fileInput} onChange={handleFileChange} />
     <div className="flex-col items-center p-8 gap-y-4">
       <div className="text-18 font-medium mb-4">
-        插入图像
+        {lang.selectImage.title}
       </div>
       <Button
         className="w-40"
@@ -77,7 +77,7 @@ const A = observer((props: { rs: (file: Blob) => unknown }) => {
         variant="outlined"
         onClick={() => fileInput.current?.click()}
       >
-        选择图片
+        {lang.selectImage.selectImage}
       </Button>
       <Button
         className="w-40"
@@ -85,7 +85,7 @@ const A = observer((props: { rs: (file: Blob) => unknown }) => {
         variant="outlined"
         onClick={handleOpenPixabay}
       >
-        从图库选择
+        {lang.selectImage.selectFromImageLib}
       </Button>
     </div>
   </>);

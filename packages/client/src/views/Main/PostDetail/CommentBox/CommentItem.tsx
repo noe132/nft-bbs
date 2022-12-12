@@ -13,7 +13,7 @@ import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 import { UserAvatar } from '~/components';
 import { imageZoomService, nftService, nodeService, snackbarService } from '~/service';
 import { showTrxDetail } from '~/modals';
-import { ago, runLoading, useWiderThan } from '~/utils';
+import { ago, lang, runLoading, useWiderThan } from '~/utils';
 import { commentContext } from './context';
 
 interface CommentItemProps {
@@ -74,7 +74,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
 
   const handleReply = () => {
     if (!state.synced) {
-      snackbarService.show('请等待回复同步完成');
+      snackbarService.show(lang.comment.waitForSync);
       return;
     }
     context.onReply(state.comment);
@@ -139,7 +139,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
         <Tooltip title={nftService.permissionTip('counter')}>
           <Button
             className={classNames(
-              'min-w-0 px-2 text-14',
+              'min-w-0 px-2 text-14 normal-case',
               !nftService.state.permissionMap.counter && '!text-gray-9c',
               !state.commentStat.liked && 'text-link-soft',
               state.commentStat.liked && 'text-rum-orange',
@@ -154,7 +154,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
             {!!state.commentStat.likeCount && (
               <ThumbUpAlt className="mr-2 text-18" />
             )}
-            {state.commentStat.likeCount || '赞'}
+            {state.commentStat.likeCount || lang.common.like}
           </Button>
         </Tooltip>
       )}
@@ -162,7 +162,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
         <Tooltip title={nftService.permissionTip('comment')}>
           <Button
             className={classNames(
-              'text-link-soft text-14 font-normal',
+              'text-link-soft text-14 font-normal normal-case',
               !nftService.state.permissionMap.comment && '!text-gray-9c',
             )}
             variant="text"
@@ -171,7 +171,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
             onClick={handleReply}
           >
             <ReplyIcon className="mr-1 -mt-[2px] text-24" />
-            回复
+            {lang.comment.reply}
           </Button>
         </Tooltip>
       )}
@@ -215,7 +215,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
                 className="text-12 text-white/40 mr-4 cursor-pointer"
                 onClick={() => props.onJumpToReply?.(state.comment.replyId)}
               >
-                回复 {state.replyTo}
+                {lang.comment.replyTo} {state.replyTo}
               </span>
             )}
 
@@ -223,7 +223,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
               className="text-12 text-white/35"
               onClick={() => state.synced && showTrxDetail(state.comment.trxId, 'comment')}
             >
-              {state.synced ? '已同步' : '同步中'}
+              {state.synced ? lang.common.synced : lang.common.sycing}
             </button>
           </div>
         </div>

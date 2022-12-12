@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import { action, observable } from 'mobx';
+import { lang } from '~/utils';
 import type {
   SnackbarItemData,
   SnackbarItemParam,
@@ -50,7 +51,7 @@ const networkError = (err: string | AxiosError<any> | Error, p2?: SnackbarItemPa
   }
   const params = {
     ...p2,
-    content: `网络请求错误 (${message})`,
+    content: `${lang.common.networkError} (${message})`,
   };
   const item = formatParams('error', params);
   item.urgent = true;

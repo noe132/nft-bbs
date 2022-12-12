@@ -12,7 +12,7 @@ import {
 import HeadingIcon from 'boxicons/svg/regular/bx-heading.svg?fill-icon';
 import EditIcon from 'boxicons/svg/regular/bx-edit.svg?fill-icon';
 
-import { compressImage, renderPostMarkdown, runLoading, SCHEMA_PREFIX, useWiderThan } from '~/utils';
+import { compressImage, lang, renderPostMarkdown, runLoading, SCHEMA_PREFIX, useWiderThan } from '~/utils';
 import { BackButton, UserAvatar, GroupCard, NFTSideBox, Scrollable } from '~/components';
 import { nftService, nodeService, routerService, snackbarService } from '~/service';
 import { selectImage } from '~/modals';
@@ -93,7 +93,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
         for (const img of images) {
           const res = await nodeService.post.postImage(img.img, img.mimeType);
           if (!res) {
-            snackbarService.error('帖子发布失败。（图片上传失败）');
+            snackbarService.error(lang.newPost.imageUploadFailed);
             return;
           }
           img.trxId = res.trx_id;
@@ -116,14 +116,14 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
             nodeService.state.post.imageCache.set(v.trxId, url);
           });
         });
-        snackbarService.show(state.postToEdit ? '编辑成功' : '发布成功');
+        snackbarService.show(state.postToEdit ? lang.newPost.editSuccess : lang.newPost.submitSuccess);
         routerService.navigate({ page: 'postlist' });
       },
     );
   };
 
   useEffect(() => {
-    nodeService.group.setDocumentTitle('新帖子');
+    nodeService.group.setDocumentTitle(lang.newPost.pageTitle);
     // const content = state.postToEdit?.content ?? '';
     const content = '';
     runInAction(() => {
@@ -135,7 +135,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
       mode: 'markdown',
       theme: 'lucario',
       indentUnit: 2,
-      placeholder: '支持 Markdown 语法',
+      placeholder: lang.newPost.postInputPlaceholder,
       lineWrapping: true,
       extraKeys: {
         'Enter': 'newlineAndIndentContinueMarkdownList',
@@ -220,7 +220,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
         )}
         <div className="flex justify-between text-white">
           <div className="text-18">
-            {state.postToEdit ? '编辑帖子' : '发布新帖'}
+            {state.postToEdit ? lang.newPost.edit : lang.newPost.new}
 
           </div>
           <div className="flex flex-center gap-x-2">
@@ -232,7 +232,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
         <OutlinedInput
           className="mt-5"
           color="light"
-          placeholder="在这里输入标题"
+          placeholder={lang.newPost.postTitleInputPlaceholder}
           error={state.titleLength > 100}
           value={state.title}
           onChange={action((e) => { state.title = e.target.value; })}
@@ -272,7 +272,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
               >
                 {!state.preview && <Visibility className="text-20 mr-2 -mt-px" />}
                 {state.preview && <VisibilityOff className="text-20 mr-2 -mt-px" />}
-                {isPC && (state.preview ? '取消预览' : '预览')}
+                {isPC && (state.preview ? lang.newPost.cancelPreview : lang.newPost.preview)}
               </Button>
             </div>
           </div>
@@ -300,7 +300,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
             >
               {!state.preview && <Visibility className="text-20 mr-2 -mt-px" />}
               {state.preview && <VisibilityOff className="text-20 mr-2 -mt-px" />}
-              {state.preview ? '取消预览' : '预览'}
+              {state.preview ? lang.newPost.cancelPreview : lang.newPost.preview}
             </Button>
           </div>
         )}
@@ -344,7 +344,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
                 loadingPosition="start"
                 startIcon={<EditIcon className="text-22" />}
               >
-                {state.postToEdit ? '提交修改' : '立即发布'}
+                {state.postToEdit ? lang.newPost.submitEdit : lang.newPost.submit}
               </LoadingButton>
             </div>
           </Tooltip>

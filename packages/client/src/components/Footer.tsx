@@ -1,5 +1,6 @@
 import classNames from 'classnames';
 import RumsystemLogo from '~/assets/icons/rumsystem.svg?fill-icon';
+import { lang } from '~/utils';
 
 interface Props {
   className?: string
@@ -17,8 +18,8 @@ export const Footer = (props: Props) => (
     <span className="px-2 mb:hidden">·</span>
     <div className="flex flex-center gap-x-12 text-14">
       {[
-        ['https://rumsystem.net/', '关于'],
-        ['https://guide.rumsystem.net/zen-yang-chuang-jian-port-lun-tan', '怎样创建 Port 论坛？'],
+        ['https://rumsystem.net/', lang.footer.about],
+        ['https://guide.rumsystem.net/zen-yang-chuang-jian-port-lun-tan', lang.footer.howto],
       ].map((v, i) => (
         <a
           className="text-white"

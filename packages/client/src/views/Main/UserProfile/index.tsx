@@ -15,7 +15,7 @@ import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { ScrollToTopButton, BackButton, UserAvatar, UserCard, NFTIcon, Scrollable } from '~/components';
 import { imageZoomService, keyService, nftService, nodeService, routerService } from '~/service';
-import { ago, runLoading, ThemeLight, usePageState, useWiderThan } from '~/utils';
+import { ago, lang, runLoading, ThemeLight, usePageState, useWiderThan } from '~/utils';
 import { editProfile } from '~/modals';
 import { PortList } from './PortList';
 
@@ -206,8 +206,7 @@ export const UserProfile = observer((props: { className?: string }) => {
           !state.selfProfile && 'text-gray-9c',
         )}
       >
-        {state.selfProfile ? '我' : 'Ta'}
-        持有的 NFT
+        {lang.profile.heldedNFTs(state.selfProfile)}
       </div>
 
       <div className="flex flex-center flex-wrap gap-4 mt-4">
@@ -244,13 +243,13 @@ export const UserProfile = observer((props: { className?: string }) => {
               disableFocusListener
               disableHoverListener
               disableTouchListener
-              title="功能开发中"
+              title={lang.common.underDev}
             >
               <button
                 className="text-link text-14"
                 onClick={action(() => { state.nftTradeTooltip = true; })}
               >
-                NFT 交易或转让
+                {lang.profile.nftTransfer}
               </button>
             </Tooltip>
           </ClickAwayListener>
@@ -299,7 +298,7 @@ export const UserProfile = observer((props: { className?: string }) => {
               })}
             >
               <EditIcon className="text-18 -mt-px mr-1" />
-              修改身份资料
+              {lang.profile.editProfile}
             </Button>
           )}
           <div className="flex gap-x-4 p-5">
@@ -351,9 +350,9 @@ export const UserProfile = observer((props: { className?: string }) => {
                 !isPC && 'ml-0',
               )}
             >
-              {!!state.fistPostTime && `加入于 ${format(state.fistPostTime, 'yyyy-MM')}`}
+              {!!state.fistPostTime && lang.profile.joinAt(format(state.fistPostTime, 'yyyy-MM'))}
               {!!state.fistPostTime && ' · '}
-              共发表 {state.totalPosts} 帖
+              {lang.profile.postCount(state.totalPosts)}
             </div>
           </div>
         </div>
@@ -373,7 +372,7 @@ export const UserProfile = observer((props: { className?: string }) => {
           {!state.profileLoading && (<>
             {!state.posts.length && !state.postLoading && (
               <div className="flex flex-center text-white/70 text-14">
-                Ta还没有发布过帖子
+                {lang.profile.noPostYet}
               </div>
             )}
             {state.posts.map((v) => {
@@ -389,10 +388,10 @@ export const UserProfile = observer((props: { className?: string }) => {
                       to={routerService.getPath({ page: 'postdetail', trxId: v.trxId })}
                       onClick={(e) => e.preventDefault()}
                     >
-                      {stat.title || '无标题'}
+                      {stat.title || lang.common.untitled}
                     </Link>
                     <div className="text-blue-gray text-14 truncate-2 mt-2">
-                      {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]'))}
+                      {RemoveMarkdown(stat.content.replaceAll(/!\[.*?\]\(.+?\)/g, lang.common.imagePlaceholder))}
                     </div>
                   </div>
 
@@ -406,7 +405,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                     >
                       <Button
                         className={classNames(
-                          'text-14 min-w-0 px-2',
+                          'text-14 min-w-0 px-2 normal-case',
                           !stat.liked && 'text-link-soft',
                           stat.liked && 'text-rum-orange',
                         )}
@@ -420,11 +419,11 @@ export const UserProfile = observer((props: { className?: string }) => {
                         {!!stat.likeCount && (
                           <ThumbUpAlt className="mr-2 text-18" />
                         )}
-                        {stat.likeCount || '赞'}
+                        {stat.likeCount || lang.common.like}
                       </Button>
                       <Button
                         className={classNames(
-                          'text-14 min-w-0 px-2',
+                          'text-14 min-w-0 px-2 normal-case',
                           !stat.disliked && 'text-link-soft',
                           stat.disliked && 'text-rum-orange',
                         )}
@@ -438,16 +437,16 @@ export const UserProfile = observer((props: { className?: string }) => {
                         {!!stat.dislikeCount && (
                           <ThumbDownAlt className="mr-2 text-18" />
                         )}
-                        {stat.dislikeCount || '踩'}
+                        {stat.dislikeCount || lang.common.dislike}
                       </Button>
                       <Button
-                        className="text-link-soft text-14 px-2 min-w-0"
+                        className="text-link-soft text-14 px-2 min-w-0s"
                         variant="text"
                         size="small"
                         onClick={() => handleOpenPost(v, true)}
                       >
                         <CommentDetailIcon className="mr-2 -mb-px text-18" />
-                        {v.commentCount || (isPC ? '我来写第一个评论' : '评论')}
+                        {v.commentCount || (isPC ? lang.comment.writeAComment : lang.comment.comment)}
                       </Button>
                     </div>
                     <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
@@ -470,13 +469,13 @@ export const UserProfile = observer((props: { className?: string }) => {
                   variant="text"
                   onClick={() => loadPost()}
                 >
-                  加载更多
+                  {lang.common.loadMore}
                   <ExpandMore />
                 </Button>
               )}
               {state.postDone && state.posts.length > 10 && (
                 <span className="text-white/60 text-14">
-                  没有啦
+                  {lang.common.noMore}
                 </span>
               )}
             </div>

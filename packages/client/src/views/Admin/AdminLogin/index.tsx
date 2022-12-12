@@ -302,7 +302,7 @@ export const AdminLogin = observer(() => {
 
         <Tooltip title="使用 Mixin 账号登录" placement="right">
           <Button
-            className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
+            className="text-rum-orange rounded-full text-16 px-8 py-2"
             color="inherit"
             variant="outlined"
             onClick={handleOpenMixinLogin}
@@ -313,7 +313,7 @@ export const AdminLogin = observer(() => {
 
         <Tooltip title="输入 keystore 和 密码" placement="right">
           <Button
-            className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
+            className="text-rum-orange rounded-full text-16 px-8 py-2"
             color="inherit"
             variant="outlined"
             onClick={handleShowKeystoreDialog}

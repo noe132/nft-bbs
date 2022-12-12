@@ -5,7 +5,7 @@ import { keyService } from '~/service/key';
 import { BigNumber, ethers } from 'ethers';
 import { NFT_CONTRACT } from './contract';
 import { nodeService } from '~/service/node';
-import { runLoading } from '~/utils';
+import { lang, runLoading } from '~/utils';
 import { snackbarService } from '../snackbar';
 
 interface TokenIdMapItem {
@@ -126,13 +126,13 @@ const getNFT = (userAddress: string) => {
 
 const permissionTip = (type: 'main' | 'comment' | 'counter' | 'profile') => {
   const map = {
-    main: '您不持有具备发帖权限的 NFT',
-    comment: '您不持有具备评论权限的 NFT',
-    counter: '您没有评论互动权限',
-    profile: '您没有提交个人资料的权限',
+    main: lang.permission.main,
+    comment: lang.permission.comment,
+    counter: lang.permission.counter,
+    profile: lang.permission.profile,
   };
   if (!nodeService.state.logined) {
-    return '请先登录';
+    return lang.permission.login;
   }
   if (!state.permissionMap[type]) {
     return map[type];

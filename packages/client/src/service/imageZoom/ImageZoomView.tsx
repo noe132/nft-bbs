@@ -7,6 +7,7 @@ import { Close, Fullscreen, RotateRight } from '@mui/icons-material';
 import ZoomInIcon from 'boxicons/svg/regular/bx-zoom-in.svg?fill-icon';
 import ZoomOutIcon from 'boxicons/svg/regular/bx-zoom-out.svg?fill-icon';
 import { imageZoomService } from '.';
+import { lang } from '~/utils';
 
 const ZOOM_RATIO = 1.1;
 
@@ -156,7 +157,9 @@ export const ImageZoomView = observer(() => {
 
   return (
     <Modal
-      BackdropProps={{ className: 'bg-black/80' }}
+      slotProps={{
+        backdrop: { className: 'bg-black/80' },
+      }}
       open={imageZoomService.state.open}
       onClose={handleClose}
       disableScrollLock
@@ -186,31 +189,31 @@ export const ImageZoomView = observer(() => {
                 {
                   className: 'w-10',
                   onClick: handleExpandScreen,
-                  tooltip: '适应图片大小',
+                  tooltip: lang.imageZoom.fitImage,
                   children: <Fullscreen className="text-30" />,
                 },
                 {
                   className: 'w-10',
                   onClick: () => handleZoom(-1),
-                  tooltip: '缩小',
+                  tooltip: lang.imageZoom.shrink,
                   children: <ZoomOutIcon className="text-24" />,
                 },
                 {
                   className: 'w-16',
                   onClick: handleRestore,
-                  tooltip: '恢复图片本身大小',
+                  tooltip: lang.imageZoom.restore,
                   children: `${Math.floor((ZOOM_RATIO ** state.zoom) * 100)}%`,
                 },
                 {
                   className: 'w-10',
                   onClick: () => handleZoom(1),
-                  tooltip: '放大',
+                  tooltip: lang.imageZoom.expand,
                   children: <ZoomInIcon className="text-24" />,
                 },
                 {
                   className: 'w-10',
                   onClick: handleRotate,
-                  tooltip: '向右旋转',
+                  tooltip: lang.imageZoom.rotateRight,
                   children: <RotateRight className="text-24" />,
                 },
               ].map((v, i) => (

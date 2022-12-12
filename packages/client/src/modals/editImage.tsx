@@ -7,7 +7,7 @@ import { Button, Dialog, IconButton, Slider } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import { RiZoomOutLine, RiZoomInLine } from 'react-icons/ri';
 
-import { createPromise, runLoading, ThemeLight, useWiderThan } from '~/utils';
+import { createPromise, lang, runLoading, ThemeLight, useWiderThan } from '~/utils';
 import { modalViewState } from './helper/modalViewState';
 import classNames from 'classnames';
 
@@ -111,7 +111,7 @@ export const EditAvatarView = observer((props: Props) => {
   return (
     <div className="flex-col items-center px-10 mt-2">
       <div className="text-center text-18 pt-8 pb-4 font-bold">
-        移动或缩放图片
+        {lang.editImage.title}
       </div>
       <div className="relative mx-auto w-[200px] h-[200px] mt-2">
         <div
@@ -149,7 +149,7 @@ export const EditAvatarView = observer((props: Props) => {
           variant="text"
           onClick={props.onCancel}
         >
-          取消
+          {lang.common.cancel}
         </Button>
         <LoadingButton
           className="px-5"
@@ -158,7 +158,7 @@ export const EditAvatarView = observer((props: Props) => {
           onClick={handleAvatarSubmit}
           loading={state.loading}
         >
-          确定
+          {lang.common.confirm}
         </LoadingButton>
       </div>
     </div>

@@ -10,6 +10,7 @@ import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { nodeService, routerService } from '~/service';
 import { UserAvatar } from '~/components/UserAvatar';
+import { lang } from '~/utils';
 
 interface Props {
   className?: string
@@ -75,9 +76,9 @@ export const UserCard = observer((props: Props) => {
       </div>
       <div className="border-t border-white/45 mt-4 w-full" />
       <div className="mt-4 text-white text-14">
-        {!!state.fistPostTime && `加入于 ${format(state.fistPostTime, 'yyyy-MM')}`}
+        {!!state.fistPostTime && `${lang.profile.joinAt(format(state.fistPostTime, 'yyyy-MM'))}`}
         {!!state.fistPostTime && ' · '}
-        共发表 {state.totalPosts} 帖
+        {lang.profile.postCount(state.totalPosts)}
       </div>
       {false && (
         <Button

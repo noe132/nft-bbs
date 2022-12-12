@@ -10,7 +10,7 @@ import {
   Button,
 } from '@mui/material';
 import { DialogItem, dialogService } from './index';
-import { ThemeLight } from '~/utils';
+import { lang, ThemeLight } from '~/utils';
 
 export const DialogContainer = observer(() => (
   <ThemeLight>
@@ -66,7 +66,7 @@ const ConfirmDialog = observer((props: { item: DialogItem }) => {
             data-test-id={props.item.cancelTestId}
             onClick={handleClose}
           >
-            {props.item.cancel ?? '取消'}
+            {props.item.cancel ?? lang.common.cancel}
           </Button>
         )}
         <Button
@@ -79,7 +79,7 @@ const ConfirmDialog = observer((props: { item: DialogItem }) => {
           onClick={handleConfirm}
           data-test-id={props.item.confirmTestId}
         >
-          {props.item.confirm ?? '确定'}
+          {props.item.confirm ?? lang.common.confirm}
         </Button>
       </DialogActions>
       <span className="block pb-2" />

@@ -6,7 +6,7 @@ import { Close } from '@mui/icons-material';
 import { Dialog, FormControl, IconButton, InputLabel, OutlinedInput } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
 import CamaraIcon from 'boxicons/svg/regular/bx-camera.svg?fill-icon';
-import { blobToDataUrl, createPromise, runLoading, ThemeLight, useWiderThan } from '~/utils';
+import { blobToDataUrl, createPromise, lang, runLoading, ThemeLight, useWiderThan } from '~/utils';
 import { nftService, nodeService, snackbarService } from '~/service';
 import { UserAvatar } from '~/components';
 
@@ -75,7 +75,6 @@ const EditProfileDialog = observer((props: ModalProps) => {
             avatar={props.avatar}
             name={props.name}
             intro={props.intro}
-            showSkip={props.showSkip}
           />
         </div>
       </Dialog>
@@ -89,7 +88,6 @@ interface Props {
   avatar?: string
   name?: string
   intro?: string
-  showSkip?: boolean
   onSkip?: () => unknown
   onConfirm: () => unknown
 }
@@ -142,7 +140,7 @@ export const EditProfileView = observer((props: Props) => {
           name: state.name,
           avatar,
         });
-        snackbarService.show('修改成功');
+        snackbarService.show(lang.profile.editSuccess);
         props.onConfirm();
       },
     );
@@ -157,7 +155,7 @@ export const EditProfileView = observer((props: Props) => {
       )}
     >
       <div className="text-16 font-medium">
-        编辑身份资料
+        {lang.editProfile.title}
       </div>
       <div
         className="group relative w-20 h-20 cursor-pointer"
@@ -170,9 +168,9 @@ export const EditProfileView = observer((props: Props) => {
       </div>
       <div className="flex-col items-stertch gap-y-4">
         <FormControl size="small">
-          <InputLabel>昵称</InputLabel>
+          <InputLabel>{lang.editProfile.nickname}</InputLabel>
           <OutlinedInput
-            label="昵称"
+            label={lang.editProfile.nickname}
             size="small"
             value={state.name}
             onChange={action((e) => { state.name = e.target.value; })}
@@ -193,11 +191,6 @@ export const EditProfileView = observer((props: Props) => {
           </FormHelperText>
         </FormControl> */}
       </div>
-      {props.showSkip && (
-        <button className="text-gray-9c rounded-full text-14">
-          暂时跳过
-        </button>
-      )}
       <LoadingButton
         className="rounded-full text-16 px-10 py-2"
         color="link"
@@ -205,7 +198,7 @@ export const EditProfileView = observer((props: Props) => {
         loading={state.loading}
         onClick={handleSubmitProfile}
       >
-        确定
+        {lang.common.confirm}
       </LoadingButton>
     </div>
   </>);

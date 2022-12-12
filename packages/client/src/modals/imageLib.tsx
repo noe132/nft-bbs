@@ -4,10 +4,10 @@ import { observer, useLocalObservable } from 'mobx-react-lite';
 import { Close } from '@mui/icons-material';
 import { CircularProgress, Dialog, IconButton, OutlinedInput, Tooltip } from '@mui/material';
 
-import { createPromise, runLoading, sleep, ThemeLight } from '~/utils';
+import { createPromise, lang, runLoading, sleep, ThemeLight } from '~/utils';
 import { PixabayApi } from '~/apis';
-import { modalViewState } from './helper/modalViewState';
 import { Scrollable } from '~/components';
+import { modalViewState } from './helper/modalViewState';
 
 export const imageLib = action(() => {
   const p = createPromise<Blob | null>();
@@ -35,7 +35,7 @@ const ImageLib = observer((props: ModalProps) => {
   return (
     <ThemeLight>
       <Dialog open={state.open} onClose={handleClose} maxWidth={false}>
-        <div className="flex-col relative ">
+        <div className="flex-col relative">
           <IconButton
             className="absolute top-2 right-2 z-50"
             onClick={handleClose}
@@ -172,14 +172,14 @@ const A = observer((props: { rs: (file: Blob) => unknown }) => {
           <OutlinedInput
             className="w-64 rounded-full"
             size="small"
-            placeholder="关键词"
+            placeholder={lang.imageLib.keywords}
             onKeyDown={handleInputKeyDown}
           />
         </div>
         <Tooltip
           placement="top"
           arrow
-          title="图片由 Pixabay 提供，都是免费可自由使用的"
+          title={lang.imageLib.tip}
         >
           <a
             href="https://pixabay.com/zh"
@@ -239,10 +239,9 @@ const A = observer((props: { rs: (file: Blob) => unknown }) => {
           </div>
           {state.isFetched && state.total === 0 && (
             <div className="py-20 text-center text-gray-500 text-14">
-              没有搜索到相关的图片呢
-              <br />
-              <div className="mt-1">换个关键词试试</div>
-              <div className="mt-1">也可以换英文试一试</div>
+              {lang.imageLib.noImages.map((v, i) => (
+                <p className="mt-1" key={i}>{v}</p>
+              ))}
             </div>
           )}
           {state.isFetched

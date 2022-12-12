@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { parse } from 'query-string';
@@ -10,9 +10,10 @@ import RemoveMarkdown from 'remove-markdown';
 import type { GroupStatus, IAppConfigItem } from 'nft-bbs-server';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl, Tooltip,
-  FormControlLabel, IconButton, InputBase, InputLabel, Modal, OutlinedInput,
+  FormControlLabel, IconButton, InputBase, InputLabel, Modal, OutlinedInput, Menu, MenuItem,
 } from '@mui/material';
 import {
+  Check,
   ChevronLeft, ChevronRight, Close, Delete,
   KeyboardReturn, QuestionMark, Visibility, VisibilityOff,
 } from '@mui/icons-material';
@@ -21,11 +22,15 @@ import { LoadingButton } from '@mui/lab';
 import bgImg1x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash.jpg';
 import bgImg2x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@2x.jpg';
 import bgImg3x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@3x.jpg';
+import LanguageIcon from '~/assets/icons/language-select.svg?fill-icon';
 
-import { chooseImgByPixelRatio, runLoading, ThemeLight, useWiderThan, validateSeed } from '~/utils';
 import {
-  APPCONFIG_KEY_NAME, dialogService, keyService, KeystoreData,
-  loginStateService, nodeService, routerService, snackbarService,
+  chooseImgByPixelRatio, runLoading, ThemeLight,
+  useWiderThan, validateSeed, lang,
+} from '~/utils';
+import {
+  APPCONFIG_KEY_NAME, dialogService, keyService, KeystoreData, langService, AllLanguages,
+  loginStateService, nodeService, routerService, snackbarService, langName,
 } from '~/service';
 import { GroupAvatar, Scrollable, Footer } from '~/components';
 import { VaultApi } from '~/apis';
@@ -53,11 +58,17 @@ export const Join = observer(() => {
       createWalletLoading: false,
       remember: false,
 
+      get groupName() {
+        const seedUrl = this.group?.mainSeedUrl;
+        if (!seedUrl) { return ''; }
+        return quorumUtils.restoreSeedFromUrl(seedUrl).group_name;
+      },
       get valid() {
         return !!this.keystore && !!this.password;
       },
     },
 
+    languageMenu: false,
     globalLoading: false,
 
     get selectedGroupConfig() {
@@ -80,6 +91,12 @@ export const Join = observer(() => {
   }));
 
   const isPC = useWiderThan(960);
+  const languageButton = useRef<HTMLButtonElement>(null);
+
+  const handleChangeLanguage = action((lang: AllLanguages) => {
+    langService.switchLang(lang);
+    state.languageMenu = false;
+  });
 
   const joinGroup = (group: GroupStatus) => {
     try {
@@ -135,7 +152,7 @@ export const Join = observer(() => {
     await fp.pipe(
       parseSearch,
       taskEither.matchW(
-        () => snackbarService.error('登录失败'),
+        () => snackbarService.error(lang.join.loginFailed),
         (jwt) => handleLoginByMixin(group, jwt),
       ),
     )();
@@ -149,7 +166,7 @@ export const Join = observer(() => {
           () => VaultApi.getOrCreateAppUser(jwt),
           taskEither.matchW(
             () => {
-              snackbarService.error('登录失败');
+              snackbarService.error(lang.join.loginFailed);
               runInAction(() => { state.mixinLogin.dialogOpen = false; });
             },
             action((data) => {
@@ -185,9 +202,9 @@ export const Join = observer(() => {
   const handleLoginByNewMetaMask = async (group: GroupStatus) => {
     if (!(window as any).ethereum) {
       const result = await dialogService.open({
-        content: '请先安装 MetaMask 插件',
-        cancel: '我知道了',
-        confirm: '去安装',
+        content: lang.join.metaMaskPluginTip,
+        cancel: lang.join.metaMaskPluginCancel,
+        confirm: lang.join.metaMaskPluginInstall,
       });
       if (result === 'confirm') {
         window.open('https://metamask.io');
@@ -214,7 +231,7 @@ export const Join = observer(() => {
           const digest = quorumUtils.typeTransform.hexToUint8Array(hash);
           const recoveredAddress = utils.recoverAddress(digest, signature);
           if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
-            throw new Error('加解密的 address 不匹配');
+            throw new Error(lang.join.metaMaskInvalidAddress);
           }
           return {
             address: recoveredAddress,
@@ -344,7 +361,7 @@ export const Join = observer(() => {
         runInAction(() => {
           state.keystoreDialog.keystore = data.keystore;
         });
-        snackbarService.show('已创建新钱包，请保存好keystore和密码。');
+        snackbarService.show(lang.join.createNewKeystoreDone);
       },
     );
   };
@@ -361,7 +378,7 @@ export const Join = observer(() => {
           state.keystoreDialog.password,
         );
         if (either.isLeft(result)) {
-          snackbarService.error('keystore或密码错误');
+          snackbarService.error(lang.join.invalidKeystore);
           return;
         }
         const keys = result.right;
@@ -398,10 +415,10 @@ export const Join = observer(() => {
     const result = validateSeed(seedUrl);
     if (either.isLeft(result)) {
       dialogService.open({
-        title: '检验错误',
+        title: lang.join.seedValidationFailedTitle,
         content: (
           <div className="break-all">
-            种子解析错误 {result.left.message}
+            {lang.join.invalidSeed} {result.left.message}
           </div>
         ),
         cancel: null,
@@ -422,8 +439,8 @@ export const Join = observer(() => {
 
   const handleDeletePrivateGroup = async (group: GroupStatus) => {
     const result = await dialogService.open({
-      title: '不再显示',
-      content: '这将不再显示这个 Port 论坛（可通过 SeedUrl 或 链接重新加入）。是否继续？',
+      title: lang.join.deleteGroupTitle,
+      content: lang.join.deleteGroupContent,
     });
     if (result === 'cancel') { return; }
     runInAction(() => {
@@ -464,7 +481,7 @@ export const Join = observer(() => {
     };
   }, []);
 
-  return (
+  return (<>
     <div className="h-[100vh] flex-col">
       <Modal className="flex flex-center" open={state.globalLoading}>
         <CircularProgress />
@@ -477,9 +494,20 @@ export const Join = observer(() => {
       >
         <div className="flex flex-center flex-1 h-0 p-8 text-white mb:p-0">
           {!state.selectedGroup && (
-            <div className="relative flex-col items-stretch gap-y-7 bg-black/80 rounded-[10px] p-7 mb:px-0 max-h-full mb:w-full">
+            <div className="relative flex-col items-stretch gap-y-7 bg-black/80 rounded-[10px] mb:rounded-none p-7 mb:px-0 max-h-full mb:w-full">
+              <Button
+                className="absolute right-3 top-3 text-[#5fc0e9] px-4"
+                variant="text"
+                ref={languageButton}
+                onClick={action(() => { state.languageMenu = true; })}
+              >
+                <LanguageIcon className="mr-3 text-cyan-blue text-20" />
+                <span className="normal-case text-14">
+                  Language
+                </span>
+              </Button>
               <div className="text-18 text-center my-3">
-                登录 Port 论坛
+                {lang.join.title}
               </div>
               <Scrollable hideTrackOnMobile light>
                 {nodeService.state.config.joinBySeedUrl && (
@@ -488,10 +516,10 @@ export const Join = observer(() => {
                       className="bg-black/80 w-full text-white rounded-md h-[48px] px-4"
                       value={state.seedUrlInput}
                       onChange={action((e) => { state.seedUrlInput = e.target.value; })}
-                      placeholder="输入地址访问论坛 Rum://"
+                      placeholder={lang.join.seedInputPlaceholder}
                       onKeyDown={(e) => e.key === 'Enter' && handleJoinBySeedurl()}
                       endAdornment={(
-                        <Tooltip title={state.seedUrlInput ? '' : '除了下列 Port 官方建立的论坛，您也可以使用种子网络地址访问其他 Rum 网络中存在的论坛。'}>
+                        <Tooltip title={state.seedUrlInput ? '' : lang.join.seedInputTooltip}>
                           <IconButton
                             className="ml-2 -mr-2"
                             onClick={() => state.seedUrlInput && handleJoinBySeedurl()}
@@ -527,7 +555,7 @@ export const Join = observer(() => {
                           fontSize={20}
                         />
                         {group.private && (
-                          <Tooltip title="不再显示">
+                          <Tooltip title={lang.join.deletePrivateGroupTooltip}>
                             <IconButton
                               className="absolute right-1 bottom-1 z-10"
                               onClick={() => handleDeletePrivateGroup(group)}
@@ -542,7 +570,7 @@ export const Join = observer(() => {
                             variant="text"
                             onClick={() => handleLoginAnonymous(group)}
                           >
-                            随便看看
+                            {lang.join.joinByAnonymous}
                             <ChevronRight className="text-26 -mt-px -mr-2" />
                           </Button>
                         )}
@@ -555,37 +583,37 @@ export const Join = observer(() => {
                           </div>
                           <div className="flex-1" />
                           {loginButton === 'saved-mixin' && (
-                            <Tooltip title="用上次使用的 Mixin 登录" placement="right">
+                            <Tooltip title={lang.join.lastUsedMixinTooltip} placement="right">
                               <Button
-                                className="text-link-soft text-14 w-full py-[3px] normal-case"
+                                className="text-link-soft text-14 w-full py-[3px]"
                                 size="small"
                                 color="link-soft"
                                 variant="outlined"
                                 onClick={() => handleLoginByMixin(group, loginState!.mixin!.mixinJWT)}
                               >
                                 <span className="truncate">
-                                  上次的 Mixin 账号登录: {loginState!.mixin!.userName}
+                                  {lang.join.lastUsedMixin} {loginState!.mixin!.userName}
                                 </span>
                               </Button>
                             </Tooltip>
                           )}
                           {loginButton === 'saved-keystore' && (
-                            <Tooltip title="用上次使用的 Keystore 账号登录" placement="right">
+                            <Tooltip title={lang.join.lastUsedKeystoreTooltip} placement="right">
                               <Button
-                                className="text-link-soft text-14 w-full py-[3px] normal-case"
+                                className="text-link-soft text-14 w-full py-[3px]"
                                 size="small"
                                 color="link-soft"
                                 variant="outlined"
                                 onClick={() => handleLoginBySavedKeystore(group, loginState!.keystore!)}
                               >
                                 <span className="truncate">
-                                  上次使用的 keystore: {loginState!.keystore!.address.slice(0, 10)}
+                                  {lang.join.lastUsedKeystore} {loginState!.keystore!.address.slice(0, 10)}
                                 </span>
                               </Button>
                             </Tooltip>
                           )}
                           {loginButton === 'saved-metamask' && (
-                            <Tooltip title="用上次使用的 MetaMask 账号登录" placement="right">
+                            <Tooltip title={lang.join.lastUsedMetaMaskTooltip} placement="right">
                               <Button
                                 className="text-link-soft text-14 w-full py-[3px] normal-case truncate"
                                 size="small"
@@ -594,78 +622,78 @@ export const Join = observer(() => {
                                 onClick={() => handleLoginBySavedMetaMask(group, loginState!.metamask!.mixinJWT)}
                               >
                                 <span className="truncate">
-                                  上次的 MetaMask 账号: {loginState!.metamask!.address.slice(0, 10).toLowerCase()}
+                                  {lang.join.lastUsedMetaMask} {loginState!.metamask!.address.slice(0, 10).toLowerCase()}
                                 </span>
                               </Button>
                             </Tooltip>
                           )}
                           {loginButton === 'mixin' && (
-                            <Tooltip title="使用 Mixin 账号登录" placement="right">
+                            <Tooltip title={lang.join.mixinTooltip} placement="right">
                               <Button
-                                className="text-rum-orange text-14 w-full py-[3px] normal-case"
+                                className="text-rum-orange text-14 w-full py-[3px]"
                                 size="small"
                                 color="rum"
                                 variant="outlined"
                                 onClick={() => handleOpenMixinLogin(group)}
                               >
                                 <span className="truncate">
-                                  使用 Mixin 扫码登录
+                                  {lang.join.mixin}
                                 </span>
                               </Button>
                             </Tooltip>
                           )}
                           {loginButton === 'keystore' && (
-                            <Tooltip title="输入 Keystore 和 密码" placement="right" disableInteractive>
+                            <Tooltip title={lang.join.keystoreTooltip} placement="right" disableInteractive>
                               <Button
-                                className="text-rum-orange text-14 w-full py-[3px] normal-case"
+                                className="text-rum-orange text-14 w-full py-[3px]"
                                 size="small"
                                 color="rum"
                                 variant="outlined"
                                 onClick={() => handleShowKeystoreDialog(group)}
                               >
                                 <span className="truncate">
-                                  输入 Keystore
+                                  {lang.join.keystore}
                                 </span>
                               </Button>
                             </Tooltip>
                           )}
                           {loginButton === 'metamask' && (
-                            <Tooltip title="输入 Keystore 和 密码" placement="right" disableInteractive>
+                            <Tooltip title={lang.join.metaMaskTooltip} placement="right" disableInteractive>
                               <Button
-                                className="text-rum-orange text-14 w-full py-[3px] normal-case"
+                                className="text-rum-orange text-14 w-full py-[3px]"
                                 size="small"
                                 color="rum"
                                 variant="outlined"
                                 onClick={() => handleLoginByNewMetaMask(group)}
                               >
                                 <span className="truncate">
-                                  MetaMask 登录
+                                  {lang.join.metaMask}
                                 </span>
                               </Button>
                             </Tooltip>
                           )}
                           {(!!config.mixin || !!config.keystore || !!config.metamask) && (
                             <Button
-                              className="text-gray-9c text-14 w-full py-[3px] normal-case"
+                              className="text-gray-9c text-14 w-full py-[3px]"
                               size="small"
                               color="inherit"
                               variant="text"
                               onClick={() => handleOpenGroup(group)}
                             >
                               <span className="truncate">
-                                更多登录方式
+                                {lang.join.more}
                               </span>
                             </Button>
                           )}
                           {(!config.mixin && !config.keystore && !config.metamask) && (
                             <Button
-                              className="text-gray-9c text-14 w-full py-[3px] normal-case"
+                              className="text-gray-9c text-14 w-full py-[3px]"
                               size="small"
                               color="inherit"
                               variant="text"
                               onClick={() => handleLoginAnonymous(group)}
                             >
-                              游客模式
+                              {lang.join.anonymous}
                             </Button>
                           )}
                         </div>
@@ -686,7 +714,7 @@ export const Join = observer(() => {
                 onClick={action(() => { state.selectedGroup = null; })}
               >
                 <ChevronLeft className="text-24 -mt-px" />
-                返回
+                {lang.join.back}
               </Button>
 
               <GroupAvatar
@@ -706,7 +734,7 @@ export const Join = observer(() => {
               <div className="flex-col self-center items-stertch mt-4 gap-y-4 min-w-[200px] mb:w-full">
                 {!!state.selectedGroupConfig?.keystore && !!state.selectedGroupLoginState?.keystore && (
                   <div className="relative flex items-center gap-x-2">
-                    <Tooltip title="用上次使用的 Keystore 登录" placement="right" disableInteractive>
+                    <Tooltip title={lang.join.lastUsedKeystoreTooltip} placement="right" disableInteractive>
                       <Button
                         className="text-link-soft rounded-full text-16 px-8 py-2 normal-case flex-1 max-w-[350px]"
                         color="link-soft"
@@ -715,15 +743,14 @@ export const Join = observer(() => {
                         onClick={() => handleLoginBySavedKeystore(state.selectedGroup!, state.selectedGroupLoginState!.keystore!)}
                       >
                         <span className="truncate">
-                          上次使用的 keystore{' '}
-                          ({state.selectedGroupLoginState.keystore.address.slice(0, 10)})
+                          {lang.join.lastUsedKeystore} {state.selectedGroupLoginState.keystore.address.slice(0, 10)}
                         </span>
                         {/* {keystore.loading && (
                           <CircularProgress className="ml-2 flex-none text-white/70" size={16} thickness={5} />
                         )} */}
                       </Button>
                     </Tooltip>
-                    <Tooltip title="清除保存的 Keystore" placement="right" disableInteractive>
+                    <Tooltip title={lang.join.lastUsedKeystoreClear} placement="right" disableInteractive>
                       <IconButton
                         className="absolute right-0 mb:static mb:mr-0 mb:translate-x-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
                         color="inherit"
@@ -737,7 +764,7 @@ export const Join = observer(() => {
 
                 {!!state.selectedGroupConfig?.mixin && !!state.selectedGroupLoginState?.mixin && (
                   <div className="relative flex items-center gap-x-2">
-                    <Tooltip title="用上次使用的 Mixin 账号登录" placement="right" disableInteractive>
+                    <Tooltip title={lang.join.lastUsedMixinTooltip} placement="right" disableInteractive>
                       <Button
                         className="text-link-soft rounded-full text-16 px-8 py-2 normal-case flex-1 max-w-[350px]"
                         color="link-soft"
@@ -746,15 +773,14 @@ export const Join = observer(() => {
                         onClick={() => handleLoginByMixin(state.selectedGroup!, state.selectedGroupLoginState!.mixin!.mixinJWT)}
                       >
                         <span className="truncate">
-                          上次的 mixin 账号{' '}
-                          ({state.selectedGroupLoginState.mixin.userName})
+                          {lang.join.lastUsedMixin} {state.selectedGroupLoginState.mixin.userName}
                         </span>
                         {/* {mixin.loading && (
                           <CircularProgress className="ml-2 flex-none text-white/70" size={16} thickness={5} />
                         )} */}
                       </Button>
                     </Tooltip>
-                    <Tooltip title="清除保存的 Mixin 账号" placement="right" disableInteractive>
+                    <Tooltip title={lang.join.lastUsedMixinClear} placement="right" disableInteractive>
                       <IconButton
                         className="absolute right-0 mb:static mb:mr-0 mb:translate-x-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
                         color="inherit"
@@ -768,7 +794,7 @@ export const Join = observer(() => {
 
                 {!!state.selectedGroupConfig?.metamask && !!state.selectedGroupLoginState?.metamask && (
                   <div className="relative flex items-center gap-x-2">
-                    <Tooltip title="用上次使用的 MetaMask 登录" placement="right" disableInteractive>
+                    <Tooltip title={lang.join.metaMaskTooltip} placement="right" disableInteractive>
                       <Button
                         className="text-link-soft rounded-full text-16 px-8 py-2 normal-case flex-1 max-w-[350px]"
                         color="link-soft"
@@ -777,15 +803,14 @@ export const Join = observer(() => {
                         onClick={() => handleLoginBySavedMetaMask(state.selectedGroup!, state.selectedGroupLoginState!.metamask!.mixinJWT)}
                       >
                         <span className="truncate">
-                          上次的 MetaMask 账号{' '}
-                          ({state.selectedGroupLoginState.metamask.address.slice(0, 10).toLowerCase()})
+                          {lang.join.lastUsedMetaMask} {state.selectedGroupLoginState.metamask.address.slice(0, 10).toLowerCase()}
                         </span>
                         {/* {mixin.loading && (
                           <CircularProgress className="ml-2 flex-none text-white/70" size={16} thickness={5} />
                         )} */}
                       </Button>
                     </Tooltip>
-                    <Tooltip title="清除保存的 MetaMask 账号" placement="right" disableInteractive>
+                    <Tooltip title={lang.join.lastUsedMetaMaskClear} placement="right" disableInteractive>
                       <IconButton
                         className="absolute right-0 mb:static mb:mr-0 mb:translate-x-0 translate-x-full -mr-2 text-white/70 hover:text-red-400"
                         color="inherit"
@@ -798,62 +823,62 @@ export const Join = observer(() => {
                 )}
 
                 {!!state.selectedGroupConfig?.mixin && (
-                  <Tooltip title="使用 Mixin 账号登录" placement="right" disableInteractive>
+                  <Tooltip title={lang.join.mixinTooltip} placement="right" disableInteractive>
                     <Button
-                      className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
+                      className="text-rum-orange rounded-full text-16 px-8 py-2"
                       color="rum"
                       variant="outlined"
                       onClick={() => handleOpenMixinLogin(state.selectedGroup!)}
                     >
-                      使用 Mixin 扫码登录
+                      {lang.join.mixin}
                     </Button>
                   </Tooltip>
                 )}
                 {!!state.selectedGroupConfig?.metamask && (
-                  <Tooltip title="使用 MetaMask 登录" placement="right" disableInteractive>
+                  <Tooltip title={lang.join.metaMaskTooltip} placement="right" disableInteractive>
                     <Button
-                      className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
+                      className="text-rum-orange rounded-full text-16 px-8 py-2"
                       color="rum"
                       variant="outlined"
                       onClick={() => handleLoginByNewMetaMask(state.selectedGroup!)}
                     >
-                      MetaMask 登录
+                      {lang.join.metaMask}
                     </Button>
                   </Tooltip>
                 )}
                 {!!state.selectedGroupConfig?.keystore && (
-                  <Tooltip title="创建一个随机账号" placement="right" disableInteractive>
+                  <Tooltip title={lang.join.randomKeystoreTooltip} placement="right" disableInteractive>
                     <Button
                       className="text-rum-orange rounded-full text-16 px-8 py-2"
                       color="rum"
                       variant="outlined"
                       onClick={() => handleLoginByRandom(state.selectedGroup!)}
                     >
-                      随机账号登录
+                      {lang.join.randomKeystore}
                     </Button>
                   </Tooltip>
                 )}
                 {!!state.selectedGroupConfig?.keystore && (
-                  <Tooltip title="输入 Keystore 和 密码" placement="right" disableInteractive>
+                  <Tooltip title={lang.join.inputKeystoreTooltip} placement="right" disableInteractive>
                     <Button
-                      className="text-rum-orange rounded-full text-16 px-8 py-2 normal-case"
+                      className="text-rum-orange rounded-full text-16 px-8 py-2"
                       color="rum"
                       variant="outlined"
                       onClick={() => handleShowKeystoreDialog(state.selectedGroup!)}
                     >
-                      输入 Keystore
+                      {lang.join.inputKeystore}
                     </Button>
                   </Tooltip>
                 )}
                 {!!state.selectedGroupConfig?.anonymous && (
                   <Button
-                    className="text-link-soft text-14 px-2 py-1 normal-case"
+                    className="text-link-soft text-14 px-2 py-1"
                     size="small"
                     color="inherit"
                     variant="text"
                     onClick={() => handleLoginAnonymous(state.selectedGroup!)}
                   >
-                    随便看看(游客模式)
+                    {lang.join.anonymous}
                   </Button>
                 )}
               </div>
@@ -863,124 +888,155 @@ export const Join = observer(() => {
       </div>
 
       <Footer />
+    </div>
 
-      <ThemeLight>
-        <Dialog
-          open={state.keystoreDialog.open}
-          onClose={action(() => { if (!state.keystoreDialog.loading) { state.keystoreDialog.open = false; } })}
-        >
-          <div className="flex-col relative text-black w-[400px]">
-            <IconButton
-              className="absolute top-2 right-2"
-              onClick={action(() => { if (!state.keystoreDialog.loading) { state.keystoreDialog.open = false; } })}
-              disabled={state.keystoreDialog.loading}
-            >
-              <Close />
-            </IconButton>
-            <div className="flex-col flex-1 justify-between items-center p-6 gap-y-6">
-              <div className="text-18">
-                注册/登录 ({state.keystoreDialog.group ? quorumUtils.restoreSeedFromUrl(state.keystoreDialog.group.mainSeedUrl).group_name : ''})
-              </div>
-              <div className="flex-col gap-y-4 w-[250px] items-stretch">
-                <FormControl size="small">
-                  <InputLabel>keystore</InputLabel>
-                  <OutlinedInput
-                    size="small"
-                    label="keystore"
-                    type="text"
-                    multiline
-                    rows={5}
-                    value={state.keystoreDialog.keystore}
-                    onChange={action((e) => { state.keystoreDialog.keystore = e.target.value; })}
-                    disabled={state.keystoreDialog.loading}
-                  />
-                </FormControl>
-                <FormControl size="small">
-                  <InputLabel>密码</InputLabel>
-                  <OutlinedInput
-                    size="small"
-                    label="密码"
-                    type={state.keystoreDialog.passwordVisibility ? 'text' : 'password'}
-                    value={state.keystoreDialog.password}
-                    onChange={action((e) => { state.keystoreDialog.password = e.target.value; })}
-                    disabled={state.keystoreDialog.loading}
-                    endAdornment={(
-                      <IconButton
-                        className="-mr-2"
-                        size="small"
-                        onClick={action(() => { state.keystoreDialog.passwordVisibility = !state.keystoreDialog.passwordVisibility; })}
-                      >
-                        {state.keystoreDialog.passwordVisibility && (<Visibility className="text-20" />)}
-                        {!state.keystoreDialog.passwordVisibility && (<VisibilityOff className="text-20" />)}
-                      </IconButton>
-                    )}
-                  />
-                </FormControl>
-                <FormControlLabel
-                  className="flex-center"
-                  label="记住 keystore 和 密码"
-                  control={(
-                    <Checkbox
-                      checked={state.keystoreDialog.remember}
-                      onChange={action((_, v) => { state.keystoreDialog.remember = v; })}
-                      disabled={state.keystoreDialog.loading}
-                    />
+    <ThemeLight>
+      <Dialog
+        open={state.keystoreDialog.open}
+        onClose={action(() => { if (!state.keystoreDialog.loading) { state.keystoreDialog.open = false; } })}
+      >
+        <div className="flex-col relative text-black w-[400px]">
+          <IconButton
+            className="absolute top-2 right-2"
+            onClick={action(() => { if (!state.keystoreDialog.loading) { state.keystoreDialog.open = false; } })}
+            disabled={state.keystoreDialog.loading}
+          >
+            <Close />
+          </IconButton>
+          <div className="flex-col flex-1 justify-between items-center p-6 gap-y-6">
+            <div className="text-18">
+              {lang.join.keystoreDialogTitle}
+              {' '}
+              ({state.keystoreDialog.groupName})
+            </div>
+            <div className="flex-col gap-y-4 w-[250px] items-stretch">
+              <FormControl size="small">
+                <InputLabel>keystore</InputLabel>
+                <OutlinedInput
+                  size="small"
+                  label="keystore"
+                  type="text"
+                  multiline
+                  rows={5}
+                  value={state.keystoreDialog.keystore}
+                  onChange={action((e) => { state.keystoreDialog.keystore = e.target.value; })}
+                  disabled={state.keystoreDialog.loading}
+                />
+              </FormControl>
+              <FormControl size="small">
+                <InputLabel>{lang.join.keystorePassword}</InputLabel>
+                <OutlinedInput
+                  size="small"
+                  label={lang.join.keystorePassword}
+                  type={state.keystoreDialog.passwordVisibility ? 'text' : 'password'}
+                  value={state.keystoreDialog.password}
+                  onChange={action((e) => { state.keystoreDialog.password = e.target.value; })}
+                  disabled={state.keystoreDialog.loading}
+                  endAdornment={(
+                    <IconButton
+                      className="-mr-2"
+                      size="small"
+                      onClick={action(() => {
+                        state.keystoreDialog.passwordVisibility = !state.keystoreDialog.passwordVisibility;
+                      })}
+                    >
+                      {state.keystoreDialog.passwordVisibility && (<Visibility className="text-20" />)}
+                      {!state.keystoreDialog.passwordVisibility && (<VisibilityOff className="text-20" />)}
+                    </IconButton>
                   )}
                 />
-              </div>
-              <div className="flex gap-x-4">
-                <LoadingButton
-                  className="rounded-full text-16 px-10 py-2"
-                  color="primary"
-                  variant="outlined"
-                  onClick={handleCreateNewWallet}
-                  loading={state.keystoreDialog.createWalletLoading}
-                  disabled={state.keystoreDialog.loading}
-                >
-                  创建新钱包
-                </LoadingButton>
-                <LoadingButton
-                  className="rounded-full text-16 px-10 py-2"
-                  color="link"
-                  variant="outlined"
-                  onClick={handleLoginByKeystoreDialog}
-                  disabled={!state.keystoreDialog.valid}
-                  loading={state.keystoreDialog.loading}
-                >
-                  确定
-                </LoadingButton>
-              </div>
+              </FormControl>
+              <FormControlLabel
+                className="flex-center"
+                label={lang.join.rememberPassword}
+                control={(
+                  <Checkbox
+                    checked={state.keystoreDialog.remember}
+                    onChange={action((_, v) => { state.keystoreDialog.remember = v; })}
+                    disabled={state.keystoreDialog.loading}
+                  />
+                )}
+              />
+            </div>
+            <div className="flex gap-x-4">
+              <LoadingButton
+                className="rounded-full text-16 px-10 py-2"
+                color="primary"
+                variant="outlined"
+                onClick={handleCreateNewWallet}
+                loading={state.keystoreDialog.createWalletLoading}
+                disabled={state.keystoreDialog.loading}
+              >
+                {lang.join.createNewKeystore}
+              </LoadingButton>
+              <LoadingButton
+                className="rounded-full text-16 px-10 py-2"
+                color="link"
+                variant="outlined"
+                onClick={handleLoginByKeystoreDialog}
+                disabled={!state.keystoreDialog.valid}
+                loading={state.keystoreDialog.loading}
+              >
+                {lang.common.confirm}
+              </LoadingButton>
             </div>
           </div>
-        </Dialog>
+        </div>
+      </Dialog>
 
-        <Dialog
-          classes={{ paper: 'mx-0 h-full' }}
-          disableScrollLock
-          open={state.mixinLogin.dialogOpen}
-          onClose={action(() => { state.mixinLogin.dialogOpen = false; })}
-        >
-          <div className="flex-col relative text-black h-full">
-            <IconButton
-              className="absolute top-2 right-2"
-              onClick={action(() => { state.mixinLogin.dialogOpen = false; })}
-            >
-              <Close />
-            </IconButton>
-            <div className="flex-col flex-1 justify-between items-center p-6 gap-y-6">
-              <div className="text-18">
-                Mixin
-              </div>
-              <div className="flex-col flex-1 gap-y-4 items-stretch">
-                <iframe
-                  className="w-[450px] h-full"
-                  src={`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${state.mixinLogin.keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`}
-                />
-              </div>
+      <Dialog
+        classes={{ paper: 'mx-0 h-full' }}
+        disableScrollLock
+        open={state.mixinLogin.dialogOpen}
+        onClose={action(() => { state.mixinLogin.dialogOpen = false; })}
+      >
+        <div className="flex-col relative text-black h-full">
+          <IconButton
+            className="absolute top-2 right-2"
+            onClick={action(() => { state.mixinLogin.dialogOpen = false; })}
+          >
+            <Close />
+          </IconButton>
+          <div className="flex-col flex-1 justify-between items-center p-6 gap-y-6">
+            <div className="text-18">
+              Mixin
+            </div>
+            <div className="flex-col flex-1 gap-y-4 items-stretch">
+              <iframe
+                className="w-[450px] h-full"
+                src={`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${state.mixinLogin.keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`}
+              />
             </div>
           </div>
-        </Dialog>
-      </ThemeLight>
-    </div>
-  );
+        </div>
+      </Dialog>
+
+      <Menu
+        className="mt-1"
+        open={state.languageMenu}
+        anchorEl={languageButton.current}
+        onClose={action(() => { state.languageMenu = false; })}
+        anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: 'center', vertical: 'top' }}
+        disableScrollLock
+      >
+        <MenuItem onClick={() => handleChangeLanguage('en')}>
+          <div className="flex flex-center w-5 mr-2">
+            {langService.state.lang === 'en' && (
+              <Check className="text-20 text-soft-blue" />
+            )}
+          </div>
+          {langName.en}
+        </MenuItem>
+        <MenuItem onClick={() => handleChangeLanguage('zh-cn')}>
+          <div className="flex flex-center w-5 mr-2">
+            {langService.state.lang === 'zh-cn' && (
+              <Check className="text-20 text-soft-blue" />
+            )}
+          </div>
+          {langName['zh-cn']}
+        </MenuItem>
+      </Menu>
+    </ThemeLight>
+  </>);
 });

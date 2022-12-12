@@ -6,7 +6,7 @@ import * as QuorumLightNodeSdk from 'quorum-light-node-sdk';
 import { Close } from '@mui/icons-material';
 import { Button, CircularProgress, Dialog, IconButton, Tooltip } from '@mui/material';
 
-import { createPromise, runLoading, setClipboard, ThemeLight, useWiderThan } from '~/utils';
+import { createPromise, lang, runLoading, setClipboard, ThemeLight, useWiderThan } from '~/utils';
 import { nodeService, snackbarService } from '~/service';
 import { modalViewState } from './helper/modalViewState';
 
@@ -113,7 +113,7 @@ export const TrxDetailView = observer((props: Props) => {
       )}
     >
       <div className="text-center text-16 mt-8">
-        区块详情
+        {lang.trxDetail.title}
       </div>
       <div className="max-w-[400px] mt-2">
         {state.loading && (
@@ -131,28 +131,28 @@ export const TrxDetailView = observer((props: Props) => {
             <div>GroupId:</div>
             <div className="truncate">{state.trx.GroupId}</div>
             <div>Sender:</div>
-            <Tooltip title={`${state.trx.SenderPubkey} (点击复制)`} arrow placement="top" enterDelay={500} enterNextDelay={500}>
+            <Tooltip title={`${state.trx.SenderPubkey} (${lang.trxDetail.clickToCopy})`} arrow placement="top" enterDelay={500} enterNextDelay={500}>
               <div
                 className="truncate"
-                onClick={() => { setClipboard(state.trx!.SenderPubkey); snackbarService.show('已复制'); }}
+                onClick={() => { setClipboard(state.trx!.SenderPubkey); snackbarService.show(lang.trxDetail.copied); }}
               >
                 {state.trx.SenderPubkey}
               </div>
             </Tooltip>
             <div>Data:</div>
-            <Tooltip title={`${state.trx.Data} (点击复制)`} arrow placement="top" enterDelay={500} enterNextDelay={500}>
+            <Tooltip title={`${state.trx.Data} (${lang.trxDetail.clickToCopy})`} arrow placement="top" enterDelay={500} enterNextDelay={500}>
               <div
                 className="truncate"
-                onClick={() => { setClipboard(state.trx!.Data); snackbarService.show('已复制'); }}
+                onClick={() => { setClipboard(state.trx!.Data); snackbarService.show(lang.trxDetail.copied); }}
               >
                 {state.trx.Data}
               </div>
             </Tooltip>
             <div>SenderSign:</div>
-            <Tooltip title={`${state.trx.SenderSign} (点击复制)`} arrow placement="top" enterDelay={500} enterNextDelay={500}>
+            <Tooltip title={`${state.trx.SenderSign} (${lang.trxDetail.clickToCopy})`} arrow placement="top" enterDelay={500} enterNextDelay={500}>
               <div
                 className="truncate"
-                onClick={() => { setClipboard(state.trx!.SenderSign); snackbarService.show('已复制'); }}
+                onClick={() => { setClipboard(state.trx!.SenderSign); snackbarService.show(lang.trxDetail.copied); }}
               >
                 {state.trx.SenderSign}
               </div>
@@ -165,7 +165,7 @@ export const TrxDetailView = observer((props: Props) => {
         )}
         {!state.loading && !state.trx && (
           <div className="flex flex-center mt-4 text-14">
-            数据获取失败
+            {lang.trxDetail.loadFailed}
           </div>
         )}
       </div>
@@ -173,9 +173,9 @@ export const TrxDetailView = observer((props: Props) => {
         <Button
           className="px-5 text-black/60"
           variant="text"
-          onClick={() => { setClipboard(JSON.stringify(state.trx)); snackbarService.show('已复制'); }}
+          onClick={() => { setClipboard(JSON.stringify(state.trx)); snackbarService.show(lang.trxDetail.copied); }}
         >
-          复制区块数据
+          {lang.trxDetail.copyData}
         </Button>
         <Button
           className="px-5"
@@ -183,7 +183,7 @@ export const TrxDetailView = observer((props: Props) => {
           color="link"
           onClick={props.onConfirm}
         >
-          确定
+          {lang.common.confirm}
         </Button>
       </div>
     </div>

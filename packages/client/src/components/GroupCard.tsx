@@ -7,7 +7,7 @@ import HomeIcon from 'boxicons/svg/regular/bx-home-alt-2.svg?fill-icon';
 
 // import { editGroupInfo } from '~/modals/editGroupInfo';
 import { keyService, nftService, nodeService, routerService } from '~/service';
-import { renderMarkdown, routeUrlPatterns, useWiderThan } from '~/utils';
+import { lang, renderMarkdown, routeUrlPatterns, useWiderThan } from '~/utils';
 
 import { GroupAvatar } from './GroupAvatar';
 
@@ -97,7 +97,7 @@ export const GroupCard = observer((props: Props) => {
                 onClick={handleGotoPostlist}
               >
                 <HomeIcon className="text-22 mr-3 mb-px" />
-                帖子列表
+                {lang.groupCard.postlist}
               </Button>
             </Tooltip>
           </div>
@@ -112,7 +112,7 @@ export const GroupCard = observer((props: Props) => {
                 onClick={handleNewPost}
               >
                 <EditIcon className="text-22 mr-3 mb-px" />
-                发布新帖
+                {lang.groupCard.newPost}
               </Button>
             </Tooltip>
           </div>

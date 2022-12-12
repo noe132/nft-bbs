@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { lang } from './lang';
 
 export const ago = (_time: number | Date, options: { trimmed?: boolean } = {}) => {
   if (!_time) {
@@ -27,11 +28,11 @@ export const ago = (_time: number | Date, options: { trimmed?: boolean } = {}) =
   } else if (_hour >= 4) {
     result = format(time, 'HH:mm');
   } else if (_hour >= 1) {
-    result = Math.floor(_hour) + '小时前';
+    result = Math.floor(_hour) + lang.ago.hoursAgo;
   } else if (_min >= 1) {
-    result = Math.floor(_min) + '分钟前';
+    result = Math.floor(_min) + lang.ago.minutesAgo;
   } else {
-    result = '刚刚';
+    result = lang.ago.justNow;
   }
   return result;
 };

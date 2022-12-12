@@ -15,7 +15,7 @@ import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { UserAvatar, BackButton, ScrollToTopButton, GroupCard, NFTSideBox, Scrollable } from '~/components';
 import { nodeService, routerService } from '~/service';
-import { ago, useWiderThan } from '~/utils';
+import { ago, lang, useWiderThan } from '~/utils';
 
 export const NotificationPage = observer((props: { className?: string }) => {
   const state = useLocalObservable(() => ({
@@ -43,7 +43,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
   };
 
   useEffect(() => {
-    nodeService.group.setDocumentTitle('消息通知');
+    nodeService.group.setDocumentTitle(lang.notification.pageTitle);
     const loadNextPage = async () => {
       if (nodeService.state.notification.loading || nodeService.state.notification.done) {
         return;
@@ -108,7 +108,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
               {!isPC && (
                 <ChevronLeft className="text-28 -mb-px" />
               )}
-              消息通知
+              {lang.notification.pageTitle}
             </div>
             {/* <Button
               className="text-soft-blue text-14 px-3"
@@ -122,6 +122,14 @@ export const NotificationPage = observer((props: { className?: string }) => {
           </div>
           <div className="flex-col mt-3">
             {state.notificationsWithoutDislike.map((v) => {
+              const actionTexts = [
+                ['post', 'comment', lang.notification.types.postComment],
+                ['post', 'like', lang.notification.types.postLike],
+                ['post', 'dislike', lang.notification.types.postDislike],
+                ['comment', 'comment', lang.notification.types.commentComment],
+                ['comment', 'like', lang.notification.types.commentLike],
+                ['comment', 'dislike', lang.notification.types.commentDislike],
+              ] as const;
               const fromProfile = nodeService.profile.getComputedProfile(v.extra?.fromProfile ?? v.from);
               const fromProfileName = fromProfile?.name || v.from.slice(0, 10);
               const actionText = actionTexts.find((u) => u[0] === v.objectType && u[1] === v.type)?.[2] ?? '';
@@ -131,7 +139,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
               } else {
                 if (v.objectType === 'post') {
                   const postContent = v.extra?.object?.value.content ?? '';
-                  const md = postContent.replaceAll(/!\[.*?\]\(.+?\)/g, '[图片]');
+                  const md = postContent.replaceAll(/!\[.*?\]\(.+?\)/g, lang.common.imagePlaceholder);
                   content = RemoveMarkdown(md);
                 }
                 if (v.objectType === 'comment') {
@@ -182,7 +190,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
                               className="text-link-soft text-14"
                               onClick={() => handleViewItem(v)}
                             >
-                              前往查看
+                              {lang.notification.goToItem}
                             </button>
                           )}
                         </span>
@@ -198,7 +206,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
                               onClick={() => handleViewItem(v)}
                             >
                               <ReplyIcon className="mr-1 -mt-[2px] text-24" />
-                              回复
+                              {lang.comment.reply}
                             </Button>
                           )}
                         </div>
@@ -244,7 +252,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
             <div className="flex flex-center h-16 pb-4">
               {!nodeService.state.notification.loading && !state.notificationsWithoutDislike.length && (
                 <div className="flex flex-center text-white text-14">
-                  暂无消息通知
+                  {lang.notification.emptyTip}
                 </div>
               )}
               <div
@@ -260,13 +268,13 @@ export const NotificationPage = observer((props: { className?: string }) => {
                   variant="text"
                   onClick={() => nodeService.notification.load({ nextPage: true })}
                 >
-                  加载更多
+                  {lang.common.loadMore}
                   <ExpandMore />
                 </Button>
               )}
               {nodeService.state.notification.done && nodeService.state.notification.list.length > 10 && (
                 <span className="text-white/60 text-14">
-                  没有啦
+                  {lang.common.noMore}
                 </span>
               )}
             </div>
@@ -291,12 +299,3 @@ export const NotificationPage = observer((props: { className?: string }) => {
     </div>
   );
 });
-
-const actionTexts = [
-  ['post', 'comment', '评论了您的帖子'],
-  ['post', 'like', '给你的帖子点赞'],
-  ['post', 'dislike', '给你的帖子点踩'],
-  ['comment', 'comment', '评论了您的评论'],
-  ['comment', 'like', '给你的评论点赞'],
-  ['comment', 'dislike', '给你的评论点踩'],
-] as const;
