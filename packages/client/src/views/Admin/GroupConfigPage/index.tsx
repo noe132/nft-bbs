@@ -13,6 +13,7 @@ import { ConfigApi, GroupApi } from '~/apis';
 import { runLoading, ThemeLight } from '~/utils';
 import { dialogService, keyService, nodeService, snackbarService } from '~/service';
 import { LoadingButton } from '@mui/lab';
+import classNames from 'classnames';
 
 export const GroupConfigPage = observer(() => {
   const state = useLocalObservable(() => ({
@@ -53,7 +54,8 @@ export const GroupConfigPage = observer(() => {
       async () => {
         await Promise.all([
           fp.pipe(
-            () => GroupApi.list(),
+            taskEither.fromTask(() => keyService.getAdminSignParam()),
+            taskEither.chainW((admin) => () => GroupApi.listAll(admin)),
             taskEither.map(action((v) => {
               state.groups = v;
             })),
@@ -82,10 +84,10 @@ export const GroupConfigPage = observer(() => {
       loading: false,
       name: group.shortName || seed.group_name || seed.group_id,
       groupId: group.id,
-      keystore: config?.keystore ?? false,
-      mixin: config?.mixin ?? false,
-      metamask: config?.metamask ?? false,
-      anonymous: config?.anonymous ?? false,
+      keystore: config?.keystore ?? nodeService.state.config.defaultGroup.keystore ?? false,
+      mixin: config?.mixin ?? nodeService.state.config.defaultGroup.mixin ?? false,
+      metamask: config?.metamask ?? nodeService.state.config.defaultGroup.metamask ?? false,
+      anonymous: config?.anonymous ?? nodeService.state.config.defaultGroup.anonymous ?? false,
       nft: config?.nft ?? '',
     };
   });
@@ -168,9 +170,22 @@ export const GroupConfigPage = observer(() => {
           </div>
         </div>
         {!state.loading && state.zipped.map((v, i) => (
-          <div className="py-4" key={i}>
+          <div
+            className={classNames(
+              'py-4',
+              v.group.private && 'opacity-50',
+            )}
+            key={i}
+          >
             <div>
               #{v.group.id} {v.shortName} ({v.seedName})
+              {v.group.private && (
+                <Tooltip title="这是一个输入seedUrl加入的种子网络。不建议修改这个论坛的种子地址">
+                  <span className="text-red-500">
+                    {' '}(private)
+                  </span>
+                </Tooltip>
+              )}
             </div>
             {!v.config && '默认配置'}
             {!!v.config && (<>
@@ -195,16 +210,19 @@ export const GroupConfigPage = observer(() => {
               </a>
               <Button
                 variant="outlined"
+                color="link-soft"
                 onClick={() => handleEdit(v.group, v.config)}
               >
                 修改
               </Button>
               {!!v.config && (
                 <Button
+                  className="text-red-300"
                   variant="outlined"
+                  color="inherit"
                   onClick={() => v.config && handleDelete(v.group, v.config)}
                 >
-                  删除
+                  使用默认配置
                 </Button>
               )}
             </div>

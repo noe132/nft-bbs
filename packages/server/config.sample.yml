@@ -17,3 +17,5 @@ defaultGroup:
 # admin user eth addresses
 admin:
   - '0xffffffffffffffffffffffffffffffffffffffff'
+
+joinBySeedUrl: false

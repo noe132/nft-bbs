@@ -37,6 +37,9 @@ export class GroupStatus {
   @Column({ nullable: false, default: true })
   public loaded!: boolean;
 
+  @Column({ nullable: false, default: false })
+  public private!: boolean;
+
   private static create(params: EntityConstructorParams<GroupStatus, 'id'>) {
     const item = new GroupStatus();
     Object.assign(item, params);

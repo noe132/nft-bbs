@@ -8,6 +8,7 @@ export interface SiteConfig {
   group: Record<GroupConfig['groupId'], GroupConfig>
   defaultGroup: Pick<GroupConfig, 'keystore' | 'mixin' | 'metamask' | 'anonymous'>
   admin: Array<string>
+  joinBySeedUrl: boolean
 }
 
 export const getConfig = async () => {

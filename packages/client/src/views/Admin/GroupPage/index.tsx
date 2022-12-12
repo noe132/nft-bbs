@@ -6,12 +6,13 @@ import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogT
 import type { GroupStatus } from 'nft-bbs-server/orm';
 
 import { GroupApi } from '~/apis';
-import { runLoading, ThemeLight } from '~/utils';
+import { runLoading, ThemeLight, validateSeed } from '~/utils';
 import { dialogService, keyService, snackbarService } from '~/service';
 import { utils } from 'quorum-light-node-sdk';
 import { LoadingButton } from '@mui/lab';
 import { Edit } from '@mui/icons-material';
 import { editSeedUrl } from '~/modals';
+import classNames from 'classnames';
 
 export const GroupPage = observer(() => {
   const state = useLocalObservable(() => ({
@@ -38,7 +39,8 @@ export const GroupPage = observer(() => {
       (l) => { state.loading = l; },
       async () => {
         await fp.pipe(
-          () => GroupApi.list(),
+          taskEither.fromTask(() => keyService.getAdminSignParam()),
+          taskEither.chainW((admin) => () => GroupApi.listAll(admin)),
           taskEither.map(action((v) => {
             state.groups = v;
           })),
@@ -76,20 +78,6 @@ export const GroupPage = observer(() => {
       profileSeedUrl: group.profileSeedUrl,
     };
   });
-
-  const validateSeed = (seedUrl: string) => fp.pipe(
-    either.tryCatch(
-      () => utils.seedUrlToGroup(seedUrl),
-      () => new Error(`invalid seedurl ${seedUrl}`),
-    ),
-    either.chainW((v) => {
-      const apis = v.chainAPIs.filter((v) => v);
-      if (!apis.length) {
-        return either.left(new Error(`no chianAPI in seedurl ${seedUrl}`));
-      }
-      return either.right(v);
-    }),
-  );
 
   const handleSubmit = async () => {
     runInAction(() => {
@@ -266,9 +254,21 @@ export const GroupPage = observer(() => {
           </div>
         )}
         {state.groups.map((v, i) => (
-          <div className="py-4" key={i}>
+          <div
+            className={classNames(
+              'py-4',
+              v.private && 'opacity-50',
+            )}
+            key={i}
+          >
             <div>
-              #{v.id}
+              #{v.id} {v.private && (
+                <Tooltip title="这是一个输入seedUrl加入的种子网络。不建议修改这个论坛的配置">
+                  <span className="text-red-500">
+                    (private)
+                  </span>
+                </Tooltip>
+              )}
             </div>
             <div>
               {v.shortName} ({utils.restoreSeedFromUrl(v.mainSeedUrl).group_name})
@@ -341,18 +341,23 @@ export const GroupPage = observer(() => {
               </a>
               <Button
                 variant="outlined"
+                color="link-soft"
                 onClick={() => handleEdit(v)}
               >
                 修改
               </Button>
               <Button
+                className="text-red-300"
                 variant="outlined"
+                color="inherit"
                 onClick={() => handleDelete(v)}
               >
                 删除
               </Button>
               <Button
+                className="text-amber-300"
                 variant="outlined"
+                color="inherit"
                 onClick={() => handleRepolling(v)}
               >
                 重新索引

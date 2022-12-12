@@ -5,15 +5,60 @@ import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { AdminApiParams, API_BASE_URL } from './common';
 
-export const list = async () => {
+interface ListGroupParams {
+  privateGroupIds?: Array<number>
+  privateGroupShortNames?: Array<string>
+}
+
+export const list = async (params?: ListGroupParams) => {
   const item = await request<Array<GroupStatus>>({
     url: `${API_BASE_URL}/group`,
+    params: {
+      ...params?.privateGroupIds && params.privateGroupIds?.length ? {
+        groupIds: JSON.stringify(params.privateGroupIds),
+      } : {},
+      ...params?.privateGroupShortNames && params.privateGroupShortNames?.length ? {
+        shortNames: JSON.stringify(params.privateGroupShortNames),
+      } : {},
+    },
     method: 'get',
   });
   return fp.pipe(
     item,
     either.mapLeft((v) => {
       snackbarService.networkError(v);
+      return null;
+    }),
+  );
+};
+
+export const listAll = async (data: AdminApiParams) => {
+  const item = await request<Array<GroupStatus>>({
+    url: `${API_BASE_URL}/group/all`,
+    data,
+    method: 'post',
+  });
+  return fp.pipe(
+    item,
+    either.mapLeft((v) => {
+      snackbarService.networkError(v);
+      return null;
+    }),
+  );
+};
+
+export const joinBySeedurl = async (seedUrl: string) => {
+  const item = await request<GroupStatus>({
+    url: `${API_BASE_URL}/group/join_private`,
+    method: 'post',
+    data: { seedUrl },
+  });
+  return fp.pipe(
+    item,
+    either.getOrElseW((v) => {
+      if (v.response?.status !== 404) {
+        snackbarService.networkError(v);
+      }
       return null;
     }),
   );

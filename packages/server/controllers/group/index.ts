@@ -1,6 +1,6 @@
 import { FastifyRegister } from 'fastify';
-import { either, function as fp } from 'fp-ts';
-import { number, string, type } from 'io-ts';
+import { either, function as fp, json } from 'fp-ts';
+import { array, number, partial, string, type } from 'io-ts';
 import { BadRequest } from 'http-errors';
 import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
 
@@ -8,13 +8,116 @@ import { Comment, Counter, GroupStatus, ImageFile, Notification, Post, Profile, 
 import { assertAdmin, assertValidation, assertVerifySign, runLoading } from '~/utils';
 import { AppDataSource } from '~/orm/data-source';
 import { pollingService } from '~/service';
+import { config } from '~/config';
 
 const loadingMap = new Map<number, boolean>();
 
 export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
-  fastify.get('/', async () => {
-    const groups = await GroupStatus.list();
+  fastify.get('/', async (req) => {
+    const query = assertValidation(req.query, partial({
+      groupIds: string,
+      shortNames: string,
+    }));
+
+    const privateGroupIds = fp.pipe(
+      json.parse(query.groupIds || ''),
+      either.chainW((v) => array(number).decode(v)),
+      either.getOrElse(() => [] as Array<number>),
+    );
+    const privateGroupShortNames = fp.pipe(
+      json.parse(query.shortNames || ''),
+      either.chainW((v) => array(string).decode(v)),
+      either.getOrElse(() => [] as Array<string>),
+    );
+
+    const dbQuery = AppDataSource.manager.createQueryBuilder()
+      .select('group')
+      .from(GroupStatus, 'group')
+      .where('group.private = false');
+
+    if (privateGroupIds.length) {
+      dbQuery.orWhere(
+        'group.id in (:...groupIds)',
+        { groupIds: privateGroupIds },
+      );
+    }
+
+    if (privateGroupShortNames.length) {
+      dbQuery.orWhere(
+        'group.shortName in (:...shortNames)',
+        { shortNames: privateGroupShortNames },
+      );
+    }
+
+    const groups = await dbQuery.getMany();
     return groups;
+  });
+
+  fastify.post('/all', async (req) => {
+    const body = assertValidation(req.body, type({
+      address: string,
+      nonce: number,
+      sign: string,
+    }));
+
+    assertVerifySign(body);
+    assertAdmin(body.address);
+
+    const dbQuery = AppDataSource.manager.createQueryBuilder()
+      .select('group')
+      .from(GroupStatus, 'group');
+
+    const groups = await dbQuery.getMany();
+    return groups;
+  });
+
+  fastify.post('/join_private', async (req) => {
+    const body = assertValidation(req.body, type({
+      seedUrl: string,
+    }));
+
+    if (!config.joinBySeedUrl) {
+      throw new BadRequest('server does not allow join by seedurl');
+    }
+
+    const result = validateSeed(body.seedUrl);
+
+    if (either.isLeft(result)) {
+      throw new BadRequest(result.left.message);
+    }
+    const seedUrl = body.seedUrl;
+    const shortName = result.right.groupId;
+
+    const query = AppDataSource.manager.createQueryBuilder()
+      .select('g')
+      .from(GroupStatus, 'g')
+      .where('"shortName" = :shortName', { shortName });
+    const existedGroup = await query.getOne();
+    if (existedGroup) { return existedGroup; }
+
+    const group = await AppDataSource.manager.transaction(async (manager) => {
+      const groups = await GroupStatus.list(manager);
+      const existedGroup = groups.find((v) => QuorumLightNodeSDK.utils.restoreSeedFromUrl(v.mainSeedUrl).group_id === shortName);
+      if (existedGroup) { return existedGroup; }
+      const item = await GroupStatus.add({
+        shortName,
+        mainSeedUrl: seedUrl,
+        commentSeedUrl: seedUrl,
+        counterSeedUrl: seedUrl,
+        profileSeedUrl: seedUrl,
+        mainStartTrx: '',
+        commentStartTrx: '',
+        counterStartTrx: '',
+        profileStartTrx: '',
+        loaded: false,
+        private: true,
+      }, manager);
+      return item;
+    });
+
+    await pollingService.updateTask(group);
+
+    return group;
   });
 
   fastify.post('/add', async (req) => {
@@ -60,6 +163,7 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
       counterStartTrx: '',
       profileStartTrx: '',
       loaded: false,
+      private: false,
     });
 
     await pollingService.updateTask(item);

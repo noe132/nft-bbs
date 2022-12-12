@@ -1,4 +1,6 @@
+import { either, function as fp } from 'fp-ts';
 import { runInAction } from 'mobx';
+import { utils } from 'quorum-light-node-sdk';
 
 export * from './ago';
 export * from './compressImage';
@@ -106,3 +108,17 @@ export const chooseImgByPixelRatio = (params: { x1: string, x2?: string, x3?: st
 };
 
 export const notNullFilter = <T>(v: T | undefined | null): v is T => v !== undefined && v !== null;
+
+export const validateSeed = (seedUrl: string) => fp.pipe(
+  either.tryCatch(
+    () => utils.seedUrlToGroup(seedUrl),
+    () => new Error(`invalid seedurl ${seedUrl}`),
+  ),
+  either.chainW((v) => {
+    const apis = v.chainAPIs.filter((v) => v);
+    if (!apis.length) {
+      return either.left(new Error(`no chianAPI in seedurl ${seedUrl}`));
+    }
+    return either.right(v);
+  }),
+);

@@ -15,6 +15,7 @@ describe('utils', () => {
       commentStartTrx: '',
       counterStartTrx: '',
       profileStartTrx: '',
+      private: false,
     })).toEqual([
       { seedUrl: '1', roles: ['main', 'comment', 'counter', 'profile'] },
     ]);
@@ -31,6 +32,7 @@ describe('utils', () => {
       commentStartTrx: '',
       counterStartTrx: '',
       profileStartTrx: '',
+      private: false,
     })).toEqual([
       { seedUrl: '1', roles: ['main', 'counter', 'profile'] },
       { seedUrl: '2', roles: ['comment'] },
@@ -48,6 +50,7 @@ describe('utils', () => {
       commentStartTrx: '',
       counterStartTrx: '',
       profileStartTrx: '',
+      private: false,
     })).toEqual([
       { seedUrl: '1', roles: ['main', 'profile'] },
       { seedUrl: '2', roles: ['comment', 'counter'] },
@@ -65,6 +68,7 @@ describe('utils', () => {
       commentStartTrx: '',
       counterStartTrx: '',
       profileStartTrx: '',
+      private: false,
     })).toEqual([
       { seedUrl: '1', roles: ['main'] },
       { seedUrl: '2', roles: ['comment', 'counter'] },
@@ -83,6 +87,7 @@ describe('utils', () => {
       commentStartTrx: '',
       counterStartTrx: '',
       profileStartTrx: '',
+      private: false,
     })).toEqual([
       { seedUrl: '1', roles: ['main'] },
       { seedUrl: '2', roles: ['comment'] },
@@ -101,6 +106,7 @@ describe('utils', () => {
       commentStartTrx: '',
       counterStartTrx: '',
       profileStartTrx: '',
+      private: false,
     })).toEqual([
       { seedUrl: '1', roles: ['main'] },
       { seedUrl: '2', roles: ['comment'] },

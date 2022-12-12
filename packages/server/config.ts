@@ -24,6 +24,7 @@ const configType = intersection([
       metamask: boolean,
     }),
     admin: array(string),
+    joinBySeedUrl: boolean,
   }),
 ]);
 

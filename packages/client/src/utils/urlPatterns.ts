@@ -46,8 +46,7 @@ export const constructRoutePath = (params: ConstructRouteParmas & { groupId: str
       throw new Error('invalid type');
   }
 };
-
-export const matchRoutePatterns = (pathname: string) => {
+export const getRouteGroupId = (pathname: string) => {
   const urlMatchMap = {
     postlist: matchPath(routeUrlPatterns.postlist, pathname),
     postdetail: matchPath(routeUrlPatterns.postdetail, pathname),

@@ -9,17 +9,20 @@ import { utils as quorumUtils } from 'quorum-light-node-sdk';
 import RemoveMarkdown from 'remove-markdown';
 import type { GroupStatus, IAppConfigItem } from 'nft-bbs-server';
 import {
-  Button, Checkbox, CircularProgress, Dialog, FormControl,
-  FormControlLabel, IconButton, InputLabel, Modal, OutlinedInput, Tooltip,
+  Button, Checkbox, CircularProgress, Dialog, FormControl, Tooltip,
+  FormControlLabel, IconButton, InputBase, InputLabel, Modal, OutlinedInput,
 } from '@mui/material';
-import { ChevronLeft, ChevronRight, Close, Delete, Visibility, VisibilityOff } from '@mui/icons-material';
+import {
+  ChevronLeft, ChevronRight, Close, Delete,
+  KeyboardReturn, QuestionMark, Visibility, VisibilityOff,
+} from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
 
 import bgImg1x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash.jpg';
 import bgImg2x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@2x.jpg';
 import bgImg3x from '~/assets/images/pierre-bouillot-QlCNwrdd_iA-unsplash@3x.jpg';
 
-import { chooseImgByPixelRatio, runLoading, ThemeLight, useWiderThan } from '~/utils';
+import { chooseImgByPixelRatio, runLoading, ThemeLight, useWiderThan, validateSeed } from '~/utils';
 import {
   APPCONFIG_KEY_NAME, dialogService, keyService, KeystoreData,
   loginStateService, nodeService, routerService, snackbarService,
@@ -30,6 +33,8 @@ import { VaultApi } from '~/apis';
 export const Join = observer(() => {
   const state = useLocalObservable(() => ({
     selectedGroup: null as null | GroupStatus,
+
+    seedUrlInput: '',
 
     mixinLogin: {
       group: null as null | GroupStatus,
@@ -388,6 +393,49 @@ export const Join = observer(() => {
     state.selectedGroup = group;
   });
 
+  const handleJoinBySeedurl = () => {
+    const seedUrl = state.seedUrlInput;
+    const result = validateSeed(seedUrl);
+    if (either.isLeft(result)) {
+      dialogService.open({
+        title: '检验错误',
+        content: (
+          <div className="break-all">
+            种子解析错误 {result.left.message}
+          </div>
+        ),
+        cancel: null,
+      });
+      return;
+    }
+
+    runLoading(
+      (l) => { state.globalLoading = l; },
+      async () => {
+        const group = await nodeService.group.joinBySeedUrl(seedUrl);
+        if (group) {
+          handleOpenGroup(group);
+        }
+      },
+    );
+  };
+
+  const handleDeletePrivateGroup = async (group: GroupStatus) => {
+    const result = await dialogService.open({
+      title: '不再显示',
+      content: '这将不再显示这个 Port 论坛（可通过 SeedUrl 或 链接重新加入）。是否继续？',
+    });
+    if (result === 'cancel') { return; }
+    runInAction(() => {
+      nodeService.state.groups = nodeService.state.groups.filter((v) => v.id !== group.id);
+      if (loginStateService.state.privateGroups) {
+        loginStateService.state.privateGroups = loginStateService.state.privateGroups.filter(
+          (v) => v !== group.id,
+        );
+      }
+    });
+  };
+
   const renderDesc = (text?: IAppConfigItem['Value']) => {
     if (!text) { return ''; }
     return RemoveMarkdown(text.toString());
@@ -434,6 +482,28 @@ export const Join = observer(() => {
                 登录 Port 论坛
               </div>
               <Scrollable hideTrackOnMobile light>
+                {nodeService.state.config.joinBySeedUrl && (
+                  <div className="flex flex-center px-7 pb-6">
+                    <InputBase
+                      className="bg-black/80 w-full text-white rounded-md h-[48px] px-4"
+                      value={state.seedUrlInput}
+                      onChange={action((e) => { state.seedUrlInput = e.target.value; })}
+                      placeholder="输入地址访问论坛 Rum://"
+                      onKeyDown={(e) => e.key === 'Enter' && handleJoinBySeedurl()}
+                      endAdornment={(
+                        <Tooltip title={state.seedUrlInput ? '' : '除了下列 Port 官方建立的论坛，您也可以使用种子网络地址访问其他 Rum 网络中存在的论坛。'}>
+                          <IconButton
+                            className="ml-2 -mr-2"
+                            onClick={() => state.seedUrlInput && handleJoinBySeedurl()}
+                          >
+                            {state.seedUrlInput && <KeyboardReturn className="text-link" />}
+                            {!state.seedUrlInput && <QuestionMark className="text-link" />}
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    />
+                  </div>
+                )}
                 <div className="flex flex-wrap justify-center gap-6 pc:w-[720px] px-4">
                   {state.groups.map(({ group, config, loginState }) => {
                     const loginButton = [
@@ -456,6 +526,16 @@ export const Join = observer(() => {
                           size={44}
                           fontSize={20}
                         />
+                        {group.private && (
+                          <Tooltip title="不再显示">
+                            <IconButton
+                              className="absolute right-1 bottom-1 z-10"
+                              onClick={() => handleDeletePrivateGroup(group)}
+                            >
+                              <Delete className="text-gray-9c" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         {config.anonymous && (!!config.mixin || !!config.keystore || !!config.metamask) && (
                           <Button
                             className="flex flex-center absolute text-14 right-1 py-1 top-1 text-gray-9c"

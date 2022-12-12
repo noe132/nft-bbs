@@ -41,6 +41,7 @@ const loginState = t.intersection([
       t.nullType,
       t.number,
     ]),
+    privateGroups: t.array(t.number),
   }),
 ]);
 

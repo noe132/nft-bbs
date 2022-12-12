@@ -19,6 +19,7 @@ export const configController: Parameters<FastifyRegister>[0] = (fastify, _opts,
         metamask: !!config.defaultGroup?.metamask,
       },
       admin: config.admin ?? [],
+      joinBySeedUrl: !!config.joinBySeedUrl,
       group,
     };
   });

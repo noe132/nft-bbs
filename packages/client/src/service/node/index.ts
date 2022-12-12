@@ -15,7 +15,7 @@ import {
 } from 'nft-bbs-types';
 
 import {
-  runLoading, routeUrlPatterns, matchRoutePatterns,
+  runLoading, routeUrlPatterns, getRouteGroupId,
   getPageStateByPageName, constructRoutePath,
 } from '~/utils';
 import {
@@ -69,6 +69,7 @@ const state = observable({
     group: {} as Record<number, GroupConfig>,
     defaultGroup: {} as GroupConfig,
     admin: [] as Array<string>,
+    joinBySeedUrl: false,
     groupId: '',
     get currentGroup() {
       return state.config.group[state.groupId] ?? state.config.defaultGroup ?? {
@@ -677,6 +678,15 @@ const counter = {
 const group = {
   join: (groupStatus: GroupStatus, useShortName = true) => either.tryCatch(
     () => {
+      runInAction(() => {
+        if (!loginStateService.state.privateGroups) {
+          loginStateService.state.privateGroups = [];
+        }
+        if (!loginStateService.state.privateGroups.includes(groupStatus.id)) {
+          loginStateService.state.privateGroups.push(groupStatus.id);
+        }
+      });
+
       QuorumLightNodeSDK.cache.Group.clear();
       const seedUrls = Array.from(new Set([
         groupStatus.mainSeedUrl,
@@ -716,19 +726,39 @@ const group = {
     },
     (e) => e as Error,
   ),
-  loadGroups: fp.pipe(
-    () => GroupApi.list(),
-    taskEither.map(action((v) => {
-      state.groups = v;
-      return v;
-    })),
-    taskEither.chainW((groups) => {
-      const tasks = groups
-        .map((v) => v.id)
-        .map((v) => () => appconfig.load(v));
-      return taskEither.fromTask(task.sequenceArray(tasks));
-    }),
-  ),
+  joinBySeedUrl: async (seedUrl: string) => {
+    const group = await GroupApi.joinBySeedurl(seedUrl);
+    if (!group) { return null; }
+    const existedGroup = state.groups.find((v) => v.id === group.id);
+    if (existedGroup) { return existedGroup; }
+    runInAction(() => {
+      state.groups.push(group);
+    });
+    return group;
+  },
+  loadGroups: () => {
+    const shortName = getRouteGroupId(window.location.pathname);
+    const id = Number(shortName) ?? 0;
+    return fp.pipe(
+      () => GroupApi.list({
+        privateGroupIds: [
+          ...loginStateService.state.privateGroups || [],
+          ...id ? [id] : [],
+        ],
+        privateGroupShortNames: shortName ? [shortName] : undefined,
+      }),
+      taskEither.map(action((v) => {
+        state.groups = v;
+        return v;
+      })),
+      taskEither.chainW((groups) => {
+        const tasks = groups
+          .map((v) => v.id)
+          .map((v) => () => appconfig.load(v));
+        return taskEither.fromTask(task.sequenceArray(tasks));
+      }),
+    )();
+  },
   setDocumentTitle: (title?: string) => {
     document.title = [
       'Port',
@@ -756,6 +786,7 @@ const config = {
               };
               state.config.group = v.group;
               state.config.admin = v.admin;
+              state.config.joinBySeedUrl = v.joinBySeedUrl;
               state.config.loaded = true;
             });
             return null;
@@ -881,7 +912,7 @@ const init = () => {
       }
 
       return fp.pipe(
-        option.fromNullable(matchRoutePatterns(window.location.pathname)),
+        option.fromNullable(getRouteGroupId(window.location.pathname)),
         option.chain((groupIdOrShortName) => {
           const groupId = parseInt(groupIdOrShortName, 10);
           const groupItem = state.groups.find((v) => [
