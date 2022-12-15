@@ -33,7 +33,7 @@ export interface PixabayResponse {
 
 export const search = async (options: any = {}) => {
   const item = await request<PixabayResponse>({
-    url: 'https://pixabay.com/api',
+    url: 'https://pixabay.com/api/',
     params: {
       key: '13927481-1de5dcccace42d9447c90346f',
       safesearch: 'true',
