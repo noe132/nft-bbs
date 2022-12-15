@@ -51,6 +51,7 @@ export const Header = observer((props: { className?: string }) => {
     },
     get showNftRequestButton() {
       const conditions = [
+        !!nodeService.state.config.currentGroup.nft,
         !nftService.state.tokenIdMap.get(keyService.state.address)?.loading,
         !nftService.state.tokenIds.length,
         keyService.state.address,
@@ -318,7 +319,7 @@ export const Header = observer((props: { className?: string }) => {
                     ] as const).map(([t, v], i) => (
                       <Button
                         className={classNames(
-                          'min-w-0 px-4',
+                          'min-w-0 px-3',
                           postlistState?.mode.hot === v && 'text-rum-orange',
                           postlistState?.mode.hot && 'text-gray-9c',
                         )}
