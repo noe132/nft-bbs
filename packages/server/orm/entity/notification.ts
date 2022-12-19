@@ -4,6 +4,7 @@ import { AppDataSource } from '../data-source';
 import { Comment } from './comment';
 import { Post } from './posts';
 import { Profile } from './profile';
+import { TempProfile } from './tempProfile';
 
 @Entity({ name: 'notifications' })
 export class Notification {
@@ -132,10 +133,14 @@ export class Notification {
       }
     });
 
-    const [posts, comments, profiles] = await Promise.all([
+    const [posts, comments, profiles, tempProfiles] = await Promise.all([
       Post.bulkGet(postTrxIds, manager),
       Comment.bulkGet(commentTrxIds, manager),
       Profile.bulkGet(items.map((v) => ({
+        groupId: v.groupId,
+        userAddress: v.from,
+      })), manager),
+      TempProfile.bulkGet(items.map((v) => ({
         groupId: v.groupId,
         userAddress: v.from,
       })), manager),
@@ -172,11 +177,16 @@ export class Notification {
         }
       }
 
+      const profile = profiles.find((v) => v.groupId === item.groupId && v.userAddress === item.from);
+      const tempProfile = tempProfiles.find((v) => v.groupId === item.groupId && v.userAddress === item.from);
+      const fromProfile = profile
+        ?? (tempProfile && TempProfile.toProfile(tempProfile))
+        ?? Profile.generateFallbackProfile({ userAddress: item.from, groupId: item.groupId });
+
       item.extra = {
         object,
         actionObject,
-        fromProfile: profiles.find((v) => v.groupId === item.groupId && v.userAddress === item.from)
-          ?? Profile.generateFallbackProfile({ userAddress: item.from, groupId: item.groupId }),
+        fromProfile,
       };
     });
 

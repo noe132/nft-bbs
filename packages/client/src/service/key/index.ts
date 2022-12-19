@@ -155,6 +155,6 @@ export const keyService = {
   validate,
   validateMixin,
   getTrxCreateParam,
-  getAdminSignParam,
+  getSignParams: getAdminSignParam,
   sign,
 };

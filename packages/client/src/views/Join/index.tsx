@@ -126,7 +126,11 @@ export const Join = observer(() => {
       if (isPC) {
         state.mixinLogin.dialogOpen = true;
       } else {
-        window.open(`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`);
+        window.open(VaultApi.getMixinOauthUrl({
+          state: keyInHex,
+          return_to: `${window.location.origin}/mixin-login.html`,
+          scope: 'PROFILE:READ+COLLECTIBLES:READ',
+        }));
       }
     });
   };
@@ -164,25 +168,34 @@ export const Join = observer(() => {
       async () => {
         await fp.pipe(
           () => VaultApi.getOrCreateAppUser(jwt),
-          taskEither.matchW(
-            () => {
-              snackbarService.error(lang.join.loginFailed);
-              runInAction(() => { state.mixinLogin.dialogOpen = false; });
-            },
-            action((data) => {
-              loginStateService.state.groups[group.id] = {
-                ...loginStateService.state.groups[group.id],
-                mixin: {
-                  mixinJWT: jwt,
-                  userName: data.user.display_name,
-                },
-                lastLogin: 'mixin',
-              };
-              loginStateService.state.autoLoginGroupId = group.id;
-              keyService.useMixin(data);
-              joinGroup(group);
-            }),
-          ),
+          taskEither.mapLeft(() => {
+            snackbarService.error(lang.join.loginFailed);
+            runInAction(() => { state.mixinLogin.dialogOpen = false; });
+          }),
+          taskEither.map(action((data) => {
+            loginStateService.state.groups[group.id] = {
+              ...loginStateService.state.groups[group.id],
+              mixin: {
+                mixinJWT: jwt,
+                userName: data.user.display_name,
+              },
+              lastLogin: 'mixin',
+            };
+            loginStateService.state.autoLoginGroupId = group.id;
+            keyService.useMixin(data);
+            joinGroup(group);
+            return data;
+          })),
+          // taskEither.chainW((data) => async () => ProfileApi.setTempProfile({
+          //   groupId: group.id,
+          //   userAddress: data.appUser.eth_address,
+          //   name: data.user.display_name,
+          //   avatar: data.user.avatar_url,
+          //   ...await keyService.getAdminSignParam(),
+          // })),
+          // taskEither.chainW((data) => taskEither.fromTask(
+          //   () => nodeService.profile.get({ userAddress: data.userAddress }),
+          // )),
         )();
       },
     );
@@ -1004,7 +1017,11 @@ export const Join = observer(() => {
             <div className="flex-col flex-1 gap-y-4 items-stretch">
               <iframe
                 className="w-[450px] h-full"
-                src={`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${state.mixinLogin.keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`}
+                src={VaultApi.getMixinOauthUrl({
+                  state: state.mixinLogin.keyInHex,
+                  return_to: `${window.location.origin}/mixin-login.html`,
+                  scope: 'PROFILE:READ+COLLECTIBLES:READ',
+                })}
               />
             </div>
           </div>

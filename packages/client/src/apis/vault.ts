@@ -1,4 +1,5 @@
 import { either, function as fp, taskEither } from 'fp-ts';
+import { stringify } from 'query-string';
 import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { VAULT_API_BASE_URL } from './common';
@@ -156,3 +157,11 @@ export const getOrCreateAppUser = (jwt: string) => fp.pipe(
   )),
   taskEither.map((users) => ({ ...users, jwt })),
 )();
+
+
+interface MixinOauthQuery {
+  state: string
+  return_to: string
+  scope?: string
+}
+export const getMixinOauthUrl = (query: MixinOauthQuery) => `https://vault.rumsystem.net/v1/oauth/mixin/login?${stringify(query)}`;

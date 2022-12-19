@@ -10,4 +10,5 @@ export * from './pendingContent';
 export * from './posts';
 export * from './profile';
 export * from './stackedCounter';
+export * from './tempProfile';
 export * from './trxset';

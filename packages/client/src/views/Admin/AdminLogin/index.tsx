@@ -106,8 +106,10 @@ export const AdminLogin = observer(() => {
       if (isPC) {
         state.mixinLogin = true;
       } else {
-        // window.open('/mixin-login.html');
-        window.open(`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${state.keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`);
+        window.open(VaultApi.getMixinOauthUrl({
+          state: state.keyInHex,
+          return_to: `${window.location.origin}/mixin-login.html`,
+        }));
       }
     });
   };
@@ -434,7 +436,10 @@ export const AdminLogin = observer(() => {
             <div className="flex-col flex-1 gap-y-4 items-stretch">
               <iframe
                 className="w-[450px] h-full"
-                src={`https://vault.rumsystem.net/v1/oauth/mixin/login?state=${state.keyInHex}&return_to=${encodeURIComponent(`${window.location.origin}/mixin-login.html`)}`}
+                src={VaultApi.getMixinOauthUrl({
+                  state: state.keyInHex,
+                  return_to: `${window.location.origin}/mixin-login.html`,
+                })}
               />
             </div>
           </div>

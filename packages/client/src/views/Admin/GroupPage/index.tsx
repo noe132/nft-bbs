@@ -39,7 +39,7 @@ export const GroupPage = observer(() => {
       (l) => { state.loading = l; },
       async () => {
         await fp.pipe(
-          taskEither.fromTask(() => keyService.getAdminSignParam()),
+          taskEither.fromTask(() => keyService.getSignParams()),
           taskEither.chainW((admin) => () => GroupApi.listAll(admin)),
           taskEither.map(action((v) => {
             state.groups = v;
@@ -142,7 +142,7 @@ export const GroupPage = observer(() => {
         (l) => { state.addGroupDialog.loading = l; },
         async () => {
           const result = await GroupApi.update({
-            ...await keyService.getAdminSignParam(),
+            ...await keyService.getSignParams(),
             id: state.addGroupDialog.id,
             shortName: state.addGroupDialog.shortName,
             mainSeedUrl: state.addGroupDialog.mainSeedUrl,
@@ -166,7 +166,7 @@ export const GroupPage = observer(() => {
       (l) => { state.addGroupDialog.loading = l; },
       async () => {
         await GroupApi.add({
-          ...await keyService.getAdminSignParam(),
+          ...await keyService.getSignParams(),
           shortName: state.addGroupDialog.shortName,
           mainSeedUrl: state.addGroupDialog.mainSeedUrl,
           commentSeedUrl: state.addGroupDialog.commentSeedUrl,
@@ -195,7 +195,7 @@ export const GroupPage = observer(() => {
     });
     if (result === 'cancel') { return; }
     GroupApi.del({
-      ...await keyService.getAdminSignParam(),
+      ...await keyService.getSignParams(),
       id: group.id,
     });
     snackbarService.show('删除成功');
@@ -221,7 +221,7 @@ export const GroupPage = observer(() => {
     });
     if (result === 'cancel') { return; }
     GroupApi.repolling({
-      ...await keyService.getAdminSignParam(),
+      ...await keyService.getSignParams(),
       id: group.id,
     });
     snackbarService.show('已清空已有数据并重新开始索引');

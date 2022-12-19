@@ -56,7 +56,7 @@ export const NFTSideBox = observer((props: Props) => {
       (l) => { nftService.state.requestDialog.loading = l; },
       async () => {
         await NftRequestApi.submitRequest({
-          ...await keyService.getAdminSignParam(),
+          ...await keyService.getSignParams(),
           groupId: nodeService.state.groupId,
           memo: nftService.state.requestDialog.memo,
         });

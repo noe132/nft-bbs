@@ -188,7 +188,7 @@ const trx = {
 };
 
 const profile = {
-  get: async (params: { userAddress: string } | { trxId: string }) => {
+  get: async (params: ({ userAddress: string } | { trxId: string }) & { createTemp?: boolean }) => {
     let profileItem = 'userAddress' in params
       ? await ProfileApi.getByUserAddress(state.groupId, params.userAddress)
       : await ProfileApi.getByTrxId(state.groupId, params.trxId);
@@ -202,6 +202,18 @@ const profile = {
         avatar: '',
         timestamp: Date.now(),
       };
+    }
+
+    if ((!profileItem || !profileItem.name) && keyService.state.keys?.type === 'mixin' && params.createTemp) {
+      const result = await ProfileApi.setTempProfile({
+        groupId: state.groupId,
+        name: keyService.state.keys.user.display_name,
+        avatar: keyService.state.keys.user.avatar_url,
+        ...await keyService.getSignParams(),
+      });
+      if (either.isRight(result)) {
+        profileItem = result.right;
+      }
     }
 
     runInAction(() => {
@@ -714,13 +726,15 @@ const group = {
         }
       });
 
-      if (window.location.pathname !== `/${state.routeGroupId}`) {
-        history.replaceState(null, '', `/${state.routeGroupId}`);
+      const groupId = getRouteGroupId(window.location.pathname);
+
+      if (!groupId && groupId !== groupStatus.id.toString() && groupId !== groupStatus.shortName) {
+        history.replaceState(null, '', `/${groupStatus.shortName || groupStatus.id}`);
       }
 
       group.setDocumentTitle();
       if (keyService.state.address) {
-        profile.get({ userAddress: keyService.state.address });
+        profile.get({ userAddress: keyService.state.address, createTemp: true });
         notification.getUnreadCount();
       }
     },

@@ -54,7 +54,7 @@ export const GroupConfigPage = observer(() => {
       async () => {
         await Promise.all([
           fp.pipe(
-            taskEither.fromTask(() => keyService.getAdminSignParam()),
+            taskEither.fromTask(() => keyService.getSignParams()),
             taskEither.chainW((admin) => () => GroupApi.listAll(admin)),
             taskEither.map(action((v) => {
               state.groups = v;
@@ -62,7 +62,7 @@ export const GroupConfigPage = observer(() => {
           )(),
           fp.pipe(
             async () => ConfigApi.list({
-              ...await keyService.getAdminSignParam(),
+              ...await keyService.getSignParams(),
             }),
             taskEither.map(action((v) => {
               state.list = v;
@@ -100,7 +100,7 @@ export const GroupConfigPage = observer(() => {
     });
     if (result === 'cancel') { return; }
     await ConfigApi.del({
-      ...await keyService.getAdminSignParam(),
+      ...await keyService.getSignParams(),
       groupId: config.groupId,
     });
     snackbarService.show('删除成功');
@@ -130,7 +130,7 @@ export const GroupConfigPage = observer(() => {
       (l) => { state.setGroupConfigDialog.loading = l; },
       async () => {
         await ConfigApi.set({
-          ...await keyService.getAdminSignParam(),
+          ...await keyService.getSignParams(),
           anonymous,
           groupId,
           keystore,

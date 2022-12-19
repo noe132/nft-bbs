@@ -7,6 +7,7 @@ import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
 import { Profile } from './profile';
 import { StackedCounter } from './stackedCounter';
+import { TempProfile } from './tempProfile';
 
 @Entity({ name: 'posts' })
 export class Post {
@@ -173,10 +174,19 @@ export class Post {
       groupId: item.groupId,
       userAddress: item.userAddress,
     })));
+    const tempProfiles = await TempProfile.bulkGet(items.map((item) => ({
+      groupId: item.groupId,
+      userAddress: item.userAddress,
+    })));
     const profileMap = profiles.reduce<Record<string, Profile>>((p, c) => {
       p[c.userAddress] = c;
       return p;
     }, {});
+    tempProfiles.map(TempProfile.toProfile).forEach((v) => {
+      if (!profileMap[v.userAddress]) {
+        profileMap[v.userAddress] = v;
+      }
+    });
 
     items.forEach((item) => {
       item.extra = {

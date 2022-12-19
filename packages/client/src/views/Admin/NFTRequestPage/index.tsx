@@ -57,7 +57,7 @@ export const NFTRequestPage = observer(() => {
       (l) => { state.loading = l; },
       async () => {
         const items = await NftRequestApi.list({
-          ...await keyService.getAdminSignParam(),
+          ...await keyService.getSignParams(),
           limit: state.limit,
           offset: state.offset,
           filter: state.filter,
@@ -91,7 +91,7 @@ export const NFTRequestPage = observer(() => {
       (l) => { state.replyDialog.loading = l; },
       async () => {
         NftRequestApi.submitRequestReply({
-          ...await keyService.getAdminSignParam(),
+          ...await keyService.getSignParams(),
           id: state.replyDialog.id,
           reply: state.replyDialog.reply,
           type: state.replyDialog.type,
