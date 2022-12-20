@@ -32,14 +32,21 @@ export const AdminHeader = observer((props: { className?: string }) => {
         props.className,
       )}
     >
-      <button className="s1360:hidden block absolute left-5 flex-none h-auto">
-        <SiteLogo />
-      </button>
+      <a className="s1360:hidden block absolute left-5" href="/" target="_blank" rel="noopener">
+        <button className="flex-none h-auto">
+          <SiteLogo />
+        </button>
+      </a>
       <div className="flex w-[1100px] justify-between self-stretch gap-x-4">
         <div className="flex items-center flex-1">
-          <button className="s1360:block hidden flex-none h-auto mr-4">
-            <SiteLogo />
-          </button>
+          <a className="s1360:block hidden" href="/" target="_blank" rel="noopener">
+            <button className="flex-none h-auto mr-4">
+              <SiteLogo />
+            </button>
+          </a>
+          <div className="text-white">
+            当前用户 address: {keyService.state.address}
+          </div>
         </div>
 
         <div className="flex items-center gap-x-4">
