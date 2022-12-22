@@ -1,7 +1,7 @@
 import { either, taskEither, function as fp } from 'fp-ts';
 import { Type } from 'io-ts';
 import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
-import { postType, commentType, likeType, dislikeType, imageType, profileType, postDeleteType } from 'nft-bbs-types';
+import { postType, commentType, likeType, dislikeType, imageType, profileType, postDeleteType, postAppendType } from 'nft-bbs-types';
 
 import { AppDataSource } from '~/orm/data-source';
 import { GroupStatus, PendingContent, TrxSet } from '~/orm/entity';
@@ -15,6 +15,7 @@ import { handleImage } from './handleImage';
 import { handleProfile } from './handleProfile';
 import { handlePostDelete } from './handlePostDelete';
 import { getMergedTaskGroup, TaskItem, TrxHandler, TrxTypes } from './helper';
+import { handlePostAppend } from './handlePostAppend';
 
 const LIMIT = 100;
 
@@ -22,6 +23,7 @@ const handlers: Array<{ type: Type<any>, handler: TrxHandler, trxType: TrxTypes 
   { type: postDeleteType, handler: handlePostDelete, trxType: 'postDelete' },
   { type: postType, handler: handlePost, trxType: 'post' },
   { type: commentType, handler: handleComment, trxType: 'comment' },
+  { type: postAppendType, handler: handlePostAppend, trxType: 'postAppend' },
   { type: likeType, handler: handleCounter, trxType: 'like' },
   { type: dislikeType, handler: handleCounter, trxType: 'dislike' },
   { type: imageType, handler: handleImage, trxType: 'image' },
@@ -52,7 +54,7 @@ const handleContent = async (params: HandleContentParams) => {
 
   if (taskItem) {
     const roles = taskItem.roles;
-    const main = roles.includes('main') && ['post', 'postDelete', 'image'].includes(trxType);
+    const main = roles.includes('main') && ['post', 'postDelete', 'postAppend', 'image'].includes(trxType);
     const comment = roles.includes('comment') && ['comment'].includes(trxType);
     const counter = roles.includes('counter') && ['like', 'dislike'].includes(trxType);
     const profile = roles.includes('profile') && ['profile'].includes(trxType);

@@ -2,7 +2,7 @@ import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryColumn }
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
 import type { Comment } from './comment';
-import type { Post } from './posts';
+import type { Post } from './post';
 
 @Entity({ name: 'stackedcounters' })
 export class StackedCounter {

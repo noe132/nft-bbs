@@ -6,7 +6,7 @@ import type { GroupStatus } from '~/orm';
 import type { SendFn } from '~/service/socket';
 
 export type GroupRoles = 'main' | 'comment' | 'counter' | 'profile';
-export type TrxTypes = 'postDelete' | 'post' | 'comment' | 'like' | 'dislike' | 'image' | 'profile';
+export type TrxTypes = 'postDelete' | 'post' | 'comment' | 'like' | 'dislike' | 'image' | 'profile' | 'postAppend';
 export type TrxHandler = (
   v: IContent,
   groupStatus: GroupStatus,

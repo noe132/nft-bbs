@@ -11,7 +11,7 @@ import type {
 } from 'nft-bbs-server';
 import {
   CommentType, DislikeType, ImageType, LikeType,
-  PostDeleteType, PostType, ProfileType,
+  PostDeleteType, PostType, ProfileType, PostAppendType,
 } from 'nft-bbs-types';
 
 import {
@@ -354,11 +354,33 @@ const post = {
           disliked: false,
           liked: false,
           userProfile: { ...state.myProfile },
+          appends: [],
         },
       };
       runInAction(() => {
         state.post.newPostCache.add(post.trxId);
         state.post.map.set(post.trxId, post);
+      });
+    }
+  },
+
+  append: async (content: string, postId: string) => {
+    const object: PostAppendType = {
+      type: 'NoteAppend',
+      content,
+      attributedTo: [{ type: 'Note', id: postId }],
+    };
+
+    const res = await trx.create(object, 'main');
+    const post = state.post.map.get(postId);
+
+    if (res && post?.extra?.appends) {
+      post.extra.appends.push({
+        content,
+        groupId: state.groupId,
+        postId,
+        timestamp: Date.now(),
+        trxId: res.trx_id,
       });
     }
   },
@@ -883,6 +905,12 @@ const socketEventHandler: Partial<SocketEventListeners> = {
   appconfig: action((v) => {
     state.appConfigMap[v.groupId] = v.data;
   }),
+  postAppend: (v) => {
+    const post = state.post.map.get(v.postId);
+    if (post?.extra?.appends.every((u) => u.trxId !== v.trxId)) {
+      post.extra.appends.push(v);
+    }
+  },
 };
 
 const init = () => {

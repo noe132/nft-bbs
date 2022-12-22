@@ -5,6 +5,7 @@ import {
 } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
+import { PostAppend } from './postAppend';
 import { Profile } from './profile';
 import { StackedCounter } from './stackedCounter';
 import { TempProfile } from './tempProfile';
@@ -70,6 +71,7 @@ export class Post {
     liked: boolean
     disliked: boolean
     userProfile: Profile
+    appends: Array<PostAppend>
   };
 
   private static create(params: EntityConstructorParams<Post, 'id' | 'extra'>) {
@@ -156,28 +158,34 @@ export class Post {
   public static async appendExtra(_items: Post | Array<Post>, options: { groupId: string, viewer?: string }) {
     const items = Array.isArray(_items) ? _items : [_items];
     if (!items.length) { return items; }
-    const [likedMap, dislikedMap] = options?.viewer
-      ? await Promise.all([
-        StackedCounter.getCounterMap({
-          type: 'Like',
-          userAddress: options.viewer,
-          items,
-        }),
-        StackedCounter.getCounterMap({
-          type: 'Dislike',
-          userAddress: options.viewer,
-          items,
-        }),
-      ])
-      : [{}, {}];
-    const profiles = await Profile.bulkGet(items.map((item) => ({
-      groupId: item.groupId,
-      userAddress: item.userAddress,
-    })));
-    const tempProfiles = await TempProfile.bulkGet(items.map((item) => ({
-      groupId: item.groupId,
-      userAddress: item.userAddress,
-    })));
+    const [
+      likedMap,
+      dislikedMap,
+      profiles,
+      tempProfiles,
+      appends,
+    ] = await Promise.all([
+      options?.viewer ? StackedCounter.getCounterMap({
+        type: 'Like',
+        userAddress: options.viewer,
+        items,
+      }) : Promise.resolve({}),
+      options?.viewer ? StackedCounter.getCounterMap({
+        type: 'Dislike',
+        userAddress: options.viewer,
+        items,
+      }) : Promise.resolve({}),
+      Profile.bulkGet(items.map((item) => ({
+        groupId: item.groupId,
+        userAddress: item.userAddress,
+      }))),
+      TempProfile.bulkGet(items.map((item) => ({
+        groupId: item.groupId,
+        userAddress: item.userAddress,
+      }))),
+      PostAppend.bulkGet(items.map((v) => v.trxId)),
+    ]);
+
     const profileMap = profiles.reduce<Record<string, Profile>>((p, c) => {
       p[c.userAddress] = c;
       return p;
@@ -197,6 +205,7 @@ export class Post {
             userAddress: item.userAddress,
             groupId: item.groupId,
           }),
+        appends: appends.filter((v) => v.postId === item.trxId),
       };
     });
 

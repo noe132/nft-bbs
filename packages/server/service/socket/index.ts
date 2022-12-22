@@ -4,7 +4,7 @@ import { either } from 'fp-ts';
 import { number, string, type, TypeOf } from 'io-ts';
 import { DislikeType, LikeType } from 'nft-bbs-types';
 import { Server, Socket } from 'socket.io';
-import { GroupStatus, Notification, Profile } from '~/orm';
+import { GroupStatus, Notification, Profile, PostAppend } from '~/orm';
 
 let socketIo: Server | null = null;
 
@@ -34,6 +34,7 @@ export interface SocketIOEventMap {
     groupId: GroupStatus['id']
     data: Record<QuorumLightNodeSDK.IAppConfigItem['Name'], undefined | QuorumLightNodeSDK.IAppConfigItem>
   }
+  postAppend: PostAppend
 }
 
 type SendParams<T extends keyof SocketIOEventMap> = {

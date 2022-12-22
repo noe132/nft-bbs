@@ -53,6 +53,17 @@ export const postType = new Type<PostType>(
   fp.identity,
 );
 
+export const postAppendType = type({
+  type: literal('NoteAppend'),
+  content: string,
+  attributedTo: tuple([
+    type({
+      type: literal('Note'),
+      id: string,
+    }),
+  ]),
+});
+
 export const commentType = excess(intersection([
   type({
     type: literal('Note'),
@@ -120,6 +131,7 @@ export const postDeleteType = type({
 });
 
 export type PostType = TypeOf<typeof postBaseType>;
+export type PostAppendType = TypeOf<typeof postAppendType>;
 export type CommentType = TypeOf<typeof commentType>;
 export type LikeType = TypeOf<typeof likeType>;
 export type DislikeType = TypeOf<typeof dislikeType>;

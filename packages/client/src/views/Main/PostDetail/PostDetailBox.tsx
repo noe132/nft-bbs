@@ -1,13 +1,15 @@
 import React from 'react';
 import classNames from 'classnames';
+import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
-import { Button, IconButton, Tooltip } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, TextField, Tooltip } from '@mui/material';
 import { Share, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
+import { LoadingButton } from '@mui/lab';
 import type { Post } from 'nft-bbs-server';
 import TrashIcon from 'boxicons/svg/regular/bx-trash.svg?fill-icon';
 
-import { ago, lang, renderPostMarkdown, runLoading, setClipboard, useWiderThan } from '~/utils';
+import { ago, lang, renderPostMarkdown, runLoading, setClipboard, ThemeLight, useWiderThan } from '~/utils';
 import { imageZoomService, nodeService, snackbarService, keyService, dialogService, nftService, routerService } from '~/service';
 import { UserAvatar, PostImageZoomButton } from '~/components';
 import { ImageApi } from '~/apis';
@@ -16,6 +18,11 @@ import { showTrxDetail } from '~/modals';
 export const PostDetailBox = observer((props: { className?: string, post: Post }) => {
   const state = useLocalObservable(() => ({
     likeLoading: false,
+    append: {
+      open: false,
+      loading: false,
+      content: '',
+    },
     get content() {
       const groupId = props.post.groupId;
       const matches = Array.from(this.postStat.content.matchAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g));
@@ -98,12 +105,38 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
     }
   };
 
+  const handleAppend = () => {
+    const content = state.append.content.trim();
+    if (!content) {
+      return;
+    }
+    runLoading(
+      (l) => { state.append.loading = l; },
+      async () => {
+        try {
+          await nodeService.post.append(content, props.post.trxId);
+          snackbarService.show('已添加附言');
+          runInAction(() => {
+            state.append.open = false;
+            state.append.content = '';
+          });
+        } catch (e) {}
+      },
+    );
+  };
+
+  const handleCloseAppend = action(() => {
+    if (!state.append.loading) {
+      state.append.open = false;
+    }
+  });
+
   const handleShare = () => {
     setClipboard(window.location.href);
     snackbarService.show(lang.post.urlCopied);
   };
 
-  return (
+  return (<>
     <div
       className={classNames(
         'flex-col w-full bg-black/80',
@@ -185,6 +218,53 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         />
       </div>
 
+
+      <div
+        className={classNames(
+          'flex-col mt-4 leading-relaxed divide-y divide-white/20',
+          'border-l border-l-[#b4daff]',
+          'border-t border-t-white/20',
+          !state.isPostAuthor && !props.post.extra?.appends.length && '!hidden',
+          isPC && 'mx-8',
+          !isPC && 'px-2',
+        )}
+      >
+        {props.post.extra?.appends.map((v, i) => (
+          <div className="px-6 py-3" key={v.trxId}>
+            <div className="text-gray-af">
+              <span className="text-14">
+                附言 {i + 1}
+              </span>
+              <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
+                <span className="text-12">
+                  · {ago(v.timestamp)}
+                </span>
+              </Tooltip>
+            </div>
+            <div className="text-white text-14 mt-1">
+              {v.content}
+            </div>
+          </div>
+        ))}
+        {state.isPostAuthor && (
+          <div className="flex items-center justify-between px-6 py-4">
+            <span className="text-rum-orange text-14">
+              你可以继续补充附言…
+            </span>
+
+            <Button
+              className="text-14 px-3 py-[2px]"
+              variant="outlined"
+              color="rum"
+              size="small"
+              onClick={action(() => { state.append.open = true; })}
+            >
+              补充附言
+            </Button>
+          </div>
+        )}
+      </div>
+
       <div
         className={classNames(
           'flex justify-between border-dark-blue border-t mt-4 py-4',
@@ -238,5 +318,49 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         </Button>
       </div>
     </div>
-  );
+    <ThemeLight>
+      <Dialog
+        className="flex justify-center items-center"
+        PaperProps={{ className: 'w-full max-w-[500px]' }}
+        TransitionProps={{ className: 'w-full' }}
+        open={state.append.open}
+        onClose={handleCloseAppend}
+      >
+        <DialogTitle className="mt-2 px-8 text-gray-4a">
+          添加附言
+        </DialogTitle>
+        <DialogContent className="px-8 text-16 text-gray-64 overflow-visible">
+          <TextField
+            className="w-full mx-auto !max-w-none"
+            inputProps={{ className: '!max-w-none' }}
+            variant="outlined"
+            multiline
+            minRows={3}
+            maxRows={6}
+            value={state.append.content}
+            onChange={action((e) => { state.append.content = e.target.value; })}
+          />
+        </DialogContent>
+        <DialogActions className="flex justify-end items-center py-3 px-6">
+          <Button
+            className="block bg-white cursor-pointer min-w-[70px] rounded-full"
+            color="inherit"
+            onClick={handleCloseAppend}
+          >
+            取消
+          </Button>
+          <LoadingButton
+            className="min-w-[70px] rounded-full"
+            color="link"
+            variant="outlined"
+            onClick={handleAppend}
+            disabled={!state.append.content.trim()}
+          >
+            补充附言
+          </LoadingButton>
+        </DialogActions>
+        <span className="block pb-2" />
+      </Dialog>
+    </ThemeLight>
+  </>);
 });

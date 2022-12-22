@@ -1,6 +1,7 @@
 import React from 'react';
 import { action, observable } from 'mobx';
 import { createPromise } from '~/utils';
+import { DialogProps } from '@mui/material';
 
 type DialogResult = 'confirm' | 'cancel';
 
@@ -15,6 +16,7 @@ export interface DialogItem {
   cancelTestId?: string
   /** default 450px */
   maxWidth?: number
+  dialogProps?: Partial<DialogProps>
   rs: (type: DialogResult) => unknown
 }
 

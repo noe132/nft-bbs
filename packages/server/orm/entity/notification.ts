@@ -2,7 +2,7 @@ import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryGenerate
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
 import { Comment } from './comment';
-import { Post } from './posts';
+import { Post } from './post';
 import { Profile } from './profile';
 import { TempProfile } from './tempProfile';
 

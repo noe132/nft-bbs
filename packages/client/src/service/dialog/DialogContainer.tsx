@@ -47,8 +47,22 @@ const ConfirmDialog = observer((props: { item: DialogItem }) => {
 
   return (
     <Dialog
-      className="flex justify-center items-center"
-      PaperProps={{ style: { maxWidth } }}
+      {...props.item.dialogProps}
+      className={classNames(
+        'flex justify-center items-center',
+        props.item.dialogProps?.className,
+      )}
+      TransitionProps={{
+        className: classNames(
+          'max-w-[100vw]',
+          props.item.dialogProps?.TransitionProps?.className,
+        ),
+        ...props.item.dialogProps?.TransitionProps,
+      }}
+      PaperProps={{
+        ...props.item.dialogProps?.PaperProps,
+        style: { maxWidth, ...props.item.dialogProps?.PaperProps?.style },
+      }}
       open={state.open}
       onClose={handleClose}
     >
