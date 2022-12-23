@@ -716,7 +716,9 @@ const group = {
         if (!loginStateService.state.privateGroups) {
           loginStateService.state.privateGroups = [];
         }
-        if (!loginStateService.state.privateGroups.includes(groupStatus.id)) {
+        const appendPrivateGroup = !loginStateService.state.privateGroups.includes(groupStatus.id)
+          && state.groups.every((v) => v.id !== groupStatus.id);
+        if (appendPrivateGroup) {
           loginStateService.state.privateGroups.push(groupStatus.id);
         }
       });
