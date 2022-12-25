@@ -20,7 +20,7 @@ export { IAppConfigItem, IAppConfigKeyListItem };
 
 export type { SocketIOEventMap, AuthenticateData } from '~/service/socket';
 
-const port = Number(process.env.PORT) || 8002;
+const port = Number(process.env.PORT) || 80;
 
 const main = async () => {
   // eslint-disable-next-line no-console
