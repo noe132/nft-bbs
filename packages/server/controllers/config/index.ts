@@ -13,10 +13,10 @@ export const configController: Parameters<FastifyRegister>[0] = (fastify, _opts,
     );
     return {
       defaultGroup: {
-        keystore: !!config.defaultGroup?.keystore,
-        mixin: !!config.defaultGroup?.mixin,
-        anonymous: !!config.defaultGroup?.anonymous,
-        metamask: !!config.defaultGroup?.metamask,
+        keystore: config.defaultGroup?.keystore ?? true,
+        mixin: config.defaultGroup?.mixin ?? true,
+        anonymous: config.defaultGroup?.anonymous ?? true,
+        metamask: config.defaultGroup?.metamask ?? true,
       },
       admin: config.admin ?? [],
       joinBySeedUrl: !!config.joinBySeedUrl,
