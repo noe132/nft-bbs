@@ -3,8 +3,6 @@ services:
     image: noe132/port-router:latest
     ports:
       - "${PORT:-35572}:80"
-    volumes:
-      - './docker/router.nginx.conf:/etc/nginx/nginx.conf'
     environment:
       PORT_SERVER_HOST: 'server'
     depends_on:
