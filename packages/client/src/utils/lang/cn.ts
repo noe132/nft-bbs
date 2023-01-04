@@ -114,6 +114,10 @@ export const content = {
       commentLike: '给你的评论点赞',
       commentDislike: '给你的评论点踩',
     },
+    nft: {
+      request: '申请了NFT：',
+      response: (approved: boolean, reply: string) => `管理员${approved ? '批准' : '拒绝'}了NFT申请: ${reply}`,
+    },
   },
   newPost: {
     pageTitle: '新帖子',

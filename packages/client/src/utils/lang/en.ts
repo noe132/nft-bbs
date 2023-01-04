@@ -116,6 +116,10 @@ export const content: Content = {
       commentLike: 'liked your comment',
       commentDislike: 'disliked your comment',
     },
+    nft: {
+      request: 'Request for NFT：',
+      response: (approved: boolean, reply: string) => `Admin ${approved ? 'approved' : 'rejected'} your NFT request: ${reply}`,
+    },
   },
   newPost: {
     pageTitle: 'New Post',

@@ -2,6 +2,7 @@ import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryGenerate
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
 import { Comment } from './comment';
+import { NftRequest } from './nftRequest';
 import { Post } from './post';
 import { Profile } from './profile';
 import { TempProfile } from './tempProfile';
@@ -24,10 +25,10 @@ export class Notification {
 
   @Index()
   @Column({ type: 'varchar', nullable: false })
-  public type!: 'like' | 'dislike' | 'comment';
+  public type!: 'like' | 'dislike' | 'comment' | 'nftrequest' | 'nftrequestresponse';
 
   @Column({ type: 'varchar', nullable: false })
-  public objectType!: 'post' | 'comment';
+  public objectType!: 'post' | 'comment' | 'nftrequest' | '';
 
   @Column({ nullable: false })
   public objectId!: string;
@@ -60,6 +61,9 @@ export class Notification {
     } | {
       type: 'comment'
       value: Comment
+    } | {
+      type: 'nftrequest'
+      value: NftRequest
     }
     actionObject?: {
       type: 'comment'
@@ -119,6 +123,7 @@ export class Notification {
   public static async appendExtra(items: Array<Notification>, manager?: EntityManager): Promise<Array<Notification>>;
   public static async appendExtra(_items: Array<Notification> | Notification, manager?: EntityManager) {
     const items = Array.isArray(_items) ? _items : [_items];
+    const nftRequestIds: Array<number> = [];
     const commentTrxIds: Array<string> = [];
     const postTrxIds: Array<string> = [];
     items.forEach((v) => {
@@ -131,9 +136,12 @@ export class Notification {
       if (v.actionObjectType === 'comment') {
         commentTrxIds.push(v.actionObjectId);
       }
+      if (v.objectType === 'nftrequest') {
+        nftRequestIds.push(Number(v.objectId));
+      }
     });
 
-    const [posts, comments, profiles, tempProfiles] = await Promise.all([
+    const [posts, comments, profiles, tempProfiles, nftRequests] = await Promise.all([
       Post.bulkGet(postTrxIds, manager),
       Comment.bulkGet(commentTrxIds, manager),
       Profile.bulkGet(items.map((v) => ({
@@ -144,6 +152,7 @@ export class Notification {
         groupId: v.groupId,
         userAddress: v.from,
       })), manager),
+      NftRequest.bulkGet(nftRequestIds),
     ]);
 
     items.forEach((item) => {
@@ -163,6 +172,14 @@ export class Notification {
           object = {
             type: 'comment',
             value: comment,
+          } as const;
+        }
+      } else if (item.objectType === 'nftrequest') {
+        const nftRequest = nftRequests.find((v) => v.id === Number(item.objectId));
+        if (nftRequest) {
+          object = {
+            type: 'nftrequest',
+            value: nftRequest,
           } as const;
         }
       }

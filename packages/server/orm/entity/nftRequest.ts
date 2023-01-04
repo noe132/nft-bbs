@@ -56,6 +56,15 @@ export class NftRequest {
     return (manager || AppDataSource.manager).findOne(NftRequest, { where: { id } });
   }
 
+  public static async bulkGet(ids: Array<NftRequest['id']>, manager?: EntityManager) {
+    if (!ids.length) { return []; }
+    return (manager || AppDataSource.manager).createQueryBuilder()
+      .from(NftRequest, 'nft')
+      .select('nft')
+      .whereInIds(ids)
+      .getMany();
+  }
+
   public static async pack(items: Array<NftRequest>, manager?: EntityManager) {
     if (!items.length) { return items; }
     const groupIds = Array.from(

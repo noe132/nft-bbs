@@ -7,10 +7,11 @@ import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
 import type { Notification } from 'nft-bbs-server';
 import { Button, CircularProgress, Tooltip } from '@mui/material';
-import { AlternateEmail, ChevronLeft, ExpandMore, ThumbDownAlt, ThumbUpAlt } from '@mui/icons-material';
+import { ChevronLeft, ExpandMore, ThumbDownAlt, ThumbUpAlt } from '@mui/icons-material';
 
 import ReplyIcon from 'boxicons/svg/regular/bx-reply.svg?fill-icon';
 import CommentDetailIcon from 'boxicons/svg/regular/bx-comment-detail.svg?fill-icon';
+import BellIcon from 'boxicons/svg/regular/bx-bell.svg?fill-icon';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';
 
 import { UserAvatar, BackButton, ScrollToTopButton, GroupCard, NFTSideBox, Scrollable } from '~/components';
@@ -30,9 +31,15 @@ export const NotificationPage = observer((props: { className?: string }) => {
   const loadingTriggerBox = useRef<HTMLDivElement>(null);
 
   const handleViewItem = (v: Notification) => {
+    if (v.type === 'nftrequest') {
+      window.open('/admin');
+      return;
+    }
     const post = v.extra?.object?.value;
     if (!post) { return; }
-    const postId = 'postId' in post ? post.postId : post.trxId;
+    const postId = 'postId' in post
+      ? post.postId
+      : 'trxId' in post ? post.trxId : '';
     routerService.navigate({
       page: 'postdetail',
       trxId: postId,
@@ -137,16 +144,26 @@ export const NotificationPage = observer((props: { className?: string }) => {
               if (v.type === 'comment') {
                 content = v.extra?.actionObject?.value.content ?? '';
               } else {
-                if (v.objectType === 'post') {
-                  const postContent = v.extra?.object?.value.content ?? '';
-                  const md = postContent.replaceAll(/!\[.*?\]\(.+?\)/g, lang.common.imagePlaceholder);
-                  content = RemoveMarkdown(md);
+                const object = v.extra?.object?.value;
+                if (object && 'content' in object) {
+                  if (v.objectType === 'post') {
+                    const postContent = object.content ?? '';
+                    const md = postContent.replaceAll(/!\[.*?\]\(.+?\)/g, lang.common.imagePlaceholder);
+                    content = RemoveMarkdown(md);
+                  }
+                  if (v.objectType === 'comment') {
+                    const commentContent = object.content ?? '';
+                    content = commentContent;
+                  }
                 }
-                if (v.objectType === 'comment') {
-                  const commentContent = v.extra?.object?.value.content ?? '';
-                  content = commentContent;
+                if (v.type === 'nftrequest' && v.extra?.object?.type === 'nftrequest' && object && 'memo' in object) {
+                  content = `${lang.notification.nft.request}${object.memo}`;
+                }
+                if (v.type === 'nftrequestresponse' && v.extra?.object?.type === 'nftrequest' && object && 'memo' in object) {
+                  content = lang.notification.nft.response(object.status === 'approved', object.reply);
                 }
               }
+              const showViewItem = ['comment', 'like', 'dislike', 'nftrequest'].includes(v.type);
               return (
                 <React.Fragment key={v.id}>
                   <div className="flex-col px-8 py-3 gap-y-4">
@@ -165,7 +182,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
 
                         <span className="break-all text-start">
                           <Link
-                            className="cursor-pointer"
+                            className="cursor-pointer !no-underline"
                             to={routerService.getPath({ page: 'userprofile', userAddress: fromProfile.userAddress })}
                           >
                             <span className="text-rum-orange text-16 mr-3">
@@ -185,7 +202,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
                             {actionText}
                           </span>
 
-                          {isPC && (
+                          {isPC && showViewItem && (
                             <button
                               className="text-link-soft text-14"
                               onClick={() => handleViewItem(v)}
@@ -196,7 +213,6 @@ export const NotificationPage = observer((props: { className?: string }) => {
                         </span>
                       </div>
                       {isPC && (
-
                         <div className="flex gap-x-4 ml-8">
                           {v.type === 'comment' && (
                             <Button
@@ -214,7 +230,7 @@ export const NotificationPage = observer((props: { className?: string }) => {
                     </div>
                     <div
                       className="flex items-center"
-                      onClick={() => !isPC && handleViewItem(v)}
+                      onClick={() => !isPC && showViewItem && handleViewItem(v)}
                     >
                       {v.type === 'like' && (
                         <ThumbUpAlt className="flex-none mr-3 -mb-px text-18 text-link-soft" />
@@ -225,8 +241,11 @@ export const NotificationPage = observer((props: { className?: string }) => {
                       {v.type === 'comment' && (
                         <CommentDetailIcon className="flex-none mr-3 -mb-px text-18 text-link-soft" />
                       )}
-                      {false && (
-                        <AlternateEmail className="flex-none mr-3 -mb-px text-18 text-link-soft" />
+                      {v.type === 'nftrequest' && (
+                        <BellIcon className="flex-none mr-3 -mb-px text-18 text-link-soft" />
+                      )}
+                      {v.type === 'nftrequestresponse' && (
+                        <BellIcon className="flex-none mr-3 -mb-px text-18 text-link-soft" />
                       )}
                       {false && (
                         <WineIcon className="flex-none mr-3 -mb-px text-18 text-rum-orange" />
