@@ -1,5 +1,5 @@
 import { either, function as fp, taskEither } from 'fp-ts';
-import { stringify } from 'query-string';
+import qs from 'query-string';
 import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { VAULT_API_BASE_URL } from './common';
@@ -164,4 +164,4 @@ interface MixinOauthQuery {
   return_to: string
   scope?: string
 }
-export const getMixinOauthUrl = (query: MixinOauthQuery) => `${VAULT_API_BASE_URL}/oauth/mixin/login?${stringify(query)}`;
+export const getMixinOauthUrl = (query: MixinOauthQuery) => `https://vault.rumsystem.net/v1/oauth/mixin/login?${qs.stringify(query)}`;

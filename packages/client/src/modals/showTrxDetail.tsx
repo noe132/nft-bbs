@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import { useEffect } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import * as QuorumLightNodeSdk from 'quorum-light-node-sdk';
+import * as rumsdk from 'rum-sdk-browser';
 import { Close } from '@mui/icons-material';
 import { Button, CircularProgress, Dialog, IconButton, Tooltip } from '@mui/material';
 
@@ -79,7 +79,7 @@ interface Props {
 }
 export const TrxDetailView = observer((props: Props) => {
   const state = useLocalObservable(() => ({
-    trx: null as null | QuorumLightNodeSdk.ITrx,
+    trx: null as null | rumsdk.ITrx,
     loading: false,
   }));
   const isPC = useWiderThan(960);
@@ -96,7 +96,7 @@ export const TrxDetailView = observer((props: Props) => {
           groupId = nodeService.state.groupMap?.comment.groupId;
         }
         if (!groupId) { return; }
-        const trx = await QuorumLightNodeSdk.chain.Trx.get(groupId, props.trxId);
+        const trx = await rumsdk.chain.Trx.get(groupId, props.trxId);
         runInAction(() => {
           state.trx = trx;
         });

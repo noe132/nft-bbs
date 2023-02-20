@@ -1,23 +1,18 @@
-import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryColumn } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
 
 @Entity({ name: 'imagefile' })
 export class ImageFile {
-  @PrimaryGeneratedColumn()
-  public id?: number;
+  @PrimaryColumn()
+  public groupId!: number;
+
+  @PrimaryColumn()
+  public id!: string;
 
   @Index()
   @Column({ nullable: false })
   public trxId!: string;
-
-  @Index()
-  @Column({ nullable: false })
-  public name!: string;
-
-  @Index()
-  @Column({ nullable: false })
-  public groupId!: number;
 
   @Column({ nullable: false })
   public mineType!: string;
@@ -38,22 +33,26 @@ export class ImageFile {
   })
   public timestamp!: number;
 
-  private static create(params: EntityConstructorParams<ImageFile, 'id'>) {
+  private static create(params: EntityConstructorParams<ImageFile>) {
     const item = new ImageFile();
     Object.assign(item, params);
     return item;
   }
 
-  public static async add(params: EntityConstructorParams<ImageFile, 'id'>, manager?: EntityManager) {
+  public static async add(params: EntityConstructorParams<ImageFile>, manager?: EntityManager) {
     const item = ImageFile.create(params);
     return (manager || AppDataSource.manager).save(ImageFile, item);
   }
 
-  public static async get(groupId: ImageFile['groupId'], trxId: string, manager?: EntityManager) {
+  public static async get(groupId: ImageFile['groupId'], id: string, manager?: EntityManager) {
     return (manager || AppDataSource.manager).findOne(ImageFile, {
-      where: { groupId, trxId },
+      where: { groupId, id },
       order: { id: 'desc' },
     });
+  }
+
+  public static async has(where: Required<Pick<FindOptionsWhere<ImageFile>, 'groupId' | 'id'>>, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).exists(ImageFile, { where });
   }
 
   public static async list(where: FindOptionsWhere<ImageFile> | Array<FindOptionsWhere<ImageFile>>, manager?: EntityManager) {

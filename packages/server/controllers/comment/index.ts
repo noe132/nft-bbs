@@ -5,16 +5,16 @@ import { Comment } from '~/orm';
 import { assertValidation, parseIntAssert, parseIntFromString, truncate } from '~/utils';
 
 export const commentController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
-  fastify.get('/:groupId/:trxId', async (req) => {
+  fastify.get('/:groupId/:id', async (req) => {
     const params = assertValidation(req.params, type({
       groupId: string,
-      trxId: string,
+      id: string,
     }));
     const query = assertValidation(req.query, type({
       viewer: string,
     }));
     const groupId = parseIntAssert(params.groupId);
-    const comment = await Comment.get({ groupId, trxId: params.trxId });
+    const comment = await Comment.get({ groupId, id: params.id });
     if (!comment) {
       throw new NotFound();
     }

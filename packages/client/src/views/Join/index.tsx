@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import { parse } from 'query-string';
+import qs from 'query-string';
 import { toUint8Array } from 'js-base64';
 import { providers, utils } from 'ethers';
 import { either, taskEither, function as fp } from 'fp-ts';
-import { utils as quorumUtils } from 'quorum-light-node-sdk';
+import { utils as quorumUtils } from 'rum-sdk-browser';
 import RemoveMarkdown from 'remove-markdown';
 import type { GroupStatus, IAppConfigItem } from 'nft-bbs-server';
 import {
@@ -140,7 +140,7 @@ export const Join = observer(() => {
     const crpytoKey = state.mixinLogin.crpytoKey;
     if (!crpytoKey || !group) { return; }
     const parseSearch = taskEither.tryCatch(async () => {
-      const query = parse(search);
+      const query = qs.parse(search);
       const cipher = new Uint8Array(toUint8Array(query.token as string));
       const iv = cipher.slice(0, 12);
       const data = cipher.slice(12);
@@ -330,12 +330,14 @@ export const Join = observer(() => {
   const handleLoginByRandom = async (group: GroupStatus) => {
     const keys = await keyService.createRandom('123');
     keyService.useKeystore(keys);
-    loginStateService.state.groups[group.id] = {
-      ...loginStateService.state.groups[group.id],
-      keystore: { ...keys },
-      lastLogin: 'keystore',
-    };
-    loginStateService.state.autoLoginGroupId = group.id;
+    runInAction(() => {
+      loginStateService.state.groups[group.id] = {
+        ...loginStateService.state.groups[group.id],
+        keystore: { ...keys },
+        lastLogin: 'keystore',
+      };
+      loginStateService.state.autoLoginGroupId = group.id;
+    });
     joinGroup(group);
   };
 

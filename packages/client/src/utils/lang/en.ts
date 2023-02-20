@@ -54,6 +54,12 @@ export const content: Content = {
     deleteGroupTitle: 'Do NOT show this again',
     deleteGroupContent: 'Will no longer show this Port board (you can rejoin via SeedUrl). Continue?',
   },
+  init: {
+    loading: 'Loading...',
+    failedToLoadConfig: 'Loading failed',
+    failedToLoadGroups: 'Failed to load ports',
+    refresh: 'Refresh',
+  },
   postlist: {
     latest: 'New',
     hotest: 'Hot',
@@ -82,6 +88,7 @@ export const content: Content = {
     postComment: 'Post Comment',
     sortByLatest: 'Latest',
     sortByOldest: 'Oldest',
+    sortByHotest: 'Hot',
     commentCount: (n: number) => `${n} comments`,
     comment: 'Comment',
     writeAComment: 'No comment yet, be the first!',

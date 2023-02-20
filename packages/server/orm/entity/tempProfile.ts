@@ -44,6 +44,7 @@ export class TempProfile {
       ...tempProfile,
       id: 0,
       trxId: '',
+      wallet: '',
       timestamp: Date.now(),
     };
   }

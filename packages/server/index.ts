@@ -10,10 +10,10 @@ import { initDB } from '~/orm';
 import { controllers } from '~/controllers';
 import { initService, disposeService } from '~/service';
 import { getLoggerWrite, patchLogger } from './utils';
-import type { IAppConfigItem, IAppConfigKeyListItem } from 'quorum-light-node-sdk-nodejs';
+import type { IAppConfigItem, IAppConfigKeyListItem } from 'rum-sdk-nodejs';
 
 export type {
-  Comment, GroupInfo, ImageFile, GroupStatus,
+  Comment, GroupInfo, ImageFile, GroupStatus, Counter,
   Notification, Post, Profile, GroupConfig,
 } from '~/orm/entity';
 export { IAppConfigItem, IAppConfigKeyListItem };

@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
 import type { GroupStatus } from 'nft-bbs-server';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import { utils } from 'quorum-light-node-sdk';
+import { utils } from 'rum-sdk-browser';
 import {
   AdminPanelSettings,
   Check,
@@ -273,7 +273,7 @@ export const Header = observer((props: { className?: string }) => {
       <div className="h-[60px]" />
       <div
         className={classNames(
-          'fixed top-0 left-0 right-0 z-50 flex flex-center px-5 h-[60px] bg-[#0d1d37] bg-white',
+          'fixed top-0 left-0 right-0 z-50 flex flex-center px-5 h-[60px] bg-[#0d1d37]',
           props.className,
         )}
       >
@@ -445,7 +445,7 @@ export const Header = observer((props: { className?: string }) => {
       />
       <div
         className={classNames(
-          'fixed top-0 left-0 right-0 z-50 flex-col items-stretch bg-[#0d1d37] bg-white',
+          'fixed top-0 left-0 right-0 z-50 flex-col items-stretch bg-[#0d1d37]',
           isPostlistPage && !!postlistState && 'h-[120px]',
           !(isPostlistPage && !!postlistState) && 'h-[60px]',
           props.className,

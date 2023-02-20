@@ -35,14 +35,14 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
 
   const context = useContext(commentContext);
 
-  const handleJumpToReply = (commentTrx: string) => {
-    const index = state.comments.findIndex((v) => v.trxId === commentTrx);
+  const handleJumpToReply = (commentId: string) => {
+    const index = state.comments.findIndex((v) => v.id === commentId);
     if (index === -1) { return; }
     const page = Math.ceil((index + 1) / state.pageSize);
     runInAction(() => {
       state.page = page;
-      context.state.highlightedComments.add(commentTrx);
-      state.scrollToComment = commentTrx;
+      context.state.highlightedComments.add(commentId);
+      state.scrollToComment = commentId;
     });
   };
 
@@ -52,7 +52,7 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
 
   useEffect(action(() => {
     if (!state.scrollToComment) { return; }
-    const commentElement = document.querySelector(`[data-comment-trx-id="${state.scrollToComment}"]`);
+    const commentElement = document.querySelector(`[data-comment-id="${state.scrollToComment}"]`);
     runInAction(() => {
       state.scrollToComment = '';
     });
@@ -66,24 +66,24 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
   useEffect(() => {
     const disposes = [
       reaction(
-        () => context.state.newCommentTrxId,
-        async (trxId) => {
+        () => context.state.newCommentId,
+        async (id) => {
           await sleep();
-          if (state.comments.some((v) => v.trxId === trxId)) {
-            handleJumpToReply(trxId);
+          if (state.comments.some((v) => v.id === id)) {
+            handleJumpToReply(id);
             runInAction(() => {
-              context.state.newCommentTrxId = '';
+              context.state.newCommentId = '';
             });
           }
         },
       ),
     ];
 
-    const initCommentTrx = context.state.initCommentTrx;
-    if (initCommentTrx && state.comments.some((v) => v.trxId === initCommentTrx)) {
-      handleJumpToReply(initCommentTrx);
+    const initCommentId = context.state.initCommentId;
+    if (initCommentId && state.comments.some((v) => v.id === initCommentId)) {
+      handleJumpToReply(initCommentId);
       runInAction(() => {
-        context.state.initCommentTrx = '';
+        context.state.initCommentId = '';
       });
     }
 
@@ -100,7 +100,7 @@ export const SubCommentBox = observer((props: { comments: Array<Comment> }) => {
             !isPC && 'pl-4',
           )}
           comment={v}
-          key={v.trxId}
+          key={v.id}
           onJumpToReply={handleJumpToReply}
         />
       ))}

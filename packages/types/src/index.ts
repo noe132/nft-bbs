@@ -1,140 +1,145 @@
-import { either, function as fp } from 'fp-ts';
-import { array, Errors, intersection, literal, partial, string, tuple, Type, type, TypeOf, union, unknown } from 'io-ts';
-import { excess } from './excessType';
+import { array, intersection, literal, partial, string, type, TypeOf, union } from 'io-ts';
 
 export * from './enum';
 export * from './excessType';
 
 export const nftbbsAppKeyName = 'group_post';
 
-const postBaseType = type({
-  type: literal('Note'),
+const imageType = type({
+  type: literal('Image'),
+  mediaType: string,
   content: string,
-  name: string,
 });
 
-const postExcludedType = union([
-  type({
-    inreplyto: unknown,
-  }),
-  type({
-    attributedTo: unknown,
-  }),
-]);
+const partialImages = partial({
+  images: array(imageType),
+});
 
-export const postType = new Type<PostType>(
-  'post type',
-  (u): u is PostType => postBaseType.is(u) && !postExcludedType.is(u),
-  (u, c) => fp.pipe(
-    postBaseType.validate(u, c),
-    either.chain(() => fp.pipe(
-      postExcludedType.validate(u, c),
-      either.match(
-        () => either.right(u),
-        () => either.left([{
-          value: u,
-          context: c,
-          message: 'item has unwanted properties',
-        }] as Errors),
-      ),
-    )),
-    either.chain((u) => {
-      if ((u as PostType).content === 'OBJECT_STATUS_DELETED') {
-        return either.left([{
-          value: u,
-          context: c,
-          message: 'post delete type',
-        }] as Errors);
-      }
-      return either.right(u);
-    }),
-    either.map((v) => v as PostType),
-  ),
-  fp.identity,
-);
-
-export const postAppendType = type({
-  type: literal('NoteAppend'),
-  content: string,
-  attributedTo: tuple([
+export const postType = type({
+  type: literal('Create'),
+  object: intersection([
+    partialImages,
     type({
       type: literal('Note'),
+      id: string,
+      name: string,
+      content: string,
+    }),
+  ]),
+});
+
+// export const postAppendType = type({
+//   type: literal('NoteAppend'),
+//   content: string,
+//   attributedTo: tuple([
+//     type({
+//       type: literal('Note'),
+//       id: string,
+//     }),
+//   ]),
+// });
+
+export const commentType = type({
+  type: literal('Create'),
+  object: intersection([
+    partialImages,
+    type({
+      type: literal('Note'),
+      id: string,
+      content: string,
+      inreplyto: type({
+        type: literal('Note'),
+        id: string,
+      }),
+    }),
+  ]),
+});
+
+export const postDeleteType = type({
+  type: literal('Delete'),
+  object: type({
+    type: literal('Note'),
+    id: string,
+  }),
+});
+
+export const postAppendType = type({
+  type: literal('Create'),
+  object: type({
+    type: literal('NoteAppend'),
+    id: string,
+    content: string,
+    inreplyto: type({
+      type: literal('Note'),
+      id: string,
+    }),
+  }),
+});
+
+export const nonUndoCounterType = type({
+  type: union([literal('Like'), literal('Dislike')]),
+  object: type({
+    type: literal('Note'),
+    id: string,
+  }),
+});
+export const undoCounterType = type({
+  type: literal('Undo'),
+  object: nonUndoCounterType,
+});
+export const counterType = union([nonUndoCounterType, undoCounterType]);
+
+export const profileType = type({
+  type: literal('Create'),
+  object: intersection([
+    type({
+      type: literal('Person'),
+      name: string,
+    }),
+    partial({
+      avatar: imageType,
+      wallet: array(type({
+        id: string,
+        type: string,
+        name: string,
+      })),
+    }),
+  ]),
+});
+
+export const imageActivityType = type({
+  type: literal('Create'),
+  object: intersection([
+    imageType,
+    type({
       id: string,
     }),
   ]),
 });
 
-export const commentType = excess(intersection([
-  type({
-    type: literal('Note'),
-    content: string,
-    inreplyto: type({
-      trxid: string,
-    }),
+export const nonUndoRelationType = type({
+  type: union([literal('Follow'), literal('Block')]),
+  object: type({
+    type: literal('Person'),
+    id: string,
   }),
-  partial({
-    image: array(type({
-      name: string,
-      mediaType: string,
-      content: string,
-    })),
-  }),
-]));
-
-export const likeType = excess(type({
-  type: literal('Like'),
-  id: string,
-}));
-
-export const dislikeType = excess(type({
-  type: literal('Dislike'),
-  id: string,
-}));
-
-export const imageType = excess(type({
-  type: literal('Note'),
-  attributedTo: tuple([
-    type({
-      type: literal('Note'),
-    }),
-  ]),
-  content: string,
-  name: string,
-  image: array(intersection([
-    type({
-      mediaType: string,
-      content: string,
-    }),
-    partial({
-      name: string,
-    }),
-  ])),
-}));
-
-export const profileType = excess(intersection([
-  type({
-    name: string,
-  }),
-  partial({
-    image: type({
-      mediaType: string,
-      content: string,
-    }),
-    wallet: unknown,
-  }),
-]));
-
-export const postDeleteType = type({
-  type: literal('Note'),
-  id: string,
-  content: literal('OBJECT_STATUS_DELETED'),
 });
+export const undoRelationType = type({
+  type: literal('Undo'),
+  object: nonUndoRelationType,
+});
+export const relationType = union([nonUndoRelationType, undoRelationType]);
 
-export type PostType = TypeOf<typeof postBaseType>;
-export type PostAppendType = TypeOf<typeof postAppendType>;
-export type CommentType = TypeOf<typeof commentType>;
-export type LikeType = TypeOf<typeof likeType>;
-export type DislikeType = TypeOf<typeof dislikeType>;
 export type ImageType = TypeOf<typeof imageType>;
-export type ProfileType = TypeOf<typeof profileType>;
+export type PostType = TypeOf<typeof postType>;
 export type PostDeleteType = TypeOf<typeof postDeleteType>;
+export type PostAppendType = TypeOf<typeof postAppendType>;
+export type NonUndoCounterType = TypeOf<typeof nonUndoCounterType>;
+export type UndoCounterType = TypeOf<typeof undoCounterType>;
+export type CounterType = TypeOf<typeof counterType>;
+export type CommentType = TypeOf<typeof commentType>;
+export type ImageActivityType = TypeOf<typeof imageActivityType>;
+export type ProfileType = TypeOf<typeof profileType>;
+export type NonUndoRelationType = TypeOf<typeof nonUndoRelationType>;
+export type UndoRelationType = TypeOf<typeof undoRelationType>;
+export type RelationType = TypeOf<typeof relationType>;

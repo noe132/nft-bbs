@@ -11,19 +11,19 @@ const cache = new LRUCache<string, ImageCacheItem>({
 });
 
 export const imageController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
-  fastify.get('/:groupId/:trxId', async (req, res) => {
+  fastify.get('/:groupId/:id', async (req, res) => {
     const params = assertValidation(req.params, type({
       groupId: string,
-      trxId: string,
+      id: string,
     }));
     const groupId = parseIntAssert(params.groupId);
-    const key = `${params.groupId}-${params.trxId}`;
+    const key = `${params.groupId}-${params.id}`;
     let item: ImageCacheItem | null = null;
 
     if (cache.has(key)) {
       item = cache.get(key)!;
     }
-    const image = await ImageFile.get(groupId, params.trxId);
+    const image = await ImageFile.get(groupId, params.id);
     if (image) {
       const buffer = Buffer.from(image.content, 'base64');
       item = { buffer, mineType: image.mineType };

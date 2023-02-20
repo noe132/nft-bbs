@@ -123,27 +123,19 @@ export class Notification {
   public static async appendExtra(items: Array<Notification>, manager?: EntityManager): Promise<Array<Notification>>;
   public static async appendExtra(_items: Array<Notification> | Notification, manager?: EntityManager) {
     const items = Array.isArray(_items) ? _items : [_items];
-    const nftRequestIds: Array<number> = [];
-    const commentTrxIds: Array<string> = [];
-    const postTrxIds: Array<string> = [];
-    items.forEach((v) => {
-      if (v.objectType === 'post') {
-        postTrxIds.push(v.objectId);
-      }
-      if (v.objectType === 'comment') {
-        commentTrxIds.push(v.objectId);
-      }
-      if (v.actionObjectType === 'comment') {
-        commentTrxIds.push(v.actionObjectId);
-      }
-      if (v.objectType === 'nftrequest') {
-        nftRequestIds.push(Number(v.objectId));
-      }
-    });
 
     const [posts, comments, profiles, tempProfiles, nftRequests] = await Promise.all([
-      Post.bulkGet(postTrxIds, manager),
-      Comment.bulkGet(commentTrxIds, manager),
+      Post.bulkGet(
+        items.filter((v) => v.objectType === 'post').map((v) => ({ groupId: v.groupId, id: v.objectId })),
+        manager,
+      ),
+      Comment.bulkGet(
+        [
+          ...items.filter((v) => v.objectType === 'comment').map((v) => ({ groupId: v.groupId, id: v.objectId })),
+          ...items.filter((v) => v.actionObjectType === 'comment').map((v) => ({ groupId: v.groupId, id: v.actionObjectId })),
+        ],
+        manager,
+      ),
       Profile.bulkGet(items.map((v) => ({
         groupId: v.groupId,
         userAddress: v.from,
@@ -152,14 +144,17 @@ export class Notification {
         groupId: v.groupId,
         userAddress: v.from,
       })), manager),
-      NftRequest.bulkGet(nftRequestIds),
+      NftRequest.bulkGet(
+        items.filter((v) => v.objectType === 'nftrequest').map((v) => Number(v.objectId)),
+        manager,
+      ),
     ]);
 
     items.forEach((item) => {
       let object;
       let actionObject;
       if (item.objectType === 'post') {
-        const post = posts.find((v) => v.trxId === item.objectId);
+        const post = posts.find((v) => v.id === item.objectId);
         if (post) {
           object = {
             type: 'post',
@@ -167,7 +162,7 @@ export class Notification {
           } as const;
         }
       } else if (item.objectType === 'comment') {
-        const comment = comments.find((v) => v.trxId === item.objectId);
+        const comment = comments.find((v) => v.id === item.objectId);
         if (comment) {
           object = {
             type: 'comment',
@@ -185,7 +180,7 @@ export class Notification {
       }
 
       if (item.actionObjectType === 'comment') {
-        const comment = comments.find((v) => v.trxId === item.actionObjectId);
+        const comment = comments.find((v) => v.id === item.actionObjectId);
         if (comment) {
           actionObject = {
             type: 'comment',

@@ -11,14 +11,16 @@ export interface SiteConfig {
   joinBySeedUrl: boolean
 }
 
-export const getConfig = async () => {
+export const getConfig = async (hideNetworkError = false) => {
   const item = await request<SiteConfig>({
     url: `${API_BASE_URL}/config`,
   });
   return fp.pipe(
     item,
     either.mapLeft((v) => {
-      snackbarService.networkError(v);
+      if (!hideNetworkError) {
+        snackbarService.networkError(v);
+      }
       return v;
     }),
   );

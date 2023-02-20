@@ -20,11 +20,11 @@ interface Props {
 export const CommentBox = observer((props: Props) => {
   const context = useContext(commentContext);
 
-  const handleJumpToReply = (commentTrx: string) => {
-    const commentElement = document.querySelector(`[data-comment-trx-id="${commentTrx}"]`);
+  const handleJumpToReply = (commentId: string) => {
+    const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
     if (commentElement) {
       runInAction(() => {
-        context.state.highlightedComments.add(commentTrx);
+        context.state.highlightedComments.add(commentId);
       });
       scrollIntoView(commentElement, {
         behavior: 'smooth',
@@ -33,21 +33,21 @@ export const CommentBox = observer((props: Props) => {
   };
 
   useEffect(() => {
-    const initCommentTrx = context.state.initCommentTrx;
-    if (initCommentTrx && props.comments.some((v) => v.trxId === initCommentTrx)) {
-      handleJumpToReply(initCommentTrx);
+    const initCommentId = context.state.initCommentId;
+    if (initCommentId && props.comments.some((v) => v.id === initCommentId)) {
+      handleJumpToReply(initCommentId);
       runInAction(() => {
-        context.state.initCommentTrx = '';
+        context.state.initCommentId = '';
       });
     }
     const dispose = reaction(
-      () => context.state.newCommentTrxId,
-      async (trxId) => {
+      () => context.state.newCommentId,
+      async (id) => {
         await sleep();
-        if (props.comments.some((v) => v.trxId === trxId)) {
-          handleJumpToReply(trxId);
+        if (props.comments.some((v) => v.id === id)) {
+          handleJumpToReply(id);
           runInAction(() => {
-            context.state.newCommentTrxId = '';
+            context.state.newCommentId = '';
           });
         }
       },
@@ -57,16 +57,16 @@ export const CommentBox = observer((props: Props) => {
   }, []);
 
   useEffect(() => {
-    const trxId = context.state.newCommentTrxId;
+    const id = context.state.newCommentId;
     const run = async () => {
       await sleep();
       await sleep();
-      if (props.comments.some((v) => v.trxId === trxId)) {
-        handleJumpToReply(trxId);
+      if (props.comments.some((v) => v.id === id)) {
+        handleJumpToReply(id);
       }
     };
     run();
-  }, [context.state.newCommentTrxId]);
+  }, [context.state.newCommentId]);
 
   return (
     <div className="comment-box">
@@ -74,7 +74,7 @@ export const CommentBox = observer((props: Props) => {
         const subComments = (context.state.weakMap.get(item) ?? [])
           .map((v) => nodeService.state.comment.map.get(v)!);
         return (
-          <React.Fragment key={item.trxId}>
+          <React.Fragment key={item.id}>
             <CommentItem
               className={classNames(
                 i !== 0 && 'border-t border-t-white/20',

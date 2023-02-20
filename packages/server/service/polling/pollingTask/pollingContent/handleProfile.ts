@@ -1,6 +1,6 @@
 import { taskEither } from 'fp-ts';
 import { ProfileType } from 'nft-bbs-types';
-import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as rumsdk from 'rum-sdk-nodejs';
 import { Profile } from '~/orm';
 import { parseQuorumTimestamp } from '~/utils';
 import { TrxHandler } from './helper';
@@ -8,7 +8,8 @@ import { TrxHandler } from './helper';
 export const handleProfile: TrxHandler = (item, groupStatus, transactionManager, queueSocket) => taskEither.tryCatch(
   async () => {
     const data = item.Data as ProfileType;
-    const userAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey);
+    const object = data.object;
+    const userAddress = rumsdk.utils.pubkeyToAddress(item.SenderPubkey);
     const groupId = groupStatus.id;
     const trxId = item.TrxId;
     const timestamp = parseQuorumTimestamp(item.TimeStamp);
@@ -17,10 +18,11 @@ export const handleProfile: TrxHandler = (item, groupStatus, transactionManager,
       groupId,
       trxId,
       userAddress,
-      name: data.name,
-      avatar: data.image
-        ? `data:${data.image.mediaType};base64,${data.image.content}`
+      name: object.name,
+      avatar: object.avatar
+        ? `data:${object.avatar.mediaType};base64,${object.avatar.content}`
         : '',
+      wallet: object.wallet ? JSON.stringify(object.wallet) : '',
       timestamp,
     }, transactionManager);
 

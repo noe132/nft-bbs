@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { either, function as fp } from 'fp-ts';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import { utils } from 'quorum-light-node-sdk';
+import { utils } from 'rum-sdk-browser';
 import { Close, Delete } from '@mui/icons-material';
 import { Button, Dialog, IconButton, TextField } from '@mui/material';
 import { LoadingButton } from '@mui/lab';

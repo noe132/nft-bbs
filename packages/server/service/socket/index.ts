@@ -1,10 +1,9 @@
-import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as rumsdk from 'rum-sdk-nodejs';
 import { FastifyInstance } from 'fastify';
 import { either } from 'fp-ts';
 import { number, string, type, TypeOf } from 'io-ts';
-import { DislikeType, LikeType } from 'nft-bbs-types';
 import { Server, Socket } from 'socket.io';
-import { GroupStatus, Notification, Profile, PostAppend } from '~/orm';
+import { GroupStatus, Notification, Profile, PostAppend, Counter } from '~/orm';
 
 let socketIo: Server | null = null;
 
@@ -17,22 +16,15 @@ interface SocketItem {
 const socketArr: Array<SocketItem> = [];
 
 export interface SocketIOEventMap {
-  post: { trxId: string }
-  comment: { trxId: string }
+  post: { id: string }
+  comment: { id: string }
   notification: Notification
-  counter: {
-    trxId: string
-    type: LikeType['type'] | DislikeType['type']
-    objectType: 'comment' | 'post'
-    objectId: string
-  }
+  counter: Counter
   profile: Profile
-  postDelete: {
-    trxId: string
-  }
+  postDelete: { id: string }
   appconfig: {
     groupId: GroupStatus['id']
-    data: Record<QuorumLightNodeSDK.IAppConfigItem['Name'], undefined | QuorumLightNodeSDK.IAppConfigItem>
+    data: Record<rumsdk.IAppConfigItem['Name'], undefined | rumsdk.IAppConfigItem>
   }
   postAppend: PostAppend
 }

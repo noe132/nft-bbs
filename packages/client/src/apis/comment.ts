@@ -23,10 +23,10 @@ export const list = async (groupId: GroupStatus['id'], options: {
   );
 };
 
-export const get = async (params: { groupId: GroupStatus['id'], trxId: string, viewer?: string }) => {
-  const { groupId, trxId, viewer } = params;
+export const get = async (params: { groupId: GroupStatus['id'], id: string, viewer?: string }) => {
+  const { groupId, id, viewer } = params;
   const item = await request<Comment>({
-    url: `${API_BASE_URL}/comment/${groupId}/${trxId}`,
+    url: `${API_BASE_URL}/comment/${groupId}/${id}`,
     params: { viewer },
   });
   return fp.pipe(

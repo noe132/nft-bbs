@@ -1,20 +1,38 @@
 import { taskEither } from 'fp-ts';
-import { DislikeType, LikeType } from 'nft-bbs-types';
-import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
-import { Post, Comment, Notification, Counter, StackedCounter } from '~/orm';
+import { CounterType } from 'nft-bbs-types';
+import * as rumsdk from 'rum-sdk-nodejs';
+import { Post, Comment, Notification, Counter, CounterSummary } from '~/orm';
 import { parseQuorumTimestamp } from '~/utils';
 import { TrxHandler } from './helper';
 
 export const handleCounter: TrxHandler = (item, groupStatus, transactionManager, queueSocket) => taskEither.tryCatch(
   async () => {
-    const data = item.Data as any as LikeType | DislikeType;
-    const userAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey);
+    const data = item.Data as CounterType;
+    const userAddress = rumsdk.utils.pubkeyToAddress(item.SenderPubkey);
     const groupId = groupStatus.id;
-    const trxId = item.TrxId;
     const timestamp = parseQuorumTimestamp(item.TimeStamp);
+    const parse = () => {
+      if (data.type === 'Undo') {
+        return {
+          isUndo: true,
+          objectId: data.object.object.id,
+          type: data.object.type === 'Like' ? 'undolike' : 'undodislike',
+          likeType: data.object.type === 'Like' ? 'like' : 'dislike',
+        } as const;
+      }
+      return {
+        isUndo: false,
+        objectId: data.object.id,
+        type: data.type === 'Like' ? 'like' : 'dislike',
+        likeType: data.type === 'Like' ? 'like' : 'dislike',
+      } as const;
+    };
+    const { isUndo, objectId, type, likeType } = parse();
+    const key = likeType === 'like' ? 'likeCount' : 'dislikeCount';
+    const isLike = likeType === 'like';
 
-    const objectItem = await Comment.get({ groupId, trxId: data.id }, transactionManager)
-    ?? await Post.get({ groupId, trxId: data.id }, transactionManager);
+    const objectItem = await Comment.get({ groupId, id: objectId }, transactionManager)
+    ?? await Post.get({ groupId, id: objectId }, transactionManager);
 
     if (!objectItem) {
       // pollingLog.warn({
@@ -27,137 +45,72 @@ export const handleCounter: TrxHandler = (item, groupStatus, transactionManager,
     const objectType = objectItem instanceof Comment ? 'comment' : 'post';
     const objectClass = objectType === 'comment' ? Comment : Post;
 
-    await Counter.add({
+    const lastCounter = await Counter.getLastCounter({
       groupId,
-      trxId,
-      type: data.type,
-      objectId: objectItem.trxId,
+      objectId,
       objectType,
-      timestamp,
       userAddress,
-    }, transactionManager);
+    });
 
-    const notifications: Array<Notification> = [];
+    if (lastCounter?.type === type) {
+      // duplicated counter in sequence
+      return true;
+    }
+
+    const isLikeByOthers = objectItem.userAddress !== userAddress;
+    const [notification, counter] = await Promise.all([
+      // don't send notification if it's dislike
+      isLike && isLikeByOthers && Notification.add({
+        groupId,
+        status: groupStatus.loaded ? 'unread' : 'read',
+        type: 'like',
+        objectId: objectItem.id,
+        objectType,
+        actionObjectId: item.TrxId,
+        actionObjectType: 'counter',
+        to: objectItem.userAddress,
+        from: userAddress,
+        timestamp,
+      }, transactionManager),
+      Counter.add({
+        groupId,
+        trxId: item.TrxId,
+        type,
+        objectId: objectItem.id,
+        objectType,
+        timestamp,
+        userAddress,
+      }, transactionManager),
+      CounterSummary.set({
+        groupId,
+        objectId,
+        objectType,
+        userAddress,
+        type: likeType,
+        value: isUndo ? -1 : 1,
+      }),
+      transactionManager.increment(
+        objectClass,
+        { groupId, id: objectItem.id },
+        key,
+        isUndo ? -1 : 1,
+      ),
+    ]);
 
     queueSocket({
       broadcast: true,
       event: 'counter',
       groupId,
-      data: {
-        trxId,
-        type: data.type,
-        objectType,
-        objectId: objectItem.trxId,
-      },
+      data: counter,
     });
 
-    if (objectType === 'post') {
-      const stackedCounter = await StackedCounter.get({
-        groupId,
-        objectId: objectItem.trxId,
-        objectType,
-        type: data.type,
-        userAddress,
-      }, transactionManager);
-
-      if (!stackedCounter) {
-        const key = data.type === 'Like' ? 'likeCount' : 'dislikeCount';
-        const [notification] = await Promise.all([
-        // don't send notification if it's dislike
-          data.type === 'Like' && objectItem.userAddress !== userAddress && Notification.add({
-            groupId,
-            status: groupStatus.loaded ? 'unread' : 'read',
-            type: 'like',
-            objectId: objectItem.trxId,
-            objectType: 'post',
-            actionObjectId: item.TrxId,
-            actionObjectType: 'counter',
-            to: objectItem.userAddress,
-            from: userAddress,
-            timestamp,
-          }, transactionManager),
-          StackedCounter.add({
-            groupId,
-            objectId: objectItem.trxId,
-            objectType,
-            type: data.type,
-            userAddress,
-          }, transactionManager),
-          transactionManager.increment(
-            objectClass,
-            { groupId, trxId: objectItem.trxId },
-            key,
-            1,
-          ),
-        ]);
-        if (notification) {
-          notifications.push(notification);
-        }
-      }
-    }
-
-    if (objectType === 'comment') {
-      const stackedCounter = await StackedCounter.get({
-        groupId,
-        objectId: objectItem.trxId,
-        objectType,
-        type: 'Like',
-      }, transactionManager);
-
-      if (!stackedCounter && data.type === 'Like') {
-        const [notification] = await Promise.all([
-          objectItem.userAddress !== userAddress && Notification.add({
-            groupId,
-            status: groupStatus.loaded ? 'unread' : 'read',
-            type: 'like',
-            objectId: objectItem.trxId,
-            objectType: 'comment',
-            actionObjectId: item.TrxId,
-            actionObjectType: 'counter',
-            to: objectItem.userAddress,
-            from: userAddress,
-            timestamp,
-          }, transactionManager),
-          await StackedCounter.add({
-            groupId,
-            objectId: objectItem.trxId,
-            objectType,
-            type: 'Like',
-            userAddress,
-          }, transactionManager),
-          transactionManager.increment(
-            objectClass,
-            { groupId, trxId: objectItem.trxId },
-            'likeCount',
-            1,
-          ),
-        ]);
-        if (notification) {
-          notifications.push(notification);
-        }
-      }
-
-      if (stackedCounter && data.type === 'Dislike') {
-        Promise.all([
-        // no notification for dislike comment (like cancelation)
-          await StackedCounter.remove(stackedCounter, transactionManager),
-          transactionManager.decrement(
-            objectClass,
-            { groupId, trxId: objectItem.trxId },
-            'likeCount',
-            1,
-          ),
-        ]);
-      }
-    }
-
-    for (const item of notifications) {
-      const notification = await Notification.appendExtra(item, transactionManager);
+    if (notification) {
+      const packedNotification = await Notification.appendExtra(notification, transactionManager);
       queueSocket({
-        userAddress: notification.to,
+        userAddress: packedNotification.to,
         event: 'notification',
         groupId,
-        data: notification,
+        data: packedNotification,
       });
     }
 

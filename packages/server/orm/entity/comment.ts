@@ -1,23 +1,24 @@
-import { Column, Entity, Index, FindOptionsWhere, PrimaryGeneratedColumn, EntityManager } from 'typeorm';
+import { Column, Entity, Index, FindOptionsWhere, EntityManager, PrimaryColumn } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
-import { ImageFile } from './imageFile';
+import { AttachedImage } from './attachedImage';
+import { CounterSummary } from './counterSummary';
 import { Profile } from './profile';
-import { StackedCounter } from './stackedCounter';
 import { TempProfile } from './tempProfile';
+
+type FindCommentParams = Required<Pick<FindOptionsWhere<Comment>, 'groupId' | 'id'>>;
 
 @Entity({ name: 'comments' })
 export class Comment {
-  @PrimaryGeneratedColumn()
-  public id?: number;
+  @PrimaryColumn()
+  public groupId!: number;
+
+  @PrimaryColumn()
+  public id!: string;
 
   @Index()
   @Column({ nullable: false })
   public trxId!: string;
-
-  @Index()
-  @Column({ nullable: false })
-  public groupId!: number;
 
   @Column({ nullable: false })
   public content!: string;
@@ -62,16 +63,16 @@ export class Comment {
     liked: boolean
     disliked: boolean
     userProfile: Profile
-    images: Array<ImageFile>
+    images: Array<AttachedImage>
   };
 
-  private static create(params: EntityConstructorParams<Comment, 'id' | 'extra'>) {
+  private static create(params: EntityConstructorParams<Comment, 'extra'>) {
     const item = new Comment();
     Object.assign(item, params);
     return item;
   }
 
-  public static async add(params: EntityConstructorParams<Comment, 'id' | 'extra'>, manager?: EntityManager) {
+  public static async add(params: EntityConstructorParams<Comment, 'extra'>, manager?: EntityManager) {
     const item = Comment.create(params);
     return (manager || AppDataSource.manager).save(Comment, item);
   }
@@ -80,20 +81,24 @@ export class Comment {
     await (manager || AppDataSource.manager).save(comment);
   }
 
-  public static async get(where: Pick<FindOptionsWhere<Comment>, 'groupId' | 'trxId'>, manager?: EntityManager) {
+  public static async get(where: FindCommentParams, manager?: EntityManager) {
     return (manager || AppDataSource.manager).findOneBy(Comment, where);
   }
 
-  public static async getFirst(params: Pick<FindOptionsWhere<Comment>, 'groupId' | 'userAddress'>) {
+  public static async getFirst(params: Required<Pick<FindOptionsWhere<Comment>, 'groupId' | 'userAddress'>>) {
     return AppDataSource.manager.findOne(Comment, {
       where: params,
       order: { timestamp: 'asc' },
     });
   }
 
-  public static async bulkGet(trxIds: Array<string>, manager?: EntityManager) {
-    if (!trxIds.length) { return []; }
-    return (manager || AppDataSource.manager).findBy(Comment, trxIds.map((trxId) => ({ trxId })));
+  public static async bulkGet(data: Array<FindCommentParams>, manager?: EntityManager) {
+    if (!data.length) { return []; }
+    return (manager || AppDataSource.manager).findBy(Comment, data);
+  }
+
+  public static async has(where: FindCommentParams, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).exists(Comment, { where });
   }
 
   public static async list(
@@ -112,6 +117,10 @@ export class Comment {
       .getMany();
   }
 
+  public static getHot(comment: Comment) {
+    return comment.likeCount * 2 + comment.commentCount - comment.dislikeCount * 2;
+  }
+
   public static async appendExtra(_items: Comment, options?: { viewer?: string }): Promise<Comment>;
   public static async appendExtra(_items: Array<Comment>, options?: { viewer?: string }): Promise<Array<Comment>>;
   public static async appendExtra(_items: Array<Comment> | Comment, options?: { viewer?: string }) {
@@ -119,19 +128,19 @@ export class Comment {
     const items = Array.isArray(_items) ? _items : [_items];
     if (!items.length) { return items; }
     const [likedMap, dislikedMap, images] = await Promise.all([
-      userAddress ? StackedCounter.getCounterMap({
-        type: 'Like',
+      userAddress ? CounterSummary.getCounterMap({
+        type: 'like',
         userAddress,
         items,
-      }) : null,
-      userAddress ? StackedCounter.getCounterMap({
-        type: 'Dislike',
+      }) : Promise.resolve({}),
+      userAddress ? CounterSummary.getCounterMap({
+        type: 'dislike',
         userAddress,
         items,
-      }) : null,
-      ImageFile.list(items.map((v) => ({
+      }) : Promise.resolve({}),
+      AttachedImage.getByObject(items.map((v) => ({
         groupId: v.groupId,
-        trxId: v.trxId,
+        objectId: v.id,
       }))),
     ]);
     const profiles = await Profile.bulkGet(items.map((item) => ({
@@ -151,15 +160,15 @@ export class Comment {
         profileMap[v.userAddress] = v;
       }
     });
-    items.forEach((item) => {
-      item.extra = {
-        liked: !!likedMap?.[item.trxId],
-        disliked: !!dislikedMap?.[item.trxId],
-        userProfile: profileMap[item.userAddress] ?? Profile.generateFallbackProfile({
-          userAddress: item.userAddress,
-          groupId: item.groupId,
+    items.forEach((comment) => {
+      comment.extra = {
+        liked: (likedMap[comment.id]?.value ?? 0) > 0,
+        disliked: (dislikedMap[comment.id]?.value ?? 0) > 0,
+        userProfile: profileMap[comment.userAddress] ?? Profile.generateFallbackProfile({
+          userAddress: comment.userAddress,
+          groupId: comment.groupId,
         }),
-        images: images.filter((v) => v.trxId === item.trxId),
+        images: images.filter((v) => v.objectId === comment.id),
       };
     });
     return Array.isArray(_items) ? items : items[0];

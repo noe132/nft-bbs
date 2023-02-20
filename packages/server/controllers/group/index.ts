@@ -2,9 +2,9 @@ import { FastifyRegister } from 'fastify';
 import { either, function as fp, json } from 'fp-ts';
 import { array, number, partial, string, type } from 'io-ts';
 import { BadRequest } from 'http-errors';
-import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as rumsdk from 'rum-sdk-nodejs';
 
-import { Comment, Counter, GroupStatus, ImageFile, Notification, Post, Profile, StackedCounter, TrxSet } from '~/orm/entity';
+import { Comment, Counter, GroupStatus, ImageFile, Notification, Post, Profile, CounterSummary, TrxSet } from '~/orm/entity';
 import { assertAdmin, assertValidation, assertVerifySign, runLoading } from '~/utils';
 import { AppDataSource } from '~/orm/data-source';
 import { pollingService } from '~/service';
@@ -97,7 +97,7 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
 
     const group = await AppDataSource.manager.transaction(async (manager) => {
       const groups = await GroupStatus.list(manager);
-      const existedGroup = groups.find((v) => QuorumLightNodeSDK.utils.restoreSeedFromUrl(v.mainSeedUrl).group_id === shortName);
+      const existedGroup = groups.find((v) => rumsdk.utils.restoreSeedFromUrl(v.mainSeedUrl).group_id === shortName);
       if (existedGroup) { return existedGroup; }
       const item = await GroupStatus.add({
         shortName,
@@ -247,8 +247,8 @@ export const groupController: Parameters<FastifyRegister>[0] = (fastify, _opts, 
       [body.counterSeedUrl, group.counterSeedUrl],
       [body.profileSeedUrl, group.profileSeedUrl],
     ].some(([seed1, seed2]) => {
-      const groupId1 = QuorumLightNodeSDK.utils.restoreSeedFromUrl(seed1).group_id;
-      const groupId2 = QuorumLightNodeSDK.utils.restoreSeedFromUrl(seed2).group_id;
+      const groupId1 = rumsdk.utils.restoreSeedFromUrl(seed1).group_id;
+      const groupId2 = rumsdk.utils.restoreSeedFromUrl(seed2).group_id;
       return groupId1 !== groupId2;
     });
 
@@ -341,7 +341,7 @@ const assertShortNameDuplication = async (shortName: string, groupId?: GroupStat
 
 const validateSeed = (seedUrl: string) => fp.pipe(
   either.tryCatch(
-    () => QuorumLightNodeSDK.utils.seedUrlToGroup(seedUrl),
+    () => rumsdk.utils.seedUrlToGroup(seedUrl),
     () => new Error(`invalid seedurl ${seedUrl}`),
   ),
   either.chainW((v) => {
@@ -357,7 +357,7 @@ const deleteGroupData = async (group: GroupStatus, groupStausType: 'update' | 'd
   await AppDataSource.manager.transaction(async (manager) => {
     const groupId = group.id;
     await manager.save(GroupStatus, group);
-    const entities = [Comment, Counter, ImageFile, Notification, Post, Profile, StackedCounter, TrxSet];
+    const entities = [Comment, Counter, ImageFile, Notification, Post, Profile, CounterSummary, TrxSet];
     const promiese = entities.map(async (v) => {
       await manager.createQueryBuilder()
         .delete()

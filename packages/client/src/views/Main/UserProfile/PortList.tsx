@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import type { GroupStatus } from 'nft-bbs-server';
-import { utils } from 'quorum-light-node-sdk';
+import { utils } from 'rum-sdk-browser';
 import { GroupAvatar } from '~/components';
 import { loginStateService, nodeService } from '~/service';
 import { lang, ThemeLight } from '~/utils';

@@ -8,6 +8,7 @@ import { AdminApiParams, API_BASE_URL } from './common';
 interface ListGroupParams {
   privateGroupIds?: Array<number>
   privateGroupShortNames?: Array<string>
+  hideNetworkError?: boolean
 }
 
 export const list = async (params?: ListGroupParams) => {
@@ -26,7 +27,9 @@ export const list = async (params?: ListGroupParams) => {
   return fp.pipe(
     item,
     either.mapLeft((v) => {
-      snackbarService.networkError(v);
+      if (!params?.hideNetworkError) {
+        snackbarService.networkError(v);
+      }
       return null;
     }),
   );

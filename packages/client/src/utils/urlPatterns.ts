@@ -1,9 +1,9 @@
-import { stringify } from 'query-string';
+import qs from 'query-string';
 import { matchPath } from 'react-router-dom';
 
 export const routeUrlPatterns = {
   postlist: '/:groupId',
-  postdetail: '/:groupId/post/:trxId',
+  postdetail: '/:groupId/post/:id',
   newpost: '/:groupId/newpost',
   userprofile: '/:groupId/userprofile/:userAddress',
   notification: '/:groupId/notification',
@@ -13,9 +13,9 @@ export type ConstructRouteParmas = {
   page: 'postlist'
 } | {
   page: 'postdetail'
-  trxId: string
+  id: string
   locateComment?: boolean
-  commentTrx?: string
+  commentId?: string
 } | {
   page: 'newpost'
 } | {
@@ -30,11 +30,11 @@ export const constructRoutePath = (params: ConstructRouteParmas & { groupId: str
     case 'postlist':
       return `/${params.groupId}`;
     case 'postdetail': {
-      const query = stringify({
+      const query = qs.stringify({
         locateComment: params.locateComment || null,
-        commentTrx: params.commentTrx || null,
+        commentId: params.commentId || null,
       }, { skipNull: true });
-      return `/${params.groupId}/post/${params.trxId}${query ? `?${query}` : ''}`;
+      return `/${params.groupId}/post/${params.id}${query ? `?${query}` : ''}`;
     }
     case 'newpost':
       return `/${params.groupId}/newpost`;

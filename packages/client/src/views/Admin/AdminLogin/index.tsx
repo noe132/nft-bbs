@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import { parse } from 'query-string';
+import qs from 'query-string';
 import { toUint8Array } from 'js-base64';
 import { either, taskEither, function as fp, task } from 'fp-ts';
 import {
@@ -118,7 +118,7 @@ export const AdminLogin = observer(() => {
     const crpytoKey = state.crpytoKey;
     if (!crpytoKey) { return; }
     const parseSearch = taskEither.tryCatch(async () => {
-      const query = parse(search);
+      const query = qs.parse(search);
       const cipher = new Uint8Array(toUint8Array(query.token as string));
       const iv = cipher.slice(0, 12);
       const data = cipher.slice(12);

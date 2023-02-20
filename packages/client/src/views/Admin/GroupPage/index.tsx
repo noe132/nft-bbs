@@ -8,7 +8,7 @@ import type { GroupStatus } from 'nft-bbs-server/orm';
 import { GroupApi } from '~/apis';
 import { runLoading, ThemeLight, validateSeed } from '~/utils';
 import { dialogService, keyService, snackbarService } from '~/service';
-import { utils } from 'quorum-light-node-sdk';
+import { utils } from 'rum-sdk-browser';
 import { LoadingButton } from '@mui/lab';
 import { Edit } from '@mui/icons-material';
 import { editSeedUrl } from '~/modals';

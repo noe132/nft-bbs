@@ -85,24 +85,24 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
     const allLinks = Array.from(new Set([...allImages].map((v) => v[1])));
     const images = state.images.filter((v) => allLinks.includes(v.url)).map((v) => ({
       ...v,
-      trxId: '',
+      id: '',
     }));
     await runLoading(
       (l) => { state.posting = l; },
       async () => {
         for (const img of images) {
-          const res = await nodeService.post.postImage(img.img, img.mimeType);
-          if (!res) {
+          const image = await nodeService.post.postImage(img.img, img.mimeType);
+          if (!image) {
             snackbarService.error(lang.newPost.imageUploadFailed);
             return;
           }
-          img.trxId = res.trx_id;
+          img.id = image.object.id;
         }
 
         const postContent = state.postContent.replaceAll(/(!\[.*?\])\((blob:.+?)\)/g, (sub, g1, g2) => {
           const img = images.find((v) => v.url === g2);
           if (!img) { return sub; }
-          return `${g1}(${SCHEMA_PREFIX}${img?.trxId})`;
+          return `${g1}(${SCHEMA_PREFIX}${img?.id})`;
         });
 
         // if (state.postToEdit) {
@@ -113,7 +113,7 @@ export const NewPost = observer((props: { className?: string, onChange?: (v: str
         runInAction(() => {
           images.forEach((v) => {
             const url = URL.createObjectURL(v.img);
-            nodeService.state.post.imageCache.set(v.trxId, url);
+            nodeService.state.post.imageCache.set(v.id, url);
           });
         });
         snackbarService.show(state.postToEdit ? lang.newPost.editSuccess : lang.newPost.submitSuccess);

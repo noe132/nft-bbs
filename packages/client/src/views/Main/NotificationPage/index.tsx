@@ -39,11 +39,11 @@ export const NotificationPage = observer((props: { className?: string }) => {
     if (!post) { return; }
     const postId = 'postId' in post
       ? post.postId
-      : 'trxId' in post ? post.trxId : '';
+      : 'id' in post ? post.id! : '';
     routerService.navigate({
       page: 'postdetail',
-      trxId: postId,
-      commentTrx: v.actionObjectType === 'comment'
+      id: postId.toString(),
+      commentId: v.actionObjectType === 'comment'
         ? v.actionObjectId
         : undefined,
     });

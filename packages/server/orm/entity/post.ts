@@ -1,27 +1,27 @@
 import {
-  Brackets, Column, DeleteDateColumn, Entity, EntityManager,
-  FindOptionsWhere,
-  Index, PrimaryGeneratedColumn,
+  Brackets, Column, DeleteDateColumn, Entity,
+  EntityManager, FindOptionsWhere, Index, PrimaryColumn,
 } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
+import { CounterSummary } from './counterSummary';
 import { PostAppend } from './postAppend';
 import { Profile } from './profile';
-import { StackedCounter } from './stackedCounter';
 import { TempProfile } from './tempProfile';
+
+type FindPostParams = Required<Pick<FindOptionsWhere<Post>, 'groupId' | 'id'>>;
 
 @Entity({ name: 'posts' })
 export class Post {
-  @PrimaryGeneratedColumn()
-  public id?: number;
+  @PrimaryColumn()
+  public id!: string;
+
+  @PrimaryColumn()
+  public groupId!: number;
 
   @Index()
   @Column({ nullable: false })
   public trxId!: string;
-
-  @Index()
-  @Column({ nullable: false })
-  public groupId!: number;
 
   @Column({ nullable: false })
   public title!: string;
@@ -74,13 +74,13 @@ export class Post {
     appends: Array<PostAppend>
   };
 
-  private static create(params: EntityConstructorParams<Post, 'id' | 'extra'>) {
+  private static create(params: EntityConstructorParams<Post, 'extra'>) {
     const item = new Post();
     Object.assign(item, params);
     return item;
   }
 
-  public static async add(params: EntityConstructorParams<Post, 'id' | 'extra'>, manager?: EntityManager) {
+  public static async add(params: EntityConstructorParams<Post, 'extra'>, manager?: EntityManager) {
     const post = Post.create(params);
     return (manager || AppDataSource.manager).save(post);
   }
@@ -89,7 +89,7 @@ export class Post {
     await (manager || AppDataSource.manager).save(post);
   }
 
-  public static get(where: Pick<FindOptionsWhere<Post>, 'groupId' | 'trxId'>, manager?: EntityManager) {
+  public static get(where: FindPostParams, manager?: EntityManager) {
     return (manager || AppDataSource.manager).findOneBy(Post, where);
   }
 
@@ -100,13 +100,17 @@ export class Post {
     });
   }
 
-  public static bulkGet(trxIds: Array<Post['trxId']>, manager?: EntityManager) {
-    if (!trxIds.length) { return []; }
-    return (manager || AppDataSource.manager).findBy(Post, trxIds.map((trxId) => ({ trxId })));
+  public static bulkGet(data: Array<FindPostParams>, manager?: EntityManager) {
+    if (!data.length) { return []; }
+    return (manager || AppDataSource.manager).findBy(Post, data);
   }
 
-  public static delete(where: Pick<FindOptionsWhere<Post>, 'groupId' | 'trxId' >, manager?: EntityManager) {
+  public static delete(where: FindPostParams, manager?: EntityManager) {
     return (manager || AppDataSource.manager).softDelete(Post, where);
+  }
+
+  public static async has(where: FindPostParams, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).exists(Post, { where });
   }
 
   public static list(params: {
@@ -165,13 +169,13 @@ export class Post {
       tempProfiles,
       appends,
     ] = await Promise.all([
-      options?.viewer ? StackedCounter.getCounterMap({
-        type: 'Like',
+      options?.viewer ? CounterSummary.getCounterMap({
+        type: 'like',
         userAddress: options.viewer,
         items,
       }) : Promise.resolve({}),
-      options?.viewer ? StackedCounter.getCounterMap({
-        type: 'Dislike',
+      options?.viewer ? CounterSummary.getCounterMap({
+        type: 'dislike',
         userAddress: options.viewer,
         items,
       }) : Promise.resolve({}),
@@ -183,7 +187,7 @@ export class Post {
         groupId: item.groupId,
         userAddress: item.userAddress,
       }))),
-      PostAppend.bulkGet(items.map((v) => v.trxId)),
+      PostAppend.getByPost(items.map((v) => ({ groupId: v.groupId, postId: v.id }))),
     ]);
 
     const profileMap = profiles.reduce<Record<string, Profile>>((p, c) => {
@@ -198,14 +202,14 @@ export class Post {
 
     items.forEach((item) => {
       item.extra = {
-        liked: !!likedMap[item.trxId],
-        disliked: !!dislikedMap[item.trxId],
+        liked: (likedMap[item.id]?.value ?? 0) > 0,
+        disliked: (dislikedMap[item.id]?.value ?? 0) > 0,
         userProfile: profileMap[item.userAddress]
           ?? Profile.generateFallbackProfile({
             userAddress: item.userAddress,
             groupId: item.groupId,
           }),
-        appends: appends.filter((v) => v.postId === item.trxId),
+        appends: appends.filter((v) => v.postId === item.id),
       };
     });
 

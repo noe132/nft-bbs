@@ -139,6 +139,9 @@ module.exports = {
           ),
         ),
       },
+      transitionProperty: {
+        'bg': 'background-color',
+      },
     },
   },
 };

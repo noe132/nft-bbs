@@ -1,6 +1,6 @@
 import { either, function as fp } from 'fp-ts';
 import { runInAction } from 'mobx';
-import { utils } from 'quorum-light-node-sdk';
+import { utils } from 'rum-sdk-browser';
 
 export * from './ago';
 export * from './compressImage';

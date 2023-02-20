@@ -28,7 +28,7 @@ export const AdminHeader = observer((props: { className?: string }) => {
     <div className="h-[60px]" />
     <div
       className={classNames(
-        'fixed top-0 left-0 right-0 z-50 flex flex-center px-5 h-[60px] bg-[#0d1d37] bg-white',
+        'fixed top-0 left-0 right-0 z-50 flex flex-center px-5 h-[60px] bg-[#0d1d37]',
         props.className,
       )}
     >

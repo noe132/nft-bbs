@@ -4,9 +4,9 @@ import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { API_BASE_URL } from './common';
 
-export const get = async (params: { groupId: GroupStatus['id'], trxId: string, viewer?: string }) => {
+export const get = async (params: { groupId: GroupStatus['id'], id: string, viewer?: string }) => {
   const item = await request<Post>({
-    url: `${API_BASE_URL}/post/${params.groupId}/${params.trxId}`,
+    url: `${API_BASE_URL}/post/${params.groupId}/${params.id}`,
     params: { viewer: params.viewer },
   });
   return fp.pipe(

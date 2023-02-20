@@ -52,6 +52,12 @@ export const content = {
     deleteGroupTitle: '不再显示',
     deleteGroupContent: '这将不再显示这个 Port 论坛（可通过 SeedUrl 或 链接重新加入）。是否继续？',
   },
+  init: {
+    loading: '正在加载...',
+    failedToLoadConfig: '加载设置失败',
+    failedToLoadGroups: '加载port列表失败',
+    refresh: '刷新页面重试',
+  },
   postlist: {
     latest: '最新',
     hotest: '最热',
@@ -80,6 +86,7 @@ export const content = {
     postComment: '发布评论',
     sortByLatest: '最新在前',
     sortByOldest: '最早在前',
+    sortByHotest: '最热在前',
     commentCount: (n: number) => `${n} 条评论`,
     comment: '评论',
     writeAComment: '我来写第一个评论',

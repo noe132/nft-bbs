@@ -1,23 +1,24 @@
 import { taskEither } from 'fp-ts';
 import { PostAppendType } from 'nft-bbs-types';
-import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as rumsdk from 'rum-sdk-nodejs';
 
-import { Post } from '~/orm';
-import { PostAppend } from '~/orm/entity/postAppend';
+import { Post, PostAppend } from '~/orm';
 import { parseQuorumTimestamp } from '~/utils';
 import { TrxHandler } from './helper';
 
 export const handlePostAppend: TrxHandler = (item, groupStatus, transactionManager, queueSocket) => taskEither.tryCatch(
   async () => {
-    const data = item.Data as any as PostAppendType;
-    const userAddress = QuorumLightNodeSDK.utils.pubkeyToAddress(item.SenderPubkey);
+    const data = item.Data as PostAppendType;
+    const object = data.object;
+    const userAddress = rumsdk.utils.pubkeyToAddress(item.SenderPubkey);
     const groupId = groupStatus.id;
     const trxId = item.TrxId;
     const timestamp = parseQuorumTimestamp(item.TimeStamp);
 
-    const content = data.content;
-    const postId = data.attributedTo[0].id;
-    const post = await Post.get({ groupId, trxId: postId }, transactionManager);
+    const id = object.id;
+    const content = object.content;
+    const postId = object.inreplyto.id;
+    const post = await Post.get({ groupId, id: postId }, transactionManager);
     if (!post) {
       // pollingLog.warn({
       //   message: `no post ${postId} found for post append ${trxId}`,
@@ -31,7 +32,12 @@ export const handlePostAppend: TrxHandler = (item, groupStatus, transactionManag
       return true;
     }
 
+    if (await PostAppend.has({ groupId, id }, transactionManager)) {
+      return true;
+    }
+
     const postAppendItem = await PostAppend.add({
+      id,
       trxId,
       content,
       groupId,

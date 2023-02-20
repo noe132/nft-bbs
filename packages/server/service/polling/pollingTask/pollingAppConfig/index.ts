@@ -1,6 +1,6 @@
 import assert from 'assert';
 import { either, taskEither, function as fp } from 'fp-ts';
-import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as rumsdk from 'rum-sdk-nodejs';
 
 import { GroupStatus } from '~/orm/entity';
 import { appConfigService } from '~/service/appconfig';
@@ -13,7 +13,7 @@ export const pollingAppConfigTask = async (groupStatusId: number) => {
   await fp.pipe(
     taskEither.fromEither(
       either.tryCatch(
-        () => QuorumLightNodeSDK.utils.restoreSeedFromUrl(groupStatus.mainSeedUrl),
+        () => rumsdk.utils.restoreSeedFromUrl(groupStatus.mainSeedUrl),
         (e) => e as Error,
       ),
     ),
@@ -21,18 +21,18 @@ export const pollingAppConfigTask = async (groupStatusId: number) => {
       const groupId = seed.group_id;
       return fp.pipe(
         taskEither.tryCatch(
-          () => QuorumLightNodeSDK.chain.AppConfig.list({ groupId }),
+          () => rumsdk.chain.AppConfig.list({ groupId }),
           (e) => e as Error,
         ),
         taskEither.chainW((keyList) => {
           const tasks = keyList.map((key) => taskEither.tryCatch(
-            () => QuorumLightNodeSDK.chain.AppConfig.get({ groupId, key: key.Name }),
+            () => rumsdk.chain.AppConfig.get({ groupId, key: key.Name }),
             (e) => e as Error,
           ));
           return taskEither.sequenceArray(tasks);
         }),
         taskEither.map((items) => {
-          type AppConfigRecord = Record<string, QuorumLightNodeSDK.IAppConfigItem>;
+          type AppConfigRecord = Record<string, rumsdk.IAppConfigItem>;
           const record = items.reduce<AppConfigRecord>((p, c) => {
             p[c.Name] = c;
             return p;

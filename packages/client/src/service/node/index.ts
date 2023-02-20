@@ -1,17 +1,17 @@
 import { matchPath } from 'react-router-dom';
-import * as QuorumLightNodeSDK from 'quorum-light-node-sdk';
+import * as rumsdk from 'rum-sdk-browser';
 import { action, observable, reaction, runInAction } from 'mobx';
 import { either, function as fp, option, task, taskEither } from 'fp-ts';
 import { constantDelay, limitRetries, Monoid } from 'retry-ts';
 import { retrying } from 'retry-ts/Task';
 import { v4 } from 'uuid';
 import type {
-  Post, Comment, Profile, Notification,
+  Post, Comment, Profile, Notification, Counter,
   GroupStatus, GroupConfig, IAppConfigItem,
 } from 'nft-bbs-server';
-import {
-  CommentType, DislikeType, ImageType, LikeType,
-  PostDeleteType, PostType, ProfileType, PostAppendType,
+import type {
+  CommentType, CounterType, PostDeleteType, PostType,
+  ProfileType, PostAppendType, ImageActivityType,
 } from 'nft-bbs-types';
 
 import {
@@ -25,7 +25,6 @@ import {
 } from '~/apis';
 import { socketService, SocketEventListeners } from '~/service/socket';
 import { keyService } from '~/service/key';
-import type { createPostlistState } from '~/views/Main/PostList';
 
 import { loginStateService } from '../loginState';
 
@@ -40,10 +39,10 @@ const state = observable({
   group: null as null | GroupStatus,
   routeGroupId: '',
   groupMap: null as null | {
-    main: QuorumLightNodeSDK.IGroup
-    comment: QuorumLightNodeSDK.IGroup
-    counter: QuorumLightNodeSDK.IGroup
-    profile: QuorumLightNodeSDK.IGroup
+    main: rumsdk.IGroup
+    comment: rumsdk.IGroup
+    counter: rumsdk.IGroup
+    profile: rumsdk.IGroup
   },
   get groupId() {
     return this.group?.id ?? 0;
@@ -52,7 +51,7 @@ const state = observable({
     const pubkey = nodeService.state.groupMap?.main?.ownerPubKey;
     return pubkey
       ? fp.pipe(
-        either.tryCatch(() => QuorumLightNodeSDK.utils.pubkeyToAddress(pubkey), fp.identity),
+        either.tryCatch(() => rumsdk.utils.pubkeyToAddress(pubkey), fp.identity),
         either.getOrElse(() => ''),
       )
       : '';
@@ -60,8 +59,8 @@ const state = observable({
 
   init: {
     page: 'init' as 'init' | 'join' | 'main',
-    step: '',
-    error: '',
+    step: '' as '' | 'config' | 'error',
+    error: '' as '' | 'config' | 'group',
   },
 
   config: {
@@ -89,7 +88,7 @@ const state = observable({
   comment: {
     map: new Map<string, Comment>(),
     taskId: 0,
-    /** `Map<postTrxId, Set<commentTrx>>` */
+    /** `Map<postTrxId, Set<commentId>>` */
     cacheByPostId: new Map<string, Set<string>>(),
     get cache() {
       return [...this.cacheByPostId.values()].flatMap((v) => [...v.values()]);
@@ -111,9 +110,8 @@ const state = observable({
     unreadCount: 0,
   },
   counter: {
-    postLike: new Map<string, string>(),
-    postDislike: new Map<string, string>(),
-    comment: new Map<string, Array<(LikeType | DislikeType) & { trxId: string }>>(),
+    post: new Map<string, Array<Counter>>(),
+    comment: new Map<string, Array<Counter>>(),
   },
   groupInfo: {
     avatar: '',
@@ -144,7 +142,7 @@ const state = observable({
 });
 
 const trx = {
-  create: async (object: any, seed: 'main' | 'comment' | 'counter' | 'profile', type: '_Object' | 'Person' = '_Object') => {
+  create: async (activity: any, seed: 'main' | 'comment' | 'counter' | 'profile') => {
     const groupStatus = state.group;
     if (!groupStatus) { throw new Error('no groupstatus while creating trx'); }
     const seedUrl = {
@@ -153,34 +151,28 @@ const trx = {
       counter: groupStatus.counterSeedUrl,
       profile: groupStatus.profileSeedUrl,
     }[seed];
-    const groupId = QuorumLightNodeSDK.utils.restoreSeedFromUrl(seedUrl).group_id;
-    const group = QuorumLightNodeSDK.cache.Group.get(groupId);
+    const groupId = rumsdk.utils.restoreSeedFromUrl(seedUrl).group_id;
+    const group = rumsdk.cache.Group.get(groupId);
     if (!group) { throw new Error('no group while creating trx'); }
 
     let res;
     if (window.location.protocol === 'https:') {
-      const signedTrx = await QuorumLightNodeSDK.utils.signTrx({
-        type,
+      const signedTrx = await rumsdk.utils.signTrx({
         groupId,
-        data: object,
-        aesKey: group!.cipherKey,
+        data: activity,
+        aesKey: group.cipherKey,
+        version: '2.0.0',
         ...keyService.getTrxCreateParam(),
       });
       res = await TrxApi.create(groupId, signedTrx.TrxItem);
     } else {
-      res = type === '_Object'
-        ? await QuorumLightNodeSDK.chain.Trx.create({
-          groupId,
-          object,
-          aesKey: group.cipherKey,
-          ...keyService.getTrxCreateParam(),
-        })
-        : await QuorumLightNodeSDK.chain.Trx.createPerson({
-          groupId,
-          person: object,
-          aesKey: group.cipherKey,
-          ...keyService.getTrxCreateParam(),
-        });
+      res = await rumsdk.chain.Trx.create({
+        groupId,
+        version: '2.0.0',
+        data: activity,
+        aesKey: group.cipherKey,
+        ...keyService.getTrxCreateParam(),
+      });
     }
 
     return res;
@@ -188,10 +180,8 @@ const trx = {
 };
 
 const profile = {
-  get: async (params: ({ userAddress: string } | { trxId: string }) & { createTemp?: boolean }) => {
-    let profileItem = 'userAddress' in params
-      ? await ProfileApi.getByUserAddress(state.groupId, params.userAddress)
-      : await ProfileApi.getByTrxId(state.groupId, params.trxId);
+  get: async (params: { userAddress: string, createTemp?: boolean }) => {
+    let profileItem = await ProfileApi.getByUserAddress(state.groupId, params.userAddress);
 
     if ('userAddress' in params && !profileItem) {
       profileItem = {
@@ -200,6 +190,7 @@ const profile = {
         groupId: state.groupId,
         name: '',
         avatar: '',
+        wallet: '',
         timestamp: Date.now(),
       };
     }
@@ -247,10 +238,20 @@ const profile = {
   submit: async (params: { name: string, avatar?: { mediaType: string, content: string } }) => {
     try {
       const person: ProfileType = {
-        name: params.name,
-        image: params.avatar,
+        type: 'Create',
+        object: {
+          type: 'Person',
+          name: params.name,
+          ...params.avatar ? {
+            avatar: {
+              type: 'Image',
+              content: params.avatar.content,
+              mediaType: params.avatar.mediaType,
+            },
+          } : {},
+        },
       };
-      const res = await trx.create(person, 'profile', 'Person');
+      const res = await trx.create(person, 'profile');
       if (res) {
         const profileItem: Profile = {
           groupId: state.groupId,
@@ -260,6 +261,7 @@ const profile = {
             ? `data:${params.avatar.mediaType};base64,${params.avatar.content}`
             : '',
           name: params.name,
+          wallet: '',
           timestamp: Date.now(),
         };
         runInAction(() => {
@@ -279,6 +281,7 @@ const profile = {
     userAddress: params.userAddress,
     name: '',
     avatar: '',
+    wallet: '',
     timestamp: Date.now(),
   }),
 
@@ -318,7 +321,7 @@ const post = {
     if (posts) {
       runInAction(() => {
         posts.forEach((v) => {
-          state.post.map.set(v.trxId, v);
+          state.post.map.set(v.id, v);
           if (v.extra?.userProfile) {
             profile.save(v.extra.userProfile);
           }
@@ -329,17 +332,22 @@ const post = {
   },
 
   create: async (title: string, content: string) => {
-    const object: PostType = {
-      type: 'Note',
-      name: title,
-      content,
+    const activity: PostType = {
+      type: 'Create',
+      object: {
+        type: 'Note',
+        id: v4(),
+        name: title,
+        content,
+      },
     };
 
-    const res = await trx.create(object, 'main');
+    const res = await trx.create(activity, 'main');
 
     if (res) {
       const post: Post = {
         trxId: res.trx_id,
+        id: activity.object.id,
         title,
         content,
         userAddress: keyService.state.address,
@@ -358,17 +366,24 @@ const post = {
         },
       };
       runInAction(() => {
-        state.post.newPostCache.add(post.trxId);
-        state.post.map.set(post.trxId, post);
+        state.post.newPostCache.add(post.id);
+        state.post.map.set(post.id, post);
       });
     }
   },
 
   append: async (content: string, postId: string) => {
     const object: PostAppendType = {
-      type: 'NoteAppend',
-      content,
-      attributedTo: [{ type: 'Note', id: postId }],
+      type: 'Create',
+      object: {
+        type: 'NoteAppend',
+        id: v4(),
+        content,
+        inreplyto: {
+          type: 'Note',
+          id: postId,
+        },
+      },
     };
 
     const res = await trx.create(object, 'main');
@@ -376,6 +391,7 @@ const post = {
 
     if (res && post?.extra?.appends) {
       post.extra.appends.push({
+        id: object.object.id,
         content,
         groupId: state.groupId,
         postId,
@@ -387,31 +403,33 @@ const post = {
 
   delete: async (post: Post) => {
     const object: PostDeleteType = {
-      type: 'Note',
-      id: post.trxId,
-      content: 'OBJECT_STATUS_DELETED',
+      type: 'Delete',
+      object: {
+        type: 'Note',
+        id: post.id,
+      },
     };
     await trx.create(object, 'main');
   },
 
-  get: async (trxId: string, viewer?: string) => {
-    if (!trxId) { return null; }
+  get: async (id: string, viewer?: string) => {
+    if (!id) { return null; }
     const item = await PostApi.get({
       groupId: state.groupId,
-      trxId,
+      id,
       viewer: viewer ?? keyService.state.address,
     });
     if (!item) { return null; }
     return post.save(item);
   },
 
-  save: action((item: Post) => {
-    if (item.extra?.userProfile.trxId) {
-      profile.save(item.extra.userProfile);
+  save: action((post: Post) => {
+    if (post.extra?.userProfile.trxId) {
+      profile.save(post.extra.userProfile);
     }
-    state.post.map.set(item.trxId, item);
-    state.post.newPostCache.delete(item.trxId);
-    return state.post.map.get(item.trxId)!;
+    state.post.map.set(post.id, post);
+    state.post.newPostCache.delete(post.id);
+    return state.post.map.get(post.id)!;
   }),
 
   getFirstPost: async (userAddress: string) => {
@@ -422,8 +440,8 @@ const post = {
     });
     if (post) {
       runInAction(() => {
-        state.post.map.set(post.trxId, post);
-        state.post.newPostCache.delete(post.trxId);
+        state.post.map.set(post.id, post);
+        state.post.newPostCache.delete(post.id);
       });
     }
     return post;
@@ -440,36 +458,39 @@ const post = {
     });
     const base64Data = content.replace(/^data:.+?;base64,/, '');
 
-    const object: ImageType = {
-      type: 'Note',
-      attributedTo: [{ type: 'Note' }],
-      content: '此版本暂不支持插图，更新版本即可支持',
-      name: '插图',
-      image: [{
-        mediaType: mineType,
+    const acvitity: ImageActivityType = {
+      type: 'Create',
+      object: {
+        type: 'Image',
+        id: v4(),
         content: base64Data,
-        name: v4(),
-      }],
+        mediaType: mineType,
+      },
     };
-    const res = await trx.create(object, 'main');
-    if (res) {
-      runInAction(() => {
-        state.post.imageCache.set(res.trx_id, URL.createObjectURL(imgBlob));
-      });
+    const res = await trx.create(acvitity, 'main');
+    if (!res) {
+      return null;
     }
+    runInAction(() => {
+      state.post.imageCache.set(acvitity.object.id, URL.createObjectURL(imgBlob));
+    });
 
-    return res;
+    return acvitity;
   },
 
   getStat: (post: Post) => {
-    const cachedLike = state.counter.postLike.get(post.trxId);
-    const cachedDislike = state.counter.postDislike.get(post.trxId);
+    const [liked, likeCount] = (state.counter.post.get(post.id) ?? []).reduce<[boolean, number]>(([liked, count], c) => {
+      if (liked && c.type === 'undolike') { return [false, count - 1]; }
+      if (!liked && c.type === 'like') { return [true, count + 1]; }
+      return [liked, count];
+    }, [!!post.extra?.liked, post.likeCount]);
+    const [disliked, dislikeCount] = (state.counter.post.get(post.id) ?? []).reduce<[boolean, number]>(([disliked, count], c) => {
+      if (disliked && c.type === 'undodislike') { return [false, count - 1]; }
+      if (!disliked && c.type === 'dislike') { return [true, count + 1]; }
+      return [disliked, count];
+    }, [!!post.extra?.disliked, post.dislikeCount]);
 
-    const likeCount = post.likeCount + (cachedLike ? 1 : 0);
-    const dislikeCount = post.dislikeCount + (cachedDislike ? 1 : 0);
-    const liked = post.extra?.liked || !!cachedLike;
-    const disliked = post.extra?.disliked || !!cachedDislike;
-    const commentCount = post.commentCount + (state.comment.cacheByPostId.get(post.trxId)?.size ?? 0);
+    const commentCount = post.commentCount + (state.comment.cacheByPostId.get(post.id)?.size ?? 0);
 
     return {
       title: post.title,
@@ -484,9 +505,9 @@ const post = {
 };
 
 const comment = {
-  list: async (postTrxId: string) => {
+  list: async (postId: string) => {
     const comments = await CommentApi.list(state.groupId, {
-      objectId: postTrxId,
+      objectId: postId,
       viewer: keyService.state.address,
       offset: 0,
       limit: 500,
@@ -495,31 +516,39 @@ const comment = {
       return null;
     }
     runInAction(() => {
-      comments.forEach((v) => {
-        if (v.extra?.userProfile.trxId) {
-          profile.save(v.extra.userProfile);
+      comments.forEach((comment) => {
+        if (comment.extra?.userProfile.trxId) {
+          profile.save(comment.extra.userProfile);
         }
-        state.comment.map.set(v.trxId, v);
+        state.comment.map.set(comment.id, comment);
       });
     });
-    const trxIds = comments.map((v) => v.trxId);
-    const postSet = state.comment.cacheByPostId.get(postTrxId);
+    const commentIds = comments.map((comment) => comment.id);
+    const postSet = state.comment.cacheByPostId.get(postId);
     if (postSet) {
-      for (const cachedTrxId of postSet) {
-        trxIds.push(cachedTrxId);
+      for (const cachedId of postSet) {
+        commentIds.push(cachedId);
       }
     }
-    return trxIds;
+    return commentIds;
   },
   submit: async (params: { objectId: string, threadId: string, replyId: string, content: string }) => {
-    const object: CommentType = {
-      type: 'Note',
-      content: params.content,
-      inreplyto: { trxid: params.replyId || params.threadId || params.objectId },
+    const activity: CommentType = {
+      type: 'Create',
+      object: {
+        type: 'Note',
+        content: params.content,
+        id: v4(),
+        inreplyto: {
+          type: 'Note',
+          id: params.replyId || params.threadId || params.objectId,
+        },
+      },
     };
-    const res = await trx.create(object, 'comment');
+    const res = await trx.create(activity, 'comment');
     if (res) {
       const comment: Comment = {
+        id: activity.object.id,
         content: params.content,
         postId: params.objectId,
         threadId: params.threadId,
@@ -534,22 +563,22 @@ const comment = {
       };
 
       runInAction(() => {
-        state.comment.map.set(comment.trxId, comment);
+        state.comment.map.set(comment.id, comment);
         if (!state.comment.cacheByPostId.has(params.objectId)) {
           state.comment.cacheByPostId.set(params.objectId, new Set());
         }
         const postSet = state.comment.cacheByPostId.get(params.objectId)!;
-        postSet.add(comment.trxId);
+        postSet.add(comment.id);
       });
       return comment;
     }
 
     return null;
   },
-  get: async (trxId: string) => {
+  get: async (id: string) => {
     const item = await CommentApi.get({
       groupId: state.groupId,
-      trxId,
+      id,
       viewer: keyService.state.address,
     });
     if (!item) { return null; }
@@ -559,41 +588,45 @@ const comment = {
     if (item.extra?.userProfile.trxId) {
       profile.save(item.extra.userProfile);
     }
-    state.comment.map.set(item.trxId, item);
+    state.comment.map.set(item.id, item);
     state.comment.cacheByPostId.forEach((s) => {
-      s.delete(item.trxId);
+      s.delete(item.id);
     });
-    return state.comment.map.get(item.trxId)!;
+    return state.comment.map.get(item.id)!;
   }),
   getFirstComment: async (userAddress: string) => {
     const comment = await CommentApi.getFirst(state.groupId, userAddress, keyService.state.address);
     return comment;
   },
   getStat: (comment: Comment) => {
-    const liked = (state.counter.comment.get(comment.trxId) ?? []).reduce((p, c) => {
-      const unchanged = (p && c.type === 'Like')
-        || (!p && c.type === 'Dislike');
-      return unchanged ? p : !p;
-    }, !!comment.extra?.liked);
+    const [liked, likeCount] = (state.counter.comment.get(comment.id) ?? []).reduce<[boolean, number]>(
+      ([liked, count], c) => {
+        if (liked && c.type === 'undolike') { return [false, count - 1]; }
+        if (!liked && c.type === 'like') { return [true, count + 1]; }
+        return [liked, count];
+      },
+      [!!comment.extra?.liked, comment.likeCount],
+    );
+    const [disliked, dislikeCount] = (state.counter.comment.get(comment.id) ?? []).reduce<[boolean, number]>(
+      ([disliked, count], c) => {
+        if (disliked && c.type === 'undodislike') { return [false, count - 1]; }
+        if (!disliked && c.type === 'dislike') { return [true, count + 1]; }
+        return [disliked, count];
+      },
+      [!!comment.extra?.disliked, comment.dislikeCount],
+    );
 
-    let likeDiff = 0;
-    if (!comment.extra?.liked && liked) {
-      likeDiff = 1;
-    }
-    if (comment.extra?.liked && !liked) {
-      likeDiff = -1;
-    }
-
-    const cachedCommentCount = Array.from(state.comment.cacheByPostId.get(comment.postId)?.values() ?? []).filter((trxId) => {
-      const c = state.comment.map.get(trxId);
-      return c?.threadId === comment.trxId;
+    const cachedCommentCount = Array.from(state.comment.cacheByPostId.get(comment.postId)?.values() ?? []).filter((id) => {
+      const c = state.comment.map.get(id);
+      return c?.threadId === comment.id;
     }).length;
-
-    const likeCount = comment.likeCount + likeDiff;
     const commentCount = comment.commentCount + cachedCommentCount;
+
     return {
       likeCount,
+      dislikeCount,
       liked,
+      disliked,
       commentCount,
     };
   },
@@ -650,56 +683,66 @@ const notification = {
 };
 
 const counter = {
-  updatePost: async (item: Post, type: 'Like' | 'Dislike') => {
+  update: async (item: Post | Comment, type: Counter['type']) => {
     if (!state.group) { return; }
-    const trxId = item.trxId;
-    const stat = post.getStat(item);
-    const liked = stat.liked && type === 'Like';
-    const disliked = stat.disliked && type === 'Dislike';
-    if (liked || disliked) { return; }
+    const isPost = 'title' in item;
+    const stat = isPost ? post.getStat(item) : comment.getStat(item);
+    const invalidAction = [
+      stat.liked && type === 'like',
+      !stat.liked && type === 'undolike',
+      stat.disliked && type === 'dislike',
+      !stat.disliked && type === 'undodislike',
+    ].some((v) => v);
+    if (invalidAction) { return; }
+    const isUndo = type === 'undolike' || type === 'undodislike';
+    const likeType = type === 'like' || type === 'undolike'
+      ? 'Like'
+      : 'Dislike';
     try {
-      const object: LikeType | DislikeType = {
-        id: trxId,
-        type,
-      };
-      const res = await trx.create(object, 'counter');
-
-      const map = type === 'Like'
-        ? state.counter.postLike
-        : state.counter.postDislike;
+      const acvitity: CounterType = isUndo
+        ? {
+          type: 'Undo',
+          object: {
+            type: likeType,
+            object: {
+              type: 'Note',
+              id: item.id,
+            },
+          },
+        }
+        : {
+          type: likeType,
+          object: {
+            type: 'Note',
+            id: item.id,
+          },
+        };
+      const res = await trx.create(acvitity, 'counter');
 
       if (res) {
         runInAction(() => {
-          map.set(item.trxId, res.trx_id);
-        });
-      }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-    }
-  },
-  updateComment: async (item: Comment, type: 'Like' | 'Dislike') => {
-    if (!state.group) { return; }
-    const trxId = item.trxId;
-    const stat = comment.getStat(item);
-    const liked = stat.liked && type === 'Like';
-    const disliked = !stat.liked && type === 'Dislike';
-    if (liked || disliked) { return; }
-    try {
-      const object: LikeType | DislikeType = {
-        id: trxId,
-        type,
-      };
-      const res = await trx.create(object, 'counter');
-      if (res) {
-        runInAction(() => {
-          if (!state.counter.comment.has(item.trxId)) {
-            state.counter.comment.set(item.trxId, []);
-          }
-          state.counter.comment.get(item.trxId)!.push({
-            ...object,
+          const counter: Counter = {
+            groupId: state.groupId,
+            objectId: item.id,
+            objectType: isPost ? 'post' : 'comment',
+            timestamp: Date.now(),
             trxId: res.trx_id,
-          });
+            type,
+            userAddress: keyService.state.address,
+          };
+          if (isPost) {
+            if (!state.counter.post.has(item.id)) {
+              state.counter.post.set(item.id, []);
+            }
+            const arr = state.counter.post.get(item.id)!;
+            arr.push(counter);
+          } else {
+            if (!state.counter.comment.has(item.id)) {
+              state.counter.comment.set(item.id, []);
+            }
+            const arr = state.counter.comment.get(item.id)!;
+            arr.push(counter);
+          }
         });
       }
     } catch (err) {
@@ -723,7 +766,7 @@ const group = {
         }
       });
 
-      QuorumLightNodeSDK.cache.Group.clear();
+      rumsdk.cache.Group.clear();
       const seedUrls = Array.from(new Set([
         groupStatus.mainSeedUrl,
         groupStatus.commentSeedUrl,
@@ -732,15 +775,15 @@ const group = {
       ]));
 
       seedUrls.forEach((v) => {
-        QuorumLightNodeSDK.cache.Group.add(v);
+        rumsdk.cache.Group.add(v);
       });
 
       runInAction(() => {
         state.groupMap = {
-          main: QuorumLightNodeSDK.utils.seedUrlToGroup(groupStatus.mainSeedUrl),
-          comment: QuorumLightNodeSDK.utils.seedUrlToGroup(groupStatus.commentSeedUrl),
-          counter: QuorumLightNodeSDK.utils.seedUrlToGroup(groupStatus.counterSeedUrl),
-          profile: QuorumLightNodeSDK.utils.seedUrlToGroup(groupStatus.profileSeedUrl),
+          main: rumsdk.utils.seedUrlToGroup(groupStatus.mainSeedUrl),
+          comment: rumsdk.utils.seedUrlToGroup(groupStatus.commentSeedUrl),
+          counter: rumsdk.utils.seedUrlToGroup(groupStatus.counterSeedUrl),
+          profile: rumsdk.utils.seedUrlToGroup(groupStatus.profileSeedUrl),
         };
         state.group = groupStatus;
         if (useShortName && groupStatus.shortName) {
@@ -777,13 +820,14 @@ const group = {
   loadGroups: () => {
     const shortName = getRouteGroupId(window.location.pathname);
     const id = Number(shortName) ?? 0;
-    return fp.pipe(
+    const load = fp.pipe(
       () => GroupApi.list({
         privateGroupIds: [
           ...loginStateService.state.privateGroups || [],
           ...id ? [id] : [],
         ],
         privateGroupShortNames: shortName ? [shortName] : undefined,
+        hideNetworkError: true,
       }),
       taskEither.map(action((v) => {
         state.groups = v;
@@ -795,6 +839,18 @@ const group = {
           .map((v) => () => appconfig.load(v));
         return taskEither.fromTask(task.sequenceArray(tasks));
       }),
+    );
+
+    return retrying(
+      Monoid.concat(constantDelay(2000), limitRetries(7)),
+      () => fp.pipe(
+        taskEither.fromIO(() => state.config.loaded),
+        taskEither.chainW((loaded) => {
+          if (loaded) { return taskEither.of(null); }
+          return load;
+        }),
+      ),
+      either.isLeft,
     )();
   },
   setDocumentTitle: (title?: string) => {
@@ -808,13 +864,13 @@ const group = {
 
 const config = {
   load: retrying(
-    Monoid.concat(constantDelay(2000), limitRetries(5)),
+    Monoid.concat(constantDelay(2000), limitRetries(7)),
     () => fp.pipe(
       taskEither.fromIO(() => state.config.loaded),
       taskEither.chainW((loaded) => {
         if (loaded) { return taskEither.of(null); }
         return fp.pipe(
-          ConfigApi.getConfig,
+          () => ConfigApi.getConfig(true),
           taskEither.map((v) => {
             runInAction(() => {
               state.config.defaultGroup = {
@@ -862,43 +918,50 @@ const socketEventHandler: Partial<SocketEventListeners> = {
     state.notification.offset += 1;
   }),
   post: action((v) => {
-    post.get(v.trxId);
-    getPageStateByPageName<ReturnType<typeof createPostlistState>>('postlist').forEach((s) => {
-      if (s.mode.type !== 'search' && !s.trxIds.includes(v.trxId)) {
-        s.trxIds.unshift(v.trxId);
+    post.get(v.id);
+    getPageStateByPageName('postlist').forEach((s) => {
+      if (s && s.mode.type !== 'search' && !s.postIds.includes(v.id)) {
+        s.postIds.unshift(v.id);
       }
     });
   }),
   postDelete: action((v) => {
-    const trxId = v.trxId;
-    state.post.map.delete(trxId);
-    getPageStateByPageName<ReturnType<typeof createPostlistState>>('postlist').forEach((s) => {
-      const index = s.trxIds.indexOf(trxId);
-      if (index !== -1) {
-        s.trxIds.splice(index, 1);
+    const postId = v.id;
+    state.post.map.delete(postId);
+    getPageStateByPageName('postlist').forEach((s) => {
+      if (s) {
+        const index = s.postIds.indexOf(postId);
+        if (index !== -1) {
+          s.postIds.splice(index, 1);
+        }
       }
     });
     const match = matchPath(routeUrlPatterns.postdetail, location.pathname);
-    if (match && match.params.trxId === trxId) {
+    if (match && match.params.trxId === postId) {
       window.location.href = constructRoutePath({ page: 'postlist', groupId: state.routeGroupId });
     }
   }),
-  comment: (v) => comment.get(v.trxId),
+  comment: (v) => comment.get(v.id),
   counter: (v) => {
     if (v.objectType === 'post') {
       post.get(v.objectId).finally(action(() => {
-        state.counter.postLike.delete(v.trxId);
-        state.counter.postDislike.delete(v.trxId);
+        const arr = state.counter.post.get(v.objectId);
+        if (arr) {
+          const index = arr.findIndex((u) => u.trxId === v.trxId);
+          if (index !== -1) {
+            arr.splice(index, 1);
+          }
+        }
       }));
     }
     if (v.objectType === 'comment') {
       comment.get(v.objectId).finally(action(() => {
-        const list = state.counter.comment.get(v.objectId);
-        if (list) {
-          state.counter.comment.set(
-            v.objectId,
-            list.filter((u) => u.trxId !== v.trxId),
-          );
+        const arr = state.counter.comment.get(v.objectId);
+        if (arr) {
+          const index = arr.findIndex((u) => u.trxId === v.trxId);
+          if (index !== -1) {
+            arr.splice(index, 1);
+          }
         }
       }));
     }
@@ -909,7 +972,7 @@ const socketEventHandler: Partial<SocketEventListeners> = {
   }),
   postAppend: (v) => {
     const post = state.post.map.get(v.postId);
-    if (post?.extra?.appends.every((u) => u.trxId !== v.trxId)) {
+    if (post?.extra?.appends.every((u) => u.id !== v.id)) {
       post.extra.appends.push(v);
     }
   },
@@ -962,7 +1025,7 @@ const init = () => {
           const groupItem = state.groups.find((v) => [
             v.id === groupId,
             v.shortName === groupIdOrShortName,
-            QuorumLightNodeSDK.utils.restoreSeedFromUrl(v.mainSeedUrl).group_id === groupIdOrShortName,
+            rumsdk.utils.restoreSeedFromUrl(v.mainSeedUrl).group_id === groupIdOrShortName,
           ].some((v) => v));
           return fp.pipe(
             option.fromNullable(groupItem),
@@ -1095,4 +1158,5 @@ export const nodeService = {
   group,
   config,
   appconfig,
+  socketEventHandler,
 };

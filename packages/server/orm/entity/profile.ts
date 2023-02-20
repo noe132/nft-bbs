@@ -25,6 +25,9 @@ export class Profile {
   @Column({ nullable: false, default: '' })
   public avatar!: string;
 
+  @Column({ nullable: false, default: '' })
+  public wallet!: string;
+
   @Index()
   @Column({
     type: 'timestamp',
@@ -66,6 +69,7 @@ export class Profile {
       userAddress: params.userAddress,
       name: '',
       avatar: '',
+      wallet: '',
       timestamp: Date.now(),
     };
   }

@@ -19,7 +19,7 @@ import { commentContext } from './context';
 interface CommentItemProps {
   className?: string
   comment: Comment
-  onJumpToReply?: (trxId: string) => unknown
+  onJumpToReply?: (id: string) => unknown
 }
 
 const linkifyIt = LinkifyIt();
@@ -28,7 +28,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
     expand: true,
     likeLoading: false,
     get comment() {
-      return nodeService.state.comment.map.get(props.comment.trxId) || props.comment;
+      return nodeService.state.comment.map.get(props.comment.id) || props.comment;
     },
     get replyTo() {
       if (!this.comment.replyId) { return null; }
@@ -48,7 +48,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
       return nodeService.comment.getStat(this.comment);
     },
     get synced() {
-      return !nodeService.state.comment.cache.includes(state.comment.trxId);
+      return !nodeService.state.comment.cache.includes(state.comment.id);
     },
   }));
   const isPC = useWiderThan(960);
@@ -57,7 +57,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
   const context = useContext(commentContext);
 
   const handleClearHighlight = () => {
-    context.state.highlightedComments.delete(props.comment.trxId);
+    context.state.highlightedComments.delete(props.comment.id);
   };
 
   const handleToggleCommentCounter = () => {
@@ -65,9 +65,9 @@ export const CommentItem = observer((props: CommentItemProps) => {
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
-      () => nodeService.counter.updateComment(
+      () => nodeService.counter.update(
         state.comment,
-        state.commentStat.liked ? 'Dislike' : 'Like',
+        state.commentStat.liked ? 'undolike' : 'like',
       ),
     );
   };
@@ -116,7 +116,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
     return text;
   };
 
-  const highlighted = context.state.highlightedComments.has(state.comment.trxId);
+  const highlighted = context.state.highlightedComments.has(state.comment.id);
 
   const commentButtonBox = (
     <div
@@ -180,12 +180,12 @@ export const CommentItem = observer((props: CommentItemProps) => {
   return (
     <div
       className={classNames(
-        'py-4 group duration-200',
+        'py-4 group duration-200 transition-bg',
         highlighted && 'bg-blue-400/20',
         props.className,
       )}
       onClick={handleClearHighlight}
-      data-comment-trx-id={props.comment.trxId}
+      data-comment-id={props.comment.id}
       ref={boxRef}
     >
       <div className="flex justify-between">
@@ -251,7 +251,7 @@ export const CommentItem = observer((props: CommentItemProps) => {
               className="w-16 h-16 rounded-lg"
               src={`data:${v.mineType};base64,${v.content}`}
               alt=""
-              key={v.name}
+              key={v.id}
               onClick={(e) => imageZoomService.openImage(e.currentTarget)}
             />
           ))}

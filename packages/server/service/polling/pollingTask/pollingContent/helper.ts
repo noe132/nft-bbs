@@ -1,5 +1,5 @@
 import { either } from 'fp-ts';
-import { IContent } from 'quorum-light-node-sdk-nodejs';
+import { IDecryptedContent } from 'rum-sdk-nodejs';
 import { EntityManager } from 'typeorm';
 
 import type { GroupStatus } from '~/orm';
@@ -8,7 +8,7 @@ import type { SendFn } from '~/service/socket';
 export type GroupRoles = 'main' | 'comment' | 'counter' | 'profile';
 export type TrxTypes = 'postDelete' | 'post' | 'comment' | 'like' | 'dislike' | 'image' | 'profile' | 'postAppend';
 export type TrxHandler = (
-  v: IContent,
+  v: IDecryptedContent,
   groupStatus: GroupStatus,
   transactionManager: EntityManager,
   queueSocket: SendFn

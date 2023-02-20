@@ -1,7 +1,10 @@
 import { either, taskEither, function as fp } from 'fp-ts';
 import { Type } from 'io-ts';
-import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
-import { postType, commentType, likeType, dislikeType, imageType, profileType, postDeleteType, postAppendType } from 'nft-bbs-types';
+import { IDecryptedContent, utils, chain } from 'rum-sdk-nodejs';
+import {
+  postType, commentType, profileType, postDeleteType,
+  counterType, imageActivityType, postAppendType,
+} from 'nft-bbs-types';
 
 import { AppDataSource } from '~/orm/data-source';
 import { GroupStatus, PendingContent, TrxSet } from '~/orm/entity';
@@ -20,19 +23,18 @@ import { handlePostAppend } from './handlePostAppend';
 const LIMIT = 100;
 
 const handlers: Array<{ type: Type<any>, handler: TrxHandler, trxType: TrxTypes }> = [
-  { type: postDeleteType, handler: handlePostDelete, trxType: 'postDelete' },
   { type: postType, handler: handlePost, trxType: 'post' },
+  { type: postDeleteType, handler: handlePostDelete, trxType: 'postDelete' },
   { type: commentType, handler: handleComment, trxType: 'comment' },
   { type: postAppendType, handler: handlePostAppend, trxType: 'postAppend' },
-  { type: likeType, handler: handleCounter, trxType: 'like' },
-  { type: dislikeType, handler: handleCounter, trxType: 'dislike' },
-  { type: imageType, handler: handleImage, trxType: 'image' },
+  { type: counterType, handler: handleCounter, trxType: 'like' },
+  { type: imageActivityType, handler: handleImage, trxType: 'image' },
   { type: profileType, handler: handleProfile, trxType: 'profile' },
 ];
 
 interface HandleContentParams {
   taskItem?: TaskItem
-  content: QuorumLightNodeSDK.IContent
+  content: IDecryptedContent
   pendingId?: number
   groupStatus: GroupStatus
   queueSocket: SendFn
@@ -196,7 +198,7 @@ export const pollingContentTask = async (groupStatusId: number) => {
   // handle new trx
   for (const taskItem of taskGroups) {
     const startTrx = groupStatus[`${taskItem.roles[0]}StartTrx`];
-    const groupId = QuorumLightNodeSDK.utils.restoreSeedFromUrl(taskItem.seedUrl).group_id;
+    const groupId = utils.restoreSeedFromUrl(taskItem.seedUrl).group_id;
     const listOptions = {
       groupId,
       count: LIMIT,
@@ -204,7 +206,7 @@ export const pollingContentTask = async (groupStatusId: number) => {
     };
     await fp.pipe(
       taskEither.tryCatch(
-        () => QuorumLightNodeSDK.chain.Content.list(listOptions),
+        () => chain.Content.list(listOptions),
         (e) => e as Error,
       ),
       taskEither.chainW((contents) => taskEither.fromTask(async () => {
@@ -212,7 +214,8 @@ export const pollingContentTask = async (groupStatusId: number) => {
         for (const content of contents) {
           const result = await handleContent({
             taskItem,
-            content,
+            // TODO: decryption?
+            content: content as any,
             groupStatus,
             queueSocket,
           });

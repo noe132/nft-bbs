@@ -5,7 +5,7 @@ import { action, reaction, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import RemoveMarkdown from 'remove-markdown';
 import { format } from 'date-fns';
-import type { Post } from 'nft-bbs-server';
+import type { Counter, Post } from 'nft-bbs-server';
 import { Button, CircularProgress, ClickAwayListener, IconButton, Popover, Tooltip } from '@mui/material';
 import { Close, ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 
@@ -84,17 +84,17 @@ export const UserProfile = observer((props: { className?: string }) => {
   const handleOpenPost = (post: Post, locateComment: true | undefined = undefined) => {
     routerService.navigate({
       page: 'postdetail',
-      trxId: post.trxId,
+      id: post.id,
       locateComment,
     });
   };
 
-  const handleUpdatePostCounter = (post: Post, type: 'Like' | 'Dislike') => {
+  const handleUpdatePostCounter = (post: Post, type: Counter['type']) => {
     if (!nftService.hasPermissionAndTip('counter')) { return; }
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
-      () => nodeService.counter.updatePost(post, type),
+      () => nodeService.counter.update(post, type),
     );
   };
 
@@ -378,14 +378,14 @@ export const UserProfile = observer((props: { className?: string }) => {
             {state.posts.map((v) => {
               const stat = nodeService.post.getStat(v);
               return (
-                <div key={v.trxId}>
+                <div key={v.id}>
                   <div
                     className="flex-col"
                     onClick={() => handleOpenPost(v)}
                   >
                     <Link
                       className="text-white text-16 font-medium cursor-pointer leading-relaxed truncate-2 hover:underline"
-                      to={routerService.getPath({ page: 'postdetail', trxId: v.trxId })}
+                      to={routerService.getPath({ page: 'postdetail', id: v.id })}
                       onClick={(e) => e.preventDefault()}
                     >
                       {stat.title || lang.common.untitled}
@@ -411,7 +411,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                         )}
                         variant="text"
                         size="small"
-                        onClick={() => handleUpdatePostCounter(v, 'Like')}
+                        onClick={() => handleUpdatePostCounter(v, stat.liked ? 'undolike' : 'like')}
                       >
                         {!stat.likeCount && (
                           <ThumbUpOffAlt className="mr-2 text-18" />
@@ -429,7 +429,7 @@ export const UserProfile = observer((props: { className?: string }) => {
                         )}
                         variant="text"
                         size="small"
-                        onClick={() => handleUpdatePostCounter(v, 'Dislike')}
+                        onClick={() => handleUpdatePostCounter(v, stat.disliked ? 'undodislike' : 'dislike')}
                       >
                         {!stat.dislikeCount && (
                           <ThumbDownOffAlt className="mr-2 text-18" />

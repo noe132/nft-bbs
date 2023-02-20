@@ -1,7 +1,6 @@
-import axios from 'axios';
 import { FastifyRegister } from 'fastify';
 import { string, type } from 'io-ts';
-import { cache } from 'quorum-light-node-sdk-nodejs';
+import { chain, cache } from 'rum-sdk-nodejs';
 import { BadRequest, ServiceUnavailable } from 'http-errors';
 import { assertValidation } from '~/utils';
 
@@ -17,25 +16,12 @@ export const trxController: Parameters<FastifyRegister>[0] = (fastify, _opts, do
       throw new BadRequest(`group ${body.groupId} not found`);
     }
 
-    for (const api of group!.chainAPIs) {
-      const apiURL = new URL(api);
-      try {
-        const res = await axios.post<{ trx_id: string }>(
-          `${apiURL.origin}/api/v1/node/trx/${body.groupId}`,
-          { TrxItem: body.TrxItem },
-          {
-            headers: {
-              Authorization: `Bearer ${apiURL.searchParams.get('jwt') || ''}`,
-            },
-          },
-        );
-        return res.data;
-      } catch (e) {
-        continue;
-      }
+    try {
+      const res = await chain.Trx.send(body.groupId, { TrxItem: body.TrxItem });
+      return res;
+    } catch (e) {
+      throw new ServiceUnavailable('no api was reachable');
     }
-
-    throw new ServiceUnavailable('no api was reachable');
   });
   done();
 };

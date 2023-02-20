@@ -8,11 +8,11 @@ import { assertValidation, parseIntAssert, parseIntFromString, truncate } from '
 import { AppDataSource } from '~/orm/data-source';
 
 export const postController: Parameters<FastifyRegister>[0] = (fastify, _opts, done) => {
-  fastify.get('/:groupId/:trxId', async (req) => {
-    const params = assertValidation(req.params, type({ groupId: string, trxId: string }));
+  fastify.get('/:groupId/:id', async (req) => {
+    const params = assertValidation(req.params, type({ groupId: string, id: string }));
     const query = assertValidation(req.query, partial({ viewer: string }));
     const groupId = parseIntAssert(params.groupId);
-    const post = await Post.get({ groupId, trxId: params.trxId });
+    const post = await Post.get({ groupId, id: params.id });
     if (!post) {
       throw new NotFound();
     }

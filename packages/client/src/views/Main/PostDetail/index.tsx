@@ -29,13 +29,13 @@ interface UserCardItem {
 
 const COMMENT_LENGTH_LIMIT = 500;
 export const PostDetail = observer((props: { className?: string }) => {
-  const routeParams = useParams<{ groupId: string, trxId: string }>();
+  const routeParams = useParams<{ groupId: string, id: string }>();
   const routeLocation = useLocation();
   const [searchParams] = useSearchParams();
   const state = usePageState('postdetail', routeLocation.key, () => ({
     inited: false,
     postLoading: false,
-    commentTrxIds: [] as Array<string>,
+    commentIds: [] as Array<string>,
     replyTo: {
       open: false,
       comment: null as null | Comment,
@@ -45,18 +45,18 @@ export const PostDetail = observer((props: { className?: string }) => {
     userCardId: 0,
     userCards: [] as Array<UserCardItem>,
     commentLoading: false,
-    commentSort: 'latest' as 'latest' | 'oldest',
+    commentSort: 'latest' as 'latest' | 'oldest' | 'hot',
     commentInput: '',
     commentInputFocused: false,
     commentPosting: false,
     commentContextState: {
-      initCommentTrx: '',
-      newCommentTrxId: '',
+      initCommentId: '',
+      newCommentId: '',
       highlightedComments: new Set<string>(),
       weakMap: new WeakMap<Comment, Array<string>>(),
     },
     get post() {
-      return nodeService.state.post.map.get(routeParams.trxId ?? '');
+      return nodeService.state.post.map.get(routeParams.id ?? '');
     },
     get replyToProfile() {
       return nodeService.profile.getComputedProfile(
@@ -66,28 +66,33 @@ export const PostDetail = observer((props: { className?: string }) => {
       );
     },
     get sortedCommentTree() {
-      this.commentTrxIds.forEach((trxId) => {
-        const comment = nodeService.state.comment.map.get(trxId)!;
+      this.commentIds.forEach((id) => {
+        const comment = nodeService.state.comment.map.get(id)!;
         if (comment.threadId) {
           const parent = nodeService.state.comment.map.get(comment.threadId);
           if (parent) {
             const children = this.commentContextState.weakMap.get(parent) ?? [];
-            if (!children.includes(comment.trxId)) {
-              children.push(comment.trxId);
+            if (!children.includes(comment.id)) {
+              children.push(comment.id);
             }
             this.commentContextState.weakMap.set(parent, children);
           }
         }
       });
-      const commentTree = state.commentTrxIds
+      const commentTree = state.commentIds
         .map((v) => nodeService.state.comment.map.get(v)!)
         .filter((v) => !v.threadId);
 
-      return [...commentTree].sort((a, b) => (
-        this.commentSort === 'latest'
-          ? b.timestamp - a.timestamp
-          : a.timestamp - b.timestamp
-      ));
+      const getHot = (v: Comment) => v.likeCount * 2 + v.commentCount - v.dislikeCount * 2;
+      return [...commentTree].sort((a, b) => {
+        if (this.commentSort === 'latest') {
+          return b.timestamp - a.timestamp;
+        }
+        if (this.commentSort === 'oldest') {
+          return a.timestamp - b.timestamp;
+        }
+        return getHot(b) - getHot(a);
+      });
     },
     get profile() {
       return nodeService.profile.getComputedProfile(
@@ -164,12 +169,12 @@ export const PostDetail = observer((props: { className?: string }) => {
     const comment = await runLoading(
       (l) => { state.commentPosting = l; },
       () => nodeService.comment.submit({
-        objectId: post.trxId,
+        objectId: post.id,
         content,
         ...type === 'reply'
           ? {
-            threadId: replyTo!.threadId || replyTo!.trxId,
-            replyId: replyTo!.threadId ? replyTo!.trxId : '',
+            threadId: replyTo!.threadId || replyTo!.id,
+            replyId: replyTo!.threadId ? replyTo!.id : '',
           }
           : {
             threadId: '',
@@ -179,14 +184,14 @@ export const PostDetail = observer((props: { className?: string }) => {
     );
     if (comment) {
       runInAction(() => {
-        state.commentTrxIds.push(comment.trxId);
+        state.commentIds.push(comment.id);
         if (type === 'direct') {
           state.commentInput = '';
         } else {
           state.replyTo.content = '';
           state.replyTo.open = false;
         }
-        state.commentContextState.newCommentTrxId = comment.trxId;
+        state.commentContextState.newCommentId = comment.id;
       });
     }
   };
@@ -198,23 +203,23 @@ export const PostDetail = observer((props: { className?: string }) => {
     await runLoading(
       (l) => { state.commentLoading = l; },
       async () => {
-        const commentTrxIds = await nodeService.comment.list(post.trxId);
-        if (!commentTrxIds) { return; }
+        const commentIds = await nodeService.comment.list(post.id);
+        if (!commentIds) { return; }
         runInAction(() => {
-          state.commentTrxIds = commentTrxIds;
+          state.commentIds = commentIds;
         });
       },
     );
   };
 
   const loadData = async () => {
-    const highlightedId = searchParams.get('commentTrx');
+    const highlightedId = searchParams.get('commentId');
     const locateComment = !!searchParams.get('locateComment');
 
     if (!state.post) {
       await runLoading(
         (l) => { state.postLoading = l; },
-        () => nodeService.post.get(routeParams.trxId ?? ''),
+        () => nodeService.post.get(routeParams.id ?? ''),
       );
     }
 
@@ -236,10 +241,10 @@ export const PostDetail = observer((props: { className?: string }) => {
       { fireImmediately: true },
     );
     if (!state.inited) {
-      const highlightedId = searchParams.get('commentTrx');
+      const highlightedId = searchParams.get('commentId');
       runInAction(() => {
         if (highlightedId) {
-          state.commentContextState.initCommentTrx = highlightedId;
+          state.commentContextState.initCommentId = highlightedId;
           state.commentContextState.highlightedComments.add(highlightedId);
         }
         state.inited = true;
@@ -369,9 +374,7 @@ export const PostDetail = observer((props: { className?: string }) => {
               >
                 {lang.comment.sortByLatest}
               </button>
-              <span className="text-gray-70 mx-2">
-                |
-              </span>
+              <span className="text-gray-70 mx-2">|</span>
               <button
                 className={classNames(
                   state.commentSort === 'oldest' && 'text-rum-orange',
@@ -381,10 +384,20 @@ export const PostDetail = observer((props: { className?: string }) => {
               >
                 {lang.comment.sortByOldest}
               </button>
+              <span className="text-gray-70 mx-2">|</span>
+              <button
+                className={classNames(
+                  state.commentSort === 'hot' && 'text-rum-orange',
+                  state.commentSort !== 'hot' && 'text-white',
+                )}
+                onClick={action(() => { state.commentSort = 'hot'; })}
+              >
+                {lang.comment.sortByHotest}
+              </button>
             </div>
             <div className="flex flex-center text-white text-14">
               <CommentMinusIcon className="mr-2 -mb-[3px] text-20" />
-              {lang.comment.commentCount(state.commentTrxIds.length)}
+              {lang.comment.commentCount(state.commentIds.length)}
             </div>
           </div>
 
@@ -436,7 +449,7 @@ export const PostDetail = observer((props: { className?: string }) => {
 
         <div className="flex justify-end">
           {isPC && (
-            <Fade in={!!state.replyTo.open} mountOnEnter key={state.replyTo.comment?.trxId ?? ''}>
+            <Fade in={!!state.replyTo.open} mountOnEnter key={state.replyTo.comment?.id ?? ''}>
               <div
                 className={classNames(
                   'fixed bottom-40 translate-x-full -mr-5 p-4',

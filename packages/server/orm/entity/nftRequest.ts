@@ -1,4 +1,4 @@
-import { utils } from 'quorum-light-node-sdk-nodejs';
+import { utils } from 'rum-sdk-nodejs';
 import { Column, Entity, Index, PrimaryGeneratedColumn, EntityManager, UpdateDateColumn, CreateDateColumn } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';

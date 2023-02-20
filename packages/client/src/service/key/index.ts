@@ -2,7 +2,7 @@ import { action, observable } from 'mobx';
 import { ethers, utils } from 'ethers';
 import { taskEither, function as fp } from 'fp-ts';
 import { Base64 } from 'js-base64';
-import * as QuorumLightNodeSdk from 'quorum-light-node-sdk';
+import * as rumsdk from 'rum-sdk-browser';
 
 import { VaultApi } from '~/apis';
 
@@ -132,8 +132,8 @@ const getTrxCreateParam = () => {
 const sign = async (data: string) => {
   const dataUint8 = new TextEncoder().encode(data);
   const digest = await crypto.subtle.digest('sha-256', dataUint8);
-  const digestInHex = QuorumLightNodeSdk.utils.typeTransform.uint8ArrayToHex(new Uint8Array(digest));
-  const signInHex = await QuorumLightNodeSdk.utils.sign(digestInHex, getTrxCreateParam());
+  const digestInHex = rumsdk.utils.typeTransform.uint8ArrayToHex(new Uint8Array(digest));
+  const signInHex = await rumsdk.utils.sign(digestInHex, getTrxCreateParam());
   return signInHex;
 };
 

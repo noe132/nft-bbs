@@ -5,7 +5,7 @@ import { runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
-import type { Post } from 'nft-bbs-server';
+import type { Counter, Post } from 'nft-bbs-server';
 import { ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 import { Button, CircularProgress, Fab, Tooltip } from '@mui/material';
 
@@ -19,7 +19,7 @@ import { showTrxDetail } from '~/modals';
 
 export const createPostlistState = () => ({
   inited: false,
-  trxIds: [] as Array<string>,
+  postIds: [] as Array<string>,
   limit: 20 as const,
   offset: 0,
   done: false,
@@ -46,7 +46,7 @@ export const createPostlistState = () => ({
     return Array(Math.ceil(list.length / 2)).fill(0).map((_, i) => list.slice(i * 2, i * 2 + 2));
   },
   get posts() {
-    return this.trxIds
+    return this.postIds
       .map((v) => nodeService.state.post.map.get(v))
       .filter(notNullFilter);
   },
@@ -54,7 +54,7 @@ export const createPostlistState = () => ({
     if (this.loading) { return; }
     if (!nextPage) {
       runInAction(() => {
-        this.trxIds = [];
+        this.postIds = [];
         this.offset = 0;
         this.done = false;
       });
@@ -75,13 +75,13 @@ export const createPostlistState = () => ({
         runInAction(() => {
           this.pauseAutoLoading = !posts;
           posts.forEach((v) => {
-            if (!this.trxIds.includes(v.trxId)) {
-              this.trxIds.push(v.trxId);
+            if (!this.postIds.includes(v.id)) {
+              this.postIds.push(v.id);
             }
           });
           if (this.offset === 0 && this.mode.type === 'normal' && nodeService.state.post.newPostCache.size) {
             nodeService.state.post.newPostCache.forEach((v) => {
-              this.trxIds.unshift(v);
+              this.postIds.unshift(v);
             });
           }
           this.offset += this.limit;
@@ -102,17 +102,17 @@ export const PostList = observer((props: { className?: string }) => {
   const handleOpenPost = (post: Post, locateComment: true | undefined = undefined) => {
     routerService.navigate({
       page: 'postdetail',
-      trxId: post.trxId,
+      id: post.id,
       locateComment,
     });
   };
 
-  const handleUpdatePostCounter = (post: Post, type: 'Like' | 'Dislike') => {
+  const handleUpdatePostCounter = (post: Post, type: Counter['type']) => {
     if (!nftService.hasPermissionAndTip('counter')) { return; }
-    if (state.likeLoadingMap.get(post.trxId)) { return; }
+    if (state.likeLoadingMap.get(post.id)) { return; }
     runLoading(
-      (l) => { state.likeLoadingMap.set(post.trxId, l); },
-      () => nodeService.counter.updatePost(post, type),
+      (l) => { state.likeLoadingMap.set(post.id, l); },
+      () => nodeService.counter.update(post, type),
     );
   };
 
@@ -201,9 +201,9 @@ export const PostList = observer((props: { className?: string }) => {
               <div className="flex flex-center gap-x-4">
                 <button
                   className="text-link-soft/50 text-12"
-                  onClick={() => !nodeService.state.post.newPostCache.has(v.trxId) && showTrxDetail(v.trxId, 'main')}
+                  onClick={() => !nodeService.state.post.newPostCache.has(v.id) && showTrxDetail(v.trxId, 'main')}
                 >
-                  {nodeService.state.post.newPostCache.has(v.trxId) ? lang.common.sycing : lang.common.synced}
+                  {nodeService.state.post.newPostCache.has(v.id) ? lang.common.sycing : lang.common.synced}
                 </button>
                 <Tooltip title={format(v.timestamp, 'yyyy-MM-dd HH:mm:ss')}>
                   <div className="text-12 text-link-soft">
@@ -215,7 +215,7 @@ export const PostList = observer((props: { className?: string }) => {
             return (
               <div
                 className="p-3 flex-col items-start bg-transparent normal-case rounded-none gap-y-2 cursor-auto select-auto"
-                key={v.trxId}
+                key={v.id}
               >
                 {!isPC && (
                   <div className="flex justify-between items-center">
@@ -230,7 +230,7 @@ export const PostList = observer((props: { className?: string }) => {
                   <div className="flex justify-between items-center self-stretch gap-x-2">
                     <Link
                       className="text-white text-18 font-medium leading-relaxed truncate-2 hover:underline"
-                      to={routerService.getPath({ page: 'postdetail', trxId: v.trxId })}
+                      to={routerService.getPath({ page: 'postdetail', id: v.id })}
                       onClick={(e) => { e.preventDefault(); }}
                     >
                       {stat.title || lang.common.untitled}
@@ -260,7 +260,7 @@ export const PostList = observer((props: { className?: string }) => {
                       )}
                       variant="text"
                       size="small"
-                      onClick={() => handleUpdatePostCounter(v, 'Like')}
+                      onClick={() => handleUpdatePostCounter(v, stat.liked ? 'undolike' : 'like')}
                     >
                       {!stat.likeCount && (
                         <ThumbUpOffAlt className="mr-2 text-18" />
@@ -278,7 +278,7 @@ export const PostList = observer((props: { className?: string }) => {
                       )}
                       variant="text"
                       size="small"
-                      onClick={() => handleUpdatePostCounter(v, 'Dislike')}
+                      onClick={() => handleUpdatePostCounter(v, stat.disliked ? 'undodislike' : 'dislike')}
                     >
                       {!stat.dislikeCount && (
                         <ThumbDownOffAlt className="mr-2 text-18" />
@@ -324,9 +324,9 @@ export const PostList = observer((props: { className?: string }) => {
             )}
             {state.done && (
               <span className="text-white/60 text-14">
-                {!state.trxIds.length && state.mode.type !== 'search' && lang.postlist.emptyTip}
-                {state.trxIds.length > 10 && state.mode.type !== 'search' && lang.common.noMore}
-                {!state.trxIds.length && state.mode.type === 'search' && lang.postlist.noSearchResult}
+                {!state.postIds.length && state.mode.type !== 'search' && lang.postlist.emptyTip}
+                {state.postIds.length > 10 && state.mode.type !== 'search' && lang.common.noMore}
+                {!state.postIds.length && state.mode.type === 'search' && lang.postlist.noSearchResult}
               </span>
             )}
           </div>

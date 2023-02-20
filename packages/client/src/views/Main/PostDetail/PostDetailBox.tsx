@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, TextField, Tooltip } from '@mui/material';
 import { Share, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
-import type { Post } from 'nft-bbs-server';
+import type { Counter, Post } from 'nft-bbs-server';
 import TrashIcon from 'boxicons/svg/regular/bx-trash.svg?fill-icon';
 
 import { ago, lang, renderPostMarkdown, runLoading, setClipboard, ThemeLight, useWiderThan } from '~/utils';
@@ -30,16 +30,16 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         matches.map((_sub, _g1, g2) => [g2 as any as string, '']),
       );
       matches.forEach((match) => {
-        const [_sub, _g1, trxId] = match;
-        if (nodeService.state.post.imageCache.has(trxId)) {
-          images.set(trxId, nodeService.state.post.imageCache.get(trxId)!);
+        const [_sub, _g1, id] = match;
+        if (nodeService.state.post.imageCache.has(id)) {
+          images.set(id, nodeService.state.post.imageCache.get(id)!);
           return;
         }
-        const url = ImageApi.getImageUrl(groupId, trxId);
-        images.set(trxId, url);
+        const url = ImageApi.getImageUrl(groupId, id);
+        images.set(id, url);
       });
-      const content = this.postStat.content.replaceAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g, (_sub, g1, trxId) => {
-        const imgUrl = images.get(trxId);
+      const content = this.postStat.content.replaceAll(/(!\[.*?\])\(rum:\/\/objects\/(.+?)\)/g, (_sub, g1, id) => {
+        const imgUrl = images.get(id);
         return `${g1}(${imgUrl})`;
       });
       return renderPostMarkdown(content);
@@ -56,7 +56,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
       return keyService.state.address === props.post.userAddress;
     },
     get synced() {
-      return !nodeService.state.post.newPostCache.has(props.post.trxId);
+      return !nodeService.state.post.newPostCache.has(props.post.id);
     },
   }));
   const isPC = useWiderThan(960);
@@ -67,12 +67,12 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
     }
   };
 
-  const handleUpdatePostCounter = (type: 'Like' | 'Dislike') => {
+  const handleUpdatePostCounter = (type: Counter['type']) => {
     if (!nftService.hasPermissionAndTip('counter')) { return; }
     if (state.likeLoading) { return; }
     runLoading(
       (l) => { state.likeLoading = l; },
-      () => nodeService.counter.updatePost(props.post, type),
+      () => nodeService.counter.update(props.post, type),
     );
   };
 
@@ -114,7 +114,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
       (l) => { state.append.loading = l; },
       async () => {
         try {
-          await nodeService.post.append(content, props.post.trxId);
+          await nodeService.post.append(content, props.post.id);
           snackbarService.show('已添加附言');
           runInAction(() => {
             state.append.open = false;
@@ -230,7 +230,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
         )}
       >
         {props.post.extra?.appends.map((v, i) => (
-          <div className="px-6 py-3" key={v.trxId}>
+          <div className="px-6 py-3" key={v.id}>
             <div className="text-gray-af">
               <span className="text-14">
                 附言 {i + 1}
@@ -280,7 +280,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
               state.postStat.liked && 'text-rum-orange',
             )}
             variant="text"
-            onClick={() => handleUpdatePostCounter('Like')}
+            onClick={() => handleUpdatePostCounter(state.postStat.liked ? 'undolike' : 'like')}
           >
             {!state.postStat.likeCount && (
               <ThumbUpOffAlt className="mr-2 text-22" />
@@ -297,7 +297,7 @@ export const PostDetailBox = observer((props: { className?: string, post: Post }
               state.postStat.disliked && 'text-rum-orange',
             )}
             variant="text"
-            onClick={() => handleUpdatePostCounter('Dislike')}
+            onClick={() => handleUpdatePostCounter(state.postStat.disliked ? 'undodislike' : 'dislike')}
           >
             {!state.postStat.dislikeCount && (
               <ThumbDownOffAlt className="mr-2 text-22" />

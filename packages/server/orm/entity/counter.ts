@@ -1,6 +1,8 @@
-import { Column, Entity, EntityManager, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, EntityManager, FindOptionsWhere, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { EntityConstructorParams } from '~/utils';
 import { AppDataSource } from '../data-source';
+
+type LastCounterParams = Required<Pick<FindOptionsWhere<Counter>, 'groupId' | 'objectId' | 'objectType' | 'userAddress'>>;
 
 @Entity({ name: 'counters' })
 export class Counter {
@@ -17,7 +19,7 @@ export class Counter {
 
   @Index()
   @Column({ type: 'varchar', nullable: false })
-  public type!: 'Like' | 'Dislike';
+  public type!: 'like' | 'dislike' | 'undolike' | 'undodislike';
 
   @Index()
   @Column({ nullable: false })
@@ -51,5 +53,12 @@ export class Counter {
   public static async add(params: EntityConstructorParams<Counter, 'id'>, manager?: EntityManager) {
     const item = Counter.create(params);
     return (manager || AppDataSource.manager).save(Counter, item);
+  }
+
+  public static async getLastCounter(where: LastCounterParams, manager?: EntityManager) {
+    return (manager || AppDataSource.manager).findOne(Counter, {
+      where,
+      order: { id: 'desc' },
+    });
   }
 }

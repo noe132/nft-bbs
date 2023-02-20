@@ -1,4 +1,4 @@
-import * as QuorumLightNodeSDK from 'quorum-light-node-sdk-nodejs';
+import * as rumsdk from 'rum-sdk-nodejs';
 import { GroupStatus } from '~/orm/entity';
 import { PollingTask } from '~/utils';
 import { pollingAppConfigTask, pollingContentTask } from './pollingTask';
@@ -24,7 +24,7 @@ const updatePollingTasks = async () => {
       group.profileSeedUrl,
     ];
     seedUrls.filter((v) => v).forEach((u) => {
-      QuorumLightNodeSDK.cache.Group.add(u);
+      rumsdk.cache.Group.add(u);
     });
 
     state.map.set(group.id, [
@@ -68,9 +68,9 @@ const updateTask = async (group: GroupStatus) => {
     group.profileSeedUrl,
   ];
   seedUrls.filter((v) => v).forEach((u) => {
-    const seedGroup = QuorumLightNodeSDK.utils.seedUrlToGroup(u);
-    QuorumLightNodeSDK.cache.Group.remove(seedGroup.groupId);
-    QuorumLightNodeSDK.cache.Group.add(u);
+    const seedGroup = rumsdk.utils.seedUrlToGroup(u);
+    rumsdk.cache.Group.remove(seedGroup.groupId);
+    rumsdk.cache.Group.add(u);
   });
   state.map.set(group.id, [
     new PollingTask(

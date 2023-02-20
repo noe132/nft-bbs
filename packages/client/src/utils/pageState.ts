@@ -1,11 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { observable } from 'mobx';
+import type { createPostlistState } from '~/views/Main/PostList';
 
 interface PageStateMapItem {
   state: unknown
   nonce: number
   listeners: Array<() => unknown>
 }
+
+interface PageStateTypeMap {
+  'postlist': ReturnType<typeof createPostlistState>
+}
+type GetPageStateType<PageName, T> = PageName extends keyof PageStateTypeMap
+  ? PageStateTypeMap[PageName]
+  : T;
 
 const pageStateMap = new Map<string, PageStateMapItem>();
 
@@ -57,10 +65,10 @@ export const usePageState: UsePageState = <T extends object>(
   return item.state;
 };
 
-export const getPageStateByPageName = <T = unknown>(pageName: string) => {
+export const getPageStateByPageName = <T = unknown, P extends string = string>(pageName: P): Array<GetPageStateType<P, T> | null> => {
   const items = Array.from(pageStateMap.entries())
     .filter(([k]) => k.startsWith(`${pageName}-`))
-    .map(([_, v]) => v);
+    .map(([_, v]) => v.state);
 
-  return items as Array<T>;
+  return items as any;
 };
