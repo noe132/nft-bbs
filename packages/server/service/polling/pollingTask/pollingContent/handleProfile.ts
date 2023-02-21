@@ -14,6 +14,13 @@ export const handleProfile: TrxHandler = (item, groupStatus, transactionManager,
     const trxId = item.TrxId;
     const timestamp = parseQuorumTimestamp(item.TimeStamp);
 
+    const userAddr = rumsdk.utils.pubkeyToAddress(item.SenderPubkey);
+
+    if (userAddr !== object.describes.id) {
+      // can only submit profile for publisher
+      return true;
+    }
+
     const profile = await Profile.add({
       groupId,
       trxId,

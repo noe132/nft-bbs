@@ -40,19 +40,46 @@ interface HandleContentParams {
   queueSocket: SendFn
 }
 
+const getGroupStatusUpdateParams = (trxId: string, taskItem?: TaskItem) => {
+  const roles = taskItem?.roles;
+  if (!roles) { return null; }
+  return {
+    ...roles.includes('main') ? { mainStartTrx: trxId } : {},
+    ...roles.includes('comment') ? { commentStartTrx: trxId } : {},
+    ...roles.includes('counter') ? { counterStartTrx: trxId } : {},
+    ...roles.includes('profile') ? { profileStartTrx: trxId } : {},
+  };
+};
+
 const handleContent = async (params: HandleContentParams) => {
   const { content, taskItem, queueSocket, groupStatus, pendingId } = params;
+  const groupId = groupStatus.id;
   const handlerItem = handlers.find((item) => item.type.is(params.content.Data as any));
   if (!handlerItem) {
     pollingLog.error({
       message: 'invalid trx data ❌',
-      data: params.content,
+      data: {
+        groupId: content.GroupId,
+        trxId: params.content.TrxId,
+      },
     });
+    if (taskItem) {
+      await AppDataSource.transaction(async (transactionManager) => {
+        const groupStatusUpdateParams = getGroupStatusUpdateParams(content.TrxId, taskItem);
+        if (groupStatusUpdateParams) {
+          await GroupStatus.update(
+            groupId,
+            groupStatusUpdateParams,
+            transactionManager,
+          );
+        }
+      });
+    }
     return either.right(null);
   }
+
   const isPendingContent = !taskItem;
   const trxType = handlerItem.trxType;
-  const groupId = groupStatus.id;
 
   if (taskItem) {
     const roles = taskItem.roles;
@@ -66,17 +93,7 @@ const handleContent = async (params: HandleContentParams) => {
     }
   }
 
-  const getGroupStatusUpdateParams = () => {
-    const roles = taskItem?.roles;
-    if (!roles) { return null; }
-    return {
-      ...roles.includes('main') ? { mainStartTrx: content.TrxId } : {},
-      ...roles.includes('comment') ? { commentStartTrx: content.TrxId } : {},
-      ...roles.includes('counter') ? { counterStartTrx: content.TrxId } : {},
-      ...roles.includes('profile') ? { profileStartTrx: content.TrxId } : {},
-    };
-  };
-  const groupStatusUpdateParams = getGroupStatusUpdateParams();
+  const groupStatusUpdateParams = getGroupStatusUpdateParams(content.TrxId, taskItem);
 
   const result = await AppDataSource.transaction(async (transactionManager) => {
     const checkIsDupTrx = () => {

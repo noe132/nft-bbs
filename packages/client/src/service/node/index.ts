@@ -240,8 +240,12 @@ const profile = {
       const person: ProfileType = {
         type: 'Create',
         object: {
-          type: 'Person',
+          type: 'Profile',
           name: params.name,
+          describes: {
+            type: 'Person',
+            id: keyService.state.address,
+          },
           ...params.avatar ? {
             avatar: {
               type: 'Image',
