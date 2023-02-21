@@ -1,4 +1,5 @@
-import { array, intersection, literal, partial, string, type, TypeOf, union } from 'io-ts';
+import { array, Errors, intersection, literal, partial, string, Type, type, TypeOf, union } from 'io-ts';
+import { either, function as fp } from 'fp-ts';
 
 export * from './enum';
 export * from './excessType';
@@ -12,22 +13,55 @@ const imageType = type({
 });
 
 const partialImages = partial({
-  images: array(imageType),
+  image: array(imageType),
 });
 
-export const postType = type({
+export const postBaseType = type({
   type: literal('Create'),
   object: intersection([
     partialImages,
     type({
       type: literal('Note'),
       id: string,
-      name: string,
       content: string,
+    }),
+    partial({
+      name: string,
     }),
   ]),
 });
 
+export const postExcludedType = type({
+  type: literal('Create'),
+  object: type({
+    type: literal('Note'),
+    inreplyto: type({
+      type: literal('Note'),
+      id: string,
+    }),
+  }),
+});
+
+export const postType = new Type<PostType>(
+  'post type',
+  (u): u is PostType => postBaseType.is(u) && !postExcludedType.is(u),
+  (u, c) => fp.pipe(
+    postBaseType.validate(u, c),
+    either.chain(() => fp.pipe(
+      postExcludedType.validate(u, c),
+      either.match(
+        () => either.right(u),
+        () => either.left([{
+          value: u,
+          context: c,
+          message: 'item has unwanted properties',
+        }] as Errors),
+      ),
+    )),
+    either.map((v) => v as PostType),
+  ),
+  fp.identity,
+);
 // export const postAppendType = type({
 //   type: literal('NoteAppend'),
 //   content: string,
@@ -101,7 +135,7 @@ export const profileType = type({
       }),
     }),
     partial({
-      avatar: imageType,
+      image: array(imageType),
       wallet: array(type({
         id: string,
         type: string,
@@ -135,7 +169,7 @@ export const undoRelationType = type({
 export const relationType = union([nonUndoRelationType, undoRelationType]);
 
 export type ImageType = TypeOf<typeof imageType>;
-export type PostType = TypeOf<typeof postType>;
+export type PostType = TypeOf<typeof postBaseType>;
 export type PostDeleteType = TypeOf<typeof postDeleteType>;
 export type PostAppendType = TypeOf<typeof postAppendType>;
 export type NonUndoCounterType = TypeOf<typeof nonUndoCounterType>;

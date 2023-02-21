@@ -247,11 +247,11 @@ const profile = {
             id: keyService.state.address,
           },
           ...params.avatar ? {
-            avatar: {
+            image: [{
               type: 'Image',
               content: params.avatar.content,
               mediaType: params.avatar.mediaType,
-            },
+            }],
           } : {},
         },
       };

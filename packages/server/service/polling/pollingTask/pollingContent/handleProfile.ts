@@ -21,13 +21,15 @@ export const handleProfile: TrxHandler = (item, groupStatus, transactionManager,
       return true;
     }
 
+    const avatar = object.image?.[0];
+
     const profile = await Profile.add({
       groupId,
       trxId,
       userAddress,
       name: object.name,
-      avatar: object.avatar
-        ? `data:${object.avatar.mediaType};base64,${object.avatar.content}`
+      avatar: avatar
+        ? `data:${avatar.mediaType};base64,${avatar.content}`
         : '',
       wallet: object.wallet ? JSON.stringify(object.wallet) : '',
       timestamp,
