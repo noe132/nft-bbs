@@ -991,8 +991,13 @@ const init = () => {
           const jwt = loginStateItem.mixin.mixinJWT;
           return fp.pipe(
             () => keyService.validateMixin(jwt),
-            taskEither.chain((v) => taskEither.fromIO(() => keyService.useMixin(v))),
-            taskEither.map(() => true),
+            taskEither.matchE(
+              () => taskEither.of(false),
+              (v) => fp.pipe(
+                taskEither.fromIO(() => keyService.useMixin(v)),
+                taskEither.map(() => true),
+              ),
+            ),
           );
         }
 
@@ -1000,8 +1005,13 @@ const init = () => {
           const jwt = loginStateItem.metamask.mixinJWT;
           return fp.pipe(
             () => keyService.validateMixin(jwt),
-            taskEither.chain((v) => taskEither.fromIO(() => keyService.useMixin(v))),
-            taskEither.map(() => true),
+            taskEither.matchE(
+              () => taskEither.of(false),
+              (v) => fp.pipe(
+                taskEither.fromIO(() => keyService.useMixin(v)),
+                taskEither.map(() => true),
+              ),
+            ),
           );
         }
 
