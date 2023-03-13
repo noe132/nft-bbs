@@ -17,6 +17,6 @@
     "io-ts": "^2.2.20"
   },
   "devDependencies": {
-    "rimraf": "^4.1.2"
+    "rimraf": "^4.4.0"
   }
 }

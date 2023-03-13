@@ -13,7 +13,10 @@ const imageType = type({
 });
 
 const partialImages = partial({
-  image: array(imageType),
+  image: union([
+    array(imageType),
+    imageType,
+  ]),
 });
 
 export const postBaseType = type({
@@ -134,8 +137,8 @@ export const profileType = type({
         id: string,
       }),
     }),
+    partialImages,
     partial({
-      image: array(imageType),
       wallet: array(type({
         id: string,
         type: string,

@@ -15,7 +15,7 @@ export const handlePost: TrxHandler = (item, groupStatus, transactionManager, qu
     const trxId = item.TrxId;
     const timestamp = parseQuorumTimestamp(item.TimeStamp);
 
-    const images = object.image ?? [];
+    const images = !object.image ? [] : [object.image].flatMap((v) => v);
 
     if (await Post.has({ groupId, id: object.id }, transactionManager)) {
       // pollingLog.warn({

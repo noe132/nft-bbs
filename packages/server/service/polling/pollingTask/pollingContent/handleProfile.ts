@@ -21,7 +21,8 @@ export const handleProfile: TrxHandler = (item, groupStatus, transactionManager,
       return true;
     }
 
-    const avatar = object.image?.[0];
+    const images = !object.image ? [] : [object.image].flatMap((v) => v);
+    const avatar = images.at(0);
 
     const profile = await Profile.add({
       groupId,

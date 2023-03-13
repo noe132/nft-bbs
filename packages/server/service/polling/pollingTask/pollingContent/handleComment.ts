@@ -39,7 +39,7 @@ export const handleComment: TrxHandler = (item, groupStatus, transactionManager,
       return false;
     }
 
-    const images = object.image ?? [];
+    const images = !object.image ? [] : [object.image].flatMap((v) => v);
 
     const [comment, threadComment, replyComment] = await Promise.all([
       Comment.add({
