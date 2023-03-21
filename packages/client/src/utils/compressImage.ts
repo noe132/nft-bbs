@@ -15,10 +15,7 @@ const MAX_SIZE = 200 * 1024;
  */
 export const compressImage = async (file: Blob, maxSize = MAX_SIZE) => {
   if (file.size < maxSize) {
-    return {
-      img: file,
-      mineType: file.type,
-    };
+    return { img: file, mineType: file.type };
   }
 
   const img = new Image();
@@ -26,33 +23,63 @@ export const compressImage = async (file: Blob, maxSize = MAX_SIZE) => {
   img.src = objectUrl;
   await new Promise((rs) => img.addEventListener('load', rs));
 
-  const MAX_WIDTH = 2000;
-  const MAX_HEIGHT = 1400;
-  let height = img.naturalHeight;
-  let width = img.naturalWidth;
-  if (img.naturalWidth > MAX_WIDTH) {
-    width = MAX_WIDTH;
-    height = Math.round((width * img.naturalHeight) / img.naturalWidth);
-  }
-  if (height > MAX_HEIGHT) {
-    height = MAX_HEIGHT;
-    width = Math.round((height * img.naturalWidth) / img.naturalHeight);
-  }
+  const height = img.naturalHeight;
+  const width = img.naturalWidth;
 
-  const qualities = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3];
-  let newImage;
-  for (const quality of qualities) {
-    newImage = await drawImage(img, width, height, quality);
-    if (newImage && newImage.size < maxSize) {
+  const strategies = [
+    { quality: 0.95, resize: false },
+    { quality: 0.92, resize: false },
+    { quality: 0.9, resize: false },
+    { quality: 0.85, resize: false },
+    { quality: 0.8, resize: false },
+    { quality: 0.9, resize: [2000, 1400] },
+    { quality: 0.85, resize: [2000, 1400] },
+    { quality: 0.8, resize: [2000, 1400] },
+    { quality: 0.9, resize: [1280, 720] },
+    { quality: 0.85, resize: [1280, 720] },
+    { quality: 0.8, resize: [1280, 720] },
+    { quality: 0.7, resize: [1280, 720] },
+    { quality: 0.6, resize: [1280, 720] },
+    { quality: 0.8, resize: [1024, 576] },
+    { quality: 0.7, resize: [1024, 576] },
+    { quality: 0.6, resize: [1024, 576] },
+    { quality: 0.8, resize: [768, 432] },
+    { quality: 0.7, resize: [768, 432] },
+    { quality: 0.6, resize: [768, 432] },
+    { quality: 0.5, resize: [768, 432] },
+    { quality: 0.5, resize: [768, 432] },
+    { quality: 0.6, resize: [512, 360] },
+    { quality: 0.5, resize: [512, 360] },
+    { quality: 0.4, resize: [512, 360] },
+    { quality: 0.3, resize: [512, 360] },
+  ] as const;
+
+  let resultImage: Blob | null = null;
+  for (const strategy of strategies) {
+    let newWidth = width;
+    let newHeight = height;
+    if (strategy.resize) {
+      const ratio = width / height;
+      const resizeRatio = strategy.resize[0] / strategy.resize[1];
+      newWidth = ratio > resizeRatio ? strategy.resize[0] : strategy.resize[1] * ratio;
+      newHeight = ratio < resizeRatio ? strategy.resize[1] : strategy.resize[0] / ratio;
+    }
+    const newImage = await drawImage(img, newWidth, newHeight, strategy.quality);
+    // use base64 encoded size (about 1.37x larger)
+    if (!newImage) { continue; }
+    const sizeInbyte = newImage?.size;
+
+    if (sizeInbyte * 1.37 < maxSize) {
+      resultImage = newImage;
       break;
     }
   }
 
   URL.revokeObjectURL(objectUrl);
 
-  return newImage
+  return resultImage
     ? {
-      img: newImage,
+      img: resultImage,
       mineType: 'image/jpeg',
     }
     : null;
