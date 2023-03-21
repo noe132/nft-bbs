@@ -38,7 +38,7 @@
       "reflect-metadata": "^0.1.13",
       "rum-sdk-nodejs": "^1.1.8",
       "socket.io": "^4.6.1",
-      "typeorm": "0.3.12"
+      "typeorm": "^0.3.11"
    },
    "devDependencies": {
       "@noe132/eslint-config-react": "^0.1.9",
