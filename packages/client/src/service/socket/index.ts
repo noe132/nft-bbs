@@ -1,5 +1,5 @@
 import io from 'socket.io-client';
-import type { SocketIOEventMap, AuthenticateData } from 'nft-bbs-server';
+import type { SocketIOEventMap, AuthenticateData } from 'rum-port-server';
 
 export type SocketEventListeners = {
   [K in keyof SocketIOEventMap]: (v: SocketIOEventMap[K]) => unknown

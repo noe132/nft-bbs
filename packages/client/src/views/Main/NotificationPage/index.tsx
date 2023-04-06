@@ -5,7 +5,7 @@ import { runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import RemoveMarkdown from 'remove-markdown';
-import type { Notification } from 'nft-bbs-server';
+import type { Notification } from 'rum-port-server';
 import { Button, CircularProgress, Tooltip } from '@mui/material';
 import { ChevronLeft, ExpandMore, ThumbDownAlt, ThumbUpAlt } from '@mui/icons-material';
 

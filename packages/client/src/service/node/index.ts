@@ -8,11 +8,11 @@ import { v4 } from 'uuid';
 import type {
   Post, Comment, Profile, Notification, Counter,
   GroupStatus, GroupConfig, IAppConfigItem,
-} from 'nft-bbs-server';
+} from 'rum-port-server';
 import type {
   CommentType, CounterType, PostDeleteType, PostType,
   ProfileType, PostAppendType, ImageActivityType,
-} from 'nft-bbs-types';
+} from 'rum-port-types';
 
 import {
   runLoading, routeUrlPatterns, getRouteGroupId,
@@ -164,7 +164,7 @@ const trx = {
         version: '2.0.0',
         ...keyService.getTrxCreateParam(),
       });
-      res = await TrxApi.create(groupId, signedTrx.TrxItem);
+      res = await TrxApi.create(groupId, signedTrx);
     } else {
       res = await rumsdk.chain.Trx.create({
         groupId,

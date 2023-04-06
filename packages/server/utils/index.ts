@@ -6,6 +6,8 @@ import { BadRequest } from 'http-errors';
 import { Logger } from 'pino';
 import { performance } from 'perf_hooks';
 import { FastifyBaseLogger } from 'fastify';
+import { PostType } from 'rum-port-types';
+import { parseISO } from 'date-fns';
 
 export * from './PollingTask';
 export * from './store';
@@ -79,9 +81,15 @@ export const patchLogger = (logger: Logger | FastifyBaseLogger) => {
   };
 };
 
-export const parseQuorumTimestamp = (timestamp: string) => {
-  const time = parseInt(timestamp.slice(0, -6), 10);
-  return time;
+// TODO: timestamp type should be string
+export const parseActivityTimestamp = (published: string | undefined, timestamp: any) => {
+  if (published) {
+    return parseISO(published).getTime();
+  }
+  if (timestamp) {
+    return Number(timestamp?.slice(0, -6));
+  }
+  return Date.now();
 };
 
 export const notNullFilter = <T>(v: T | undefined | null): v is T => v !== undefined && v !== null;

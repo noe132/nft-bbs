@@ -1,9 +1,9 @@
 import { taskEither } from 'fp-ts';
-import { PostAppendType } from 'nft-bbs-types';
+import { PostAppendType } from 'rum-port-types';
 import * as rumsdk from 'rum-sdk-nodejs';
 
 import { Post, PostAppend } from '~/orm';
-import { parseQuorumTimestamp } from '~/utils';
+import { parseActivityTimestamp } from '~/utils';
 import { TrxHandler } from './helper';
 
 export const handlePostAppend: TrxHandler = (item, groupStatus, transactionManager, queueSocket) => taskEither.tryCatch(
@@ -13,7 +13,7 @@ export const handlePostAppend: TrxHandler = (item, groupStatus, transactionManag
     const userAddress = rumsdk.utils.pubkeyToAddress(item.SenderPubkey);
     const groupId = groupStatus.id;
     const trxId = item.TrxId;
-    const timestamp = parseQuorumTimestamp(item.TimeStamp);
+    const timestamp = parseActivityTimestamp(data.published, item.TimeStamp);
 
     const id = object.id;
     const content = object.content;

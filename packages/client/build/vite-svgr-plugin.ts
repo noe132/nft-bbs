@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import { Plugin, transformWithEsbuild } from 'vite';
+import jsxPlugin from '@svgr/plugin-jsx';
 
 export const svgrPlugin = (): Plugin => ({
   name: 'vite-svgr-plugin',
@@ -36,6 +37,7 @@ export const svgrPlugin = (): Plugin => ({
               : {},
           },
           // icon: isIcon,
+          plugins: [jsxPlugin],
         },
         {
           componentName: 'ReactComponent',

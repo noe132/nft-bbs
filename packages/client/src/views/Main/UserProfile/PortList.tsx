@@ -2,7 +2,7 @@ import { Button } from '@mui/material';
 import classNames from 'classnames';
 import { action } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import type { GroupStatus } from 'nft-bbs-server';
+import type { GroupStatus } from 'rum-port-server';
 import { utils } from 'rum-sdk-browser';
 import { GroupAvatar } from '~/components';
 import { loginStateService, nodeService } from '~/service';

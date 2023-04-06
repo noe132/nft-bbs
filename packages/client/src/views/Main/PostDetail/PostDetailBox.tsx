@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, TextField, Tooltip } from '@mui/material';
 import { Share, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';
-import type { Counter, Post } from 'nft-bbs-server';
+import type { Counter, Post } from 'rum-port-server';
 import TrashIcon from 'boxicons/svg/regular/bx-trash.svg?fill-icon';
 
 import { ago, lang, renderPostMarkdown, runLoading, setClipboard, ThemeLight, useWiderThan } from '~/utils';

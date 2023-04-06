@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
 import LinkifyIt from 'linkify-it';
-import type { Comment } from 'nft-bbs-server';
+import type { Comment } from 'rum-port-server';
 import { Button, Tooltip } from '@mui/material';
 import { ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 

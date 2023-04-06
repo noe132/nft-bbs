@@ -10,7 +10,7 @@ interface VerifySignParams {
   nonce: number
   sign: string
 }
-const lruCache = new LRUCache({
+const lruCache = new LRUCache<string, true>({
   max: 1000,
   ttl: 1000 * 60 * 60 * 2,
 });
@@ -29,7 +29,7 @@ export const assertVerifySign = (params: VerifySignParams) => {
       if (lruCache.has(key)) {
         return either.left(new Error('no replay request'));
       }
-      lruCache.set(key, null);
+      lruCache.set(key, true);
       return either.right(null);
     }),
     either.mapLeft((e) => new BadRequest(e.message)),

@@ -1,5 +1,5 @@
 import { either, function as fp } from 'fp-ts';
-import type { GroupStatus } from 'nft-bbs-server/orm';
+import type { GroupStatus } from 'rum-port-server/orm';
 
 import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';

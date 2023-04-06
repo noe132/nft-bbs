@@ -7,7 +7,7 @@ import {
   Button, Checkbox, CircularProgress, Dialog, DialogActions,
   DialogContent, DialogTitle, FormControlLabel, TextField, Tooltip,
 } from '@mui/material';
-import type { GroupConfig, GroupStatus } from 'nft-bbs-server/orm';
+import type { GroupConfig, GroupStatus } from 'rum-port-server/orm';
 
 import { ConfigApi, GroupApi } from '~/apis';
 import { runLoading, ThemeLight } from '~/utils';

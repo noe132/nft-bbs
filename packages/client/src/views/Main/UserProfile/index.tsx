@@ -5,7 +5,7 @@ import { action, reaction, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import RemoveMarkdown from 'remove-markdown';
 import { format } from 'date-fns';
-import type { Counter, Post } from 'nft-bbs-server';
+import type { Counter, Post } from 'rum-port-server';
 import { Button, CircularProgress, ClickAwayListener, IconButton, Popover, Tooltip } from '@mui/material';
 import { Close, ExpandMore, ThumbDownAlt, ThumbDownOffAlt, ThumbUpAlt, ThumbUpOffAlt } from '@mui/icons-material';
 

@@ -3,7 +3,7 @@ import { action, runInAction } from 'mobx';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { either, function as fp, taskEither } from 'fp-ts';
 import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, TextField, Tooltip } from '@mui/material';
-import type { GroupStatus } from 'nft-bbs-server/orm';
+import type { GroupStatus } from 'rum-port-server/orm';
 
 import { GroupApi } from '~/apis';
 import { runLoading, ThemeLight, validateSeed } from '~/utils';

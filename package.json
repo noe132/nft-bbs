@@ -1,9 +1,13 @@
 {
   "private": true,
+  "version": "2.0.0",
+  "name": "rum-port",
+  "description": "Rum Port",
+
   "scripts": {
-    "build": "nx run-many --target=build --parallel=1 --projects=\"nft-bbs-types,nft-bbs-server,nft-bbs-client\"",
-    "build:server": "nx run-many --target=build --parallel=1 --projects=\"nft-bbs-types,nft-bbs-server\"",
-    "lint": "nx run-many --target=lint --parallel=1 --projects=\"nft-bbs-types,nft-bbs-server,nft-bbs-client\""
+    "build": "nx run-many --target=build --parallel=1 --projects=\"rum-port-types,rum-port-server,rum-port-client\"",
+    "build:server": "nx run-many --target=build --parallel=1 --projects=\"rum-port-types,rum-port-server\"",
+    "lint": "nx run-many --target=lint --parallel=1 --projects=\"rum-port-types,rum-port-server,rum-port-client\""
   },
   "workspaces": {
     "packages": [
@@ -13,16 +17,15 @@
   "devDependencies": {
     "@noe132/eslint-config-react": "^0.1.9",
     "cross-env": "^7.0.3",
-    "eslint": "^8.36.0",
-    "eslint-import-resolver-typescript": "^3.5.3",
-    "lerna": "^6.5.1"
+    "eslint": "^8.37.0",
+    "eslint-import-resolver-typescript": "^3.5.5",
+    "lerna": "^6.6.1"
   },
   "browserslist": [
     "last 3 years"
   ],
   "dependencies": {
-    "@babel/core": "^7.21.0",
-    "typescript": "^4.9.5"
-  },
-  "name": "nft-bbs"
+    "@babel/core": "^7.21.4",
+    "typescript": "^5.0.3"
+  }
 }

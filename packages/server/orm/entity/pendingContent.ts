@@ -12,6 +12,10 @@ export class PendingContent {
   public groupId!: number;
 
   @Column()
+  @Index()
+  public trxId!: string;
+
+  @Column()
   public content!: string;
 
   private static create(params: EntityConstructorParams<PendingContent, 'id'>) {
@@ -21,13 +25,18 @@ export class PendingContent {
   }
 
   public static async add(params: EntityConstructorParams<PendingContent>, manager?: EntityManager) {
-    const item = PendingContent.create(params);
-    return (manager || AppDataSource.manager).save(PendingContent, item);
+    const m = manager || AppDataSource.manager;
+    const count = await m.count(PendingContent, { where: { groupId: params.groupId, trxId: params.trxId } });
+    if (!count) {
+      const item = PendingContent.create(params);
+      await m.save(PendingContent, item);
+    }
   }
 
   public static async list(groupId: PendingContent['groupId'], manager?: EntityManager) {
-    return (manager || AppDataSource.manager).findBy(PendingContent, {
-      groupId,
+    return (manager || AppDataSource.manager).find(PendingContent, {
+      where: { groupId },
+      order: { id: 'ASC' },
     });
   }
 

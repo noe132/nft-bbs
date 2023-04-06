@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { useLocation, useParams, Link, matchPath } from 'react-router-dom';
 import classNames from 'classnames';
 import { action, runInAction } from 'mobx';
-import type { GroupStatus } from 'nft-bbs-server';
+import type { GroupStatus } from 'rum-port-server';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { utils } from 'rum-sdk-browser';
 import {

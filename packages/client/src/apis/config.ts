@@ -1,5 +1,5 @@
 import { either, function as fp } from 'fp-ts';
-import type { GroupConfig } from 'nft-bbs-server';
+import type { GroupConfig } from 'rum-port-server';
 import { request } from '~/request';
 import { snackbarService } from '~/service/snackbar';
 import { AdminApiParams, API_BASE_URL } from './common';

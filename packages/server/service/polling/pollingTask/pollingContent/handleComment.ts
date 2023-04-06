@@ -1,10 +1,10 @@
 import { taskEither } from 'fp-ts';
-import { CommentType } from 'nft-bbs-types';
+import { CommentType } from 'rum-port-types';
 import * as rumsdk from 'rum-sdk-nodejs';
 
 import { Post, Comment, Notification } from '~/orm';
 import { AttachedImage } from '~/orm/entity/attachedImage';
-import { parseQuorumTimestamp } from '~/utils';
+import { parseActivityTimestamp } from '~/utils';
 import { TrxHandler } from './helper';
 
 export const handleComment: TrxHandler = (item, groupStatus, transactionManager, queueSocket) => taskEither.tryCatch(
@@ -14,7 +14,7 @@ export const handleComment: TrxHandler = (item, groupStatus, transactionManager,
     const userAddress = rumsdk.utils.pubkeyToAddress(item.SenderPubkey);
     const groupId = groupStatus.id;
     const trxId = item.TrxId;
-    const timestamp = parseQuorumTimestamp(item.TimeStamp);
+    const timestamp = parseActivityTimestamp(data.published, item.TimeStamp);
     const inreplytoId = object.inreplyto.id;
 
     if (await Comment.has({ groupId, id: object.id }, transactionManager)) {

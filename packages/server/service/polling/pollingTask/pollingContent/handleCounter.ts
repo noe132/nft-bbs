@@ -1,8 +1,8 @@
 import { taskEither } from 'fp-ts';
-import { CounterType } from 'nft-bbs-types';
+import { CounterType } from 'rum-port-types';
 import * as rumsdk from 'rum-sdk-nodejs';
 import { Post, Comment, Notification, Counter, CounterSummary } from '~/orm';
-import { parseQuorumTimestamp } from '~/utils';
+import { parseActivityTimestamp } from '~/utils';
 import { TrxHandler } from './helper';
 
 export const handleCounter: TrxHandler = (item, groupStatus, transactionManager, queueSocket) => taskEither.tryCatch(
@@ -10,7 +10,7 @@ export const handleCounter: TrxHandler = (item, groupStatus, transactionManager,
     const data = item.Data as CounterType;
     const userAddress = rumsdk.utils.pubkeyToAddress(item.SenderPubkey);
     const groupId = groupStatus.id;
-    const timestamp = parseQuorumTimestamp(item.TimeStamp);
+    const timestamp = parseActivityTimestamp(data.published, item.TimeStamp);
     const parse = () => {
       if (data.type === 'Undo') {
         return {

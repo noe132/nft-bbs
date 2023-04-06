@@ -132,12 +132,12 @@ export class Comment {
         type: 'like',
         userAddress,
         items,
-      }) : Promise.resolve({}),
+      }) : undefined,
       userAddress ? CounterSummary.getCounterMap({
         type: 'dislike',
         userAddress,
         items,
-      }) : Promise.resolve({}),
+      }) : undefined,
       AttachedImage.getByObject(items.map((v) => ({
         groupId: v.groupId,
         objectId: v.id,
@@ -162,8 +162,8 @@ export class Comment {
     });
     items.forEach((comment) => {
       comment.extra = {
-        liked: (likedMap[comment.id]?.value ?? 0) > 0,
-        disliked: (dislikedMap[comment.id]?.value ?? 0) > 0,
+        liked: (likedMap?.[comment.id]?.value ?? 0) > 0,
+        disliked: (dislikedMap?.[comment.id]?.value ?? 0) > 0,
         userProfile: profileMap[comment.userAddress] ?? Profile.generateFallbackProfile({
           userAddress: comment.userAddress,
           groupId: comment.groupId,

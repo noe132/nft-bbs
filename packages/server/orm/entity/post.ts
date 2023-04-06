@@ -173,12 +173,12 @@ export class Post {
         type: 'like',
         userAddress: options.viewer,
         items,
-      }) : Promise.resolve({}),
+      }) : undefined,
       options?.viewer ? CounterSummary.getCounterMap({
         type: 'dislike',
         userAddress: options.viewer,
         items,
-      }) : Promise.resolve({}),
+      }) : undefined,
       Profile.bulkGet(items.map((item) => ({
         groupId: item.groupId,
         userAddress: item.userAddress,
@@ -202,8 +202,8 @@ export class Post {
 
     items.forEach((item) => {
       item.extra = {
-        liked: (likedMap[item.id]?.value ?? 0) > 0,
-        disliked: (dislikedMap[item.id]?.value ?? 0) > 0,
+        liked: (likedMap?.[item.id]?.value ?? 0) > 0,
+        disliked: (dislikedMap?.[item.id]?.value ?? 0) > 0,
         userProfile: profileMap[item.userAddress]
           ?? Profile.generateFallbackProfile({
             userAddress: item.userAddress,

@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import { action, reaction, runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import scrollIntoView from 'scroll-into-view-if-needed';
-import type { Comment, Profile } from 'nft-bbs-server';
+import type { Comment, Profile } from 'rum-port-server';
 import { Button, CircularProgress, ClickAwayListener, Fade, IconButton, InputBase, Portal, Tooltip } from '@mui/material';
 import { Close } from '@mui/icons-material';
 import { LoadingButton } from '@mui/lab';

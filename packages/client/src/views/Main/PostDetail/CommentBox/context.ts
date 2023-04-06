@@ -1,4 +1,4 @@
-import type { Comment } from 'nft-bbs-server';
+import type { Comment } from 'rum-port-server';
 import { createContext } from 'react';
 
 export interface CommentContext {

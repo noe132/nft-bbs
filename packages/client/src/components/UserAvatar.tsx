@@ -1,6 +1,6 @@
 import React from 'react';
 import classNames from 'classnames';
-import type { Profile } from 'nft-bbs-server';
+import type { Profile } from 'rum-port-server';
 import DefaultAvatar from '~/assets/images/default_avatar.png';
 
 interface AvatarProps {

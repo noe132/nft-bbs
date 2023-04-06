@@ -1,8 +1,8 @@
 import { taskEither } from 'fp-ts';
-import { ProfileType } from 'nft-bbs-types';
+import { ProfileType } from 'rum-port-types';
 import * as rumsdk from 'rum-sdk-nodejs';
 import { Profile } from '~/orm';
-import { parseQuorumTimestamp } from '~/utils';
+import { parseActivityTimestamp } from '~/utils';
 import { TrxHandler } from './helper';
 
 export const handleProfile: TrxHandler = (item, groupStatus, transactionManager, queueSocket) => taskEither.tryCatch(
@@ -12,7 +12,7 @@ export const handleProfile: TrxHandler = (item, groupStatus, transactionManager,
     const userAddress = rumsdk.utils.pubkeyToAddress(item.SenderPubkey);
     const groupId = groupStatus.id;
     const trxId = item.TrxId;
-    const timestamp = parseQuorumTimestamp(item.TimeStamp);
+    const timestamp = parseActivityTimestamp(data.published, item.TimeStamp);
 
     const userAddr = rumsdk.utils.pubkeyToAddress(item.SenderPubkey);
 

@@ -3,7 +3,7 @@ import { action } from 'mobx';
 import classNames from 'classnames';
 import { observer, useLocalObservable } from 'mobx-react-lite';
 import { format } from 'date-fns';
-import type { Profile } from 'nft-bbs-server';
+import type { Profile } from 'rum-port-server';
 import { Button } from '@mui/material';
 import { ChevronRight } from '@mui/icons-material';
 import WineIcon from 'boxicons/svg/solid/bxs-wine.svg?fill-icon';

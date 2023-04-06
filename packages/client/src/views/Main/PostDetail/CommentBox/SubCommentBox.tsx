@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import { action, reaction, runInAction } from 'mobx';
 import scrollIntoView from 'scroll-into-view-if-needed';
 import { observer, useLocalObservable } from 'mobx-react-lite';
-import type { Comment } from 'nft-bbs-server';
+import type { Comment } from 'rum-port-server';
 import { Pagination } from '@mui/material';
 import { lang, sleep, useWiderThan } from '~/utils';
 

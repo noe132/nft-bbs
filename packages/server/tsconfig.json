@@ -12,6 +12,9 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
+    "types": [
+      "node"
+    ],
     "paths": {
       "~/*": ["./*"]
     },

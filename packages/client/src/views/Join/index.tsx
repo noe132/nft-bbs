@@ -7,7 +7,7 @@ import { providers, utils } from 'ethers';
 import { either, taskEither, function as fp } from 'fp-ts';
 import { utils as quorumUtils } from 'rum-sdk-browser';
 import RemoveMarkdown from 'remove-markdown';
-import type { GroupStatus, IAppConfigItem } from 'nft-bbs-server';
+import type { GroupStatus, IAppConfigItem } from 'rum-port-server';
 import {
   Button, Checkbox, CircularProgress, Dialog, FormControl, Tooltip,
   FormControlLabel, IconButton, InputBase, InputLabel, Modal, OutlinedInput, Menu, MenuItem,

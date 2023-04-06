@@ -1,8 +1,8 @@
 import { taskEither } from 'fp-ts';
-import { ImageActivityType } from 'nft-bbs-types';
+import { ImageActivityType } from 'rum-port-types';
 import * as rumsdk from 'rum-sdk-nodejs';
 import { ImageFile } from '~/orm';
-import { parseQuorumTimestamp } from '~/utils';
+import { parseActivityTimestamp } from '~/utils';
 import { TrxHandler } from './helper';
 
 export const handleImage: TrxHandler = (item, groupStatus, transactionManager, _queueSocket) => taskEither.tryCatch(
@@ -12,7 +12,7 @@ export const handleImage: TrxHandler = (item, groupStatus, transactionManager, _
     const userAddress = rumsdk.utils.pubkeyToAddress(item.SenderPubkey);
     const groupId = groupStatus.id;
     const trxId = item.TrxId;
-    const timestamp = parseQuorumTimestamp(item.TimeStamp);
+    const timestamp = parseActivityTimestamp(data.published, item.TimeStamp);
 
     if (await ImageFile.has({ groupId, id: object.id }, transactionManager)) {
       // pollingLog.warn({

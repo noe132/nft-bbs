@@ -7,7 +7,7 @@ import {
   Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle,
   FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField,
 } from '@mui/material';
-import type { NftRequest } from 'nft-bbs-server/orm';
+import type { NftRequest } from 'rum-port-server/orm';
 
 import { NftRequestApi } from '~/apis';
 import { keyService, snackbarService } from '~/service';

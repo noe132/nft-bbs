@@ -4,7 +4,7 @@ import { IDecryptedContent, utils, chain } from 'rum-sdk-nodejs';
 import {
   postType, commentType, profileType, postDeleteType,
   counterType, imageActivityType, postAppendType,
-} from 'nft-bbs-types';
+} from 'rum-port-types';
 
 import { AppDataSource } from '~/orm/data-source';
 import { GroupStatus, PendingContent, TrxSet } from '~/orm/entity';
@@ -116,6 +116,7 @@ const handleContent = async (params: HandleContentParams) => {
             !isPendingContent && !handled && PendingContent.add(
               {
                 content: JSON.stringify(content),
+                trxId: content.TrxId,
                 groupId,
               },
               transactionManager,

@@ -3,7 +3,7 @@ import { reaction, runInAction } from 'mobx';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 import scrollIntoView from 'scroll-into-view-if-needed';
-import type { Comment } from 'nft-bbs-server';
+import type { Comment } from 'rum-port-server';
 
 import { nodeService } from '~/service';
 

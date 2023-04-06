@@ -1,5 +1,5 @@
 {
-  "name": "nft-bbs-types",
+  "name": "rum-port-types",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -17,6 +17,6 @@
     "io-ts": "^2.2.20"
   },
   "devDependencies": {
-    "rimraf": "^4.4.0"
+    "rimraf": "^4.4.1"
   }
 }
