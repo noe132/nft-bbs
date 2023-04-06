@@ -8,10 +8,10 @@ const drawImage = (img: HTMLImageElement, width: number, height: number, quality
     canvas.toBlob((v) => rs(v), 'image/jpeg', quality);
   });
 };
-const MAX_SIZE = 200 * 1024;
+const MAX_SIZE = 250 * 1024;
 
 /**
- * @param maxSize - in byte (default 200kb)
+ * @param maxSize - in bytes
  */
 export const compressImage = async (file: Blob, maxSize = MAX_SIZE) => {
   if (file.size < maxSize) {
