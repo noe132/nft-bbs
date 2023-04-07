@@ -3,7 +3,6 @@
   "version": "2.0.0",
   "name": "rum-port",
   "description": "Rum Port",
-
   "scripts": {
     "build": "nx run-many --target=build --parallel=1 --projects=\"rum-port-types,rum-port-server,rum-port-client\"",
     "build:server": "nx run-many --target=build --parallel=1 --projects=\"rum-port-types,rum-port-server\"",

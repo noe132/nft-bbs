@@ -1,26 +1,22 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class init1676887666762 implements MigrationInterface {
-  name = 'init1676887666762';
+export class Init1680840007834 implements MigrationInterface {
+  name = 'Init1680840007834';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query('CREATE TABLE "attachedimage" ("id" SERIAL NOT NULL, "groupId" integer NOT NULL, "objectId" character varying NOT NULL, "mineType" character varying NOT NULL, "content" character varying NOT NULL, CONSTRAINT "PK_8e2eb6b0e9476a7c0934957ca8e" PRIMARY KEY ("id"))');
+    await queryRunner.query('CREATE INDEX "IDX_57936256227bbf7fb633aecbd5" ON "attachedimage" ("groupId") ');
+    await queryRunner.query('CREATE INDEX "IDX_7d1448e9d106e15bab654e5d93" ON "attachedimage" ("objectId") ');
+    await queryRunner.query('CREATE TABLE "groupinfo" ("id" SERIAL NOT NULL, "trxId" character varying NOT NULL, "groupId" integer NOT NULL, "avatar" character varying NOT NULL, "desc" character varying NOT NULL, "timestamp" TIMESTAMP NOT NULL, CONSTRAINT "UQ_1dbbb645715c05ce0a131999740" UNIQUE ("trxId"), CONSTRAINT "PK_e7ea35ddaef2ddbe5985ad21656" PRIMARY KEY ("id"))');
+    await queryRunner.query('CREATE INDEX "IDX_1dbbb645715c05ce0a13199974" ON "groupinfo" ("trxId") ');
+    await queryRunner.query('CREATE INDEX "IDX_27c75a307d3baeee6749f8e45d" ON "groupinfo" ("groupId") ');
+    await queryRunner.query('CREATE INDEX "IDX_40f5c0a66ffe4f0115898475e4" ON "groupinfo" ("timestamp") ');
     await queryRunner.query('CREATE TABLE "countersummary" ("id" SERIAL NOT NULL, "groupId" integer NOT NULL, "objectId" character varying NOT NULL, "objectType" character varying NOT NULL, "type" character varying NOT NULL, "userAddress" character varying NOT NULL, "value" integer NOT NULL, CONSTRAINT "PK_6419f07486013aa3b3c4a8cb544" PRIMARY KEY ("id"))');
     await queryRunner.query('CREATE INDEX "IDX_c0a6c3b631b712269bdacb4440" ON "countersummary" ("groupId") ');
     await queryRunner.query('CREATE INDEX "IDX_8e5224e455886d704c6f426bc1" ON "countersummary" ("objectId") ');
     await queryRunner.query('CREATE INDEX "IDX_6a6a97b52f1496721457c215b7" ON "countersummary" ("objectType") ');
     await queryRunner.query('CREATE INDEX "IDX_fbd8798bf5735855f9cf8857a4" ON "countersummary" ("type") ');
     await queryRunner.query('CREATE INDEX "IDX_e840988fe6caef3ac0562b5bbe" ON "countersummary" ("userAddress") ');
-    await queryRunner.query('CREATE TABLE "attachedimage" ("id" SERIAL NOT NULL, "groupId" integer NOT NULL, "objectId" character varying NOT NULL, "mineType" character varying NOT NULL, "content" character varying NOT NULL, CONSTRAINT "PK_8e2eb6b0e9476a7c0934957ca8e" PRIMARY KEY ("id"))');
-    await queryRunner.query('CREATE INDEX "IDX_57936256227bbf7fb633aecbd5" ON "attachedimage" ("groupId") ');
-    await queryRunner.query('CREATE INDEX "IDX_7d1448e9d106e15bab654e5d93" ON "attachedimage" ("objectId") ');
-    await queryRunner.query('CREATE TABLE "counters" ("id" SERIAL NOT NULL, "trxId" character varying NOT NULL, "groupId" integer NOT NULL, "type" character varying NOT NULL, "objectId" character varying NOT NULL, "objectType" character varying NOT NULL, "userAddress" character varying NOT NULL, "timestamp" TIMESTAMP NOT NULL, CONSTRAINT "PK_910bfcbadea9cde6397e0daf996" PRIMARY KEY ("id"))');
-    await queryRunner.query('CREATE INDEX "IDX_fe5974ee4af5427d2ca4210469" ON "counters" ("trxId") ');
-    await queryRunner.query('CREATE INDEX "IDX_d5ca40ed63b438d98c053b9540" ON "counters" ("groupId") ');
-    await queryRunner.query('CREATE INDEX "IDX_05016cb34d66ea1d0eb3775c7f" ON "counters" ("type") ');
-    await queryRunner.query('CREATE INDEX "IDX_81b3e177d31751be3eae8765de" ON "counters" ("objectId") ');
-    await queryRunner.query('CREATE INDEX "IDX_8f8c2691d839de621dc171e27e" ON "counters" ("objectType") ');
-    await queryRunner.query('CREATE INDEX "IDX_394a6392a368e40bca32694d51" ON "counters" ("userAddress") ');
-    await queryRunner.query('CREATE INDEX "IDX_478cb63b3a2ebaf1479650eb57" ON "counters" ("timestamp") ');
     await queryRunner.query('CREATE TABLE "profiles" ("id" SERIAL NOT NULL, "trxId" character varying NOT NULL, "groupId" integer NOT NULL, "userAddress" character varying NOT NULL, "name" character varying NOT NULL DEFAULT \'\', "avatar" character varying NOT NULL DEFAULT \'\', "wallet" character varying NOT NULL DEFAULT \'\', "timestamp" TIMESTAMP NOT NULL, CONSTRAINT "PK_8e520eb4da7dc01d0e190447c8e" PRIMARY KEY ("id"))');
     await queryRunner.query('CREATE INDEX "IDX_4ac02c7a052bbc73576d6e9512" ON "profiles" ("trxId") ');
     await queryRunner.query('CREATE INDEX "IDX_13a496076a1e84ecef0049dc23" ON "profiles" ("groupId") ');
@@ -34,20 +30,24 @@ export class init1676887666762 implements MigrationInterface {
     await queryRunner.query('CREATE INDEX "IDX_9029c2464ed0c122197be4f60b" ON "comments" ("replyId") ');
     await queryRunner.query('CREATE INDEX "IDX_fcdfd24f4c1627eb1f070d7d50" ON "comments" ("userAddress") ');
     await queryRunner.query('CREATE INDEX "IDX_31761e5f1b67f42fa0da44bc03" ON "comments" ("timestamp") ');
-    await queryRunner.query('CREATE TABLE "groupinfo" ("id" SERIAL NOT NULL, "trxId" character varying NOT NULL, "groupId" integer NOT NULL, "avatar" character varying NOT NULL, "desc" character varying NOT NULL, "timestamp" TIMESTAMP NOT NULL, CONSTRAINT "UQ_1dbbb645715c05ce0a131999740" UNIQUE ("trxId"), CONSTRAINT "PK_e7ea35ddaef2ddbe5985ad21656" PRIMARY KEY ("id"))');
-    await queryRunner.query('CREATE INDEX "IDX_1dbbb645715c05ce0a13199974" ON "groupinfo" ("trxId") ');
-    await queryRunner.query('CREATE INDEX "IDX_27c75a307d3baeee6749f8e45d" ON "groupinfo" ("groupId") ');
-    await queryRunner.query('CREATE INDEX "IDX_40f5c0a66ffe4f0115898475e4" ON "groupinfo" ("timestamp") ');
-    await queryRunner.query('CREATE TABLE "groupconfig" ("groupId" integer NOT NULL, "keystore" boolean NOT NULL, "mixin" boolean NOT NULL, "metamask" boolean NOT NULL DEFAULT true, "anonymous" boolean NOT NULL, "nft" character varying NOT NULL, CONSTRAINT "PK_eb703ebdc7f125187f6caf367ea" PRIMARY KEY ("groupId"))');
     await queryRunner.query('CREATE TABLE "groupstatus" ("id" SERIAL NOT NULL, "shortName" character varying NOT NULL DEFAULT \'\', "mainSeedUrl" character varying NOT NULL DEFAULT \'\', "commentSeedUrl" character varying NOT NULL DEFAULT \'\', "counterSeedUrl" character varying NOT NULL DEFAULT \'\', "profileSeedUrl" character varying NOT NULL DEFAULT \'\', "mainStartTrx" character varying NOT NULL DEFAULT \'\', "commentStartTrx" character varying NOT NULL DEFAULT \'\', "counterStartTrx" character varying NOT NULL DEFAULT \'\', "profileStartTrx" character varying NOT NULL DEFAULT \'\', "loaded" boolean NOT NULL DEFAULT true, "private" boolean NOT NULL DEFAULT false, CONSTRAINT "PK_cf90ac9d0c87b7bf6c7071fae69" PRIMARY KEY ("id"))');
-    await queryRunner.query('CREATE TABLE "imagefile" ("groupId" integer NOT NULL, "id" character varying NOT NULL, "trxId" character varying NOT NULL, "mineType" character varying NOT NULL, "content" character varying NOT NULL, "userAddress" character varying NOT NULL, "timestamp" TIMESTAMP NOT NULL, CONSTRAINT "PK_6efc29b7dadf1e5a2ff09181b96" PRIMARY KEY ("groupId", "id"))');
-    await queryRunner.query('CREATE INDEX "IDX_64f4f5768d8d4effd9dc7a1ee4" ON "imagefile" ("trxId") ');
     await queryRunner.query('CREATE TABLE "nftrequests" ("id" SERIAL NOT NULL, "by" character varying NOT NULL, "groupId" integer NOT NULL, "memo" character varying NOT NULL DEFAULT \'\', "reply" character varying NOT NULL DEFAULT \'\', "status" character varying NOT NULL DEFAULT \'pending\', "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_2048dac8ce9b8f7acb817e6a080" PRIMARY KEY ("id"))');
     await queryRunner.query('CREATE INDEX "IDX_cc11098096fe3738711ed64ed0" ON "nftrequests" ("by") ');
     await queryRunner.query('CREATE INDEX "IDX_0988cd97f7fbc7dd57c086c39f" ON "nftrequests" ("groupId") ');
     await queryRunner.query('CREATE INDEX "IDX_f351681fc3ee45ac3e92557950" ON "nftrequests" ("status") ');
     await queryRunner.query('CREATE INDEX "IDX_af98d3d652b941e342dfc9f914" ON "nftrequests" ("createdAt") ');
     await queryRunner.query('CREATE INDEX "IDX_377a8a2fe75069896a81560b49" ON "nftrequests" ("updatedAt") ');
+    await queryRunner.query('CREATE TABLE "counters" ("id" SERIAL NOT NULL, "trxId" character varying NOT NULL, "groupId" integer NOT NULL, "type" character varying NOT NULL, "objectId" character varying NOT NULL, "objectType" character varying NOT NULL, "userAddress" character varying NOT NULL, "timestamp" TIMESTAMP NOT NULL, CONSTRAINT "PK_910bfcbadea9cde6397e0daf996" PRIMARY KEY ("id"))');
+    await queryRunner.query('CREATE INDEX "IDX_fe5974ee4af5427d2ca4210469" ON "counters" ("trxId") ');
+    await queryRunner.query('CREATE INDEX "IDX_d5ca40ed63b438d98c053b9540" ON "counters" ("groupId") ');
+    await queryRunner.query('CREATE INDEX "IDX_05016cb34d66ea1d0eb3775c7f" ON "counters" ("type") ');
+    await queryRunner.query('CREATE INDEX "IDX_81b3e177d31751be3eae8765de" ON "counters" ("objectId") ');
+    await queryRunner.query('CREATE INDEX "IDX_8f8c2691d839de621dc171e27e" ON "counters" ("objectType") ');
+    await queryRunner.query('CREATE INDEX "IDX_394a6392a368e40bca32694d51" ON "counters" ("userAddress") ');
+    await queryRunner.query('CREATE INDEX "IDX_478cb63b3a2ebaf1479650eb57" ON "counters" ("timestamp") ');
+    await queryRunner.query('CREATE TABLE "groupconfig" ("groupId" integer NOT NULL, "keystore" boolean NOT NULL, "mixin" boolean NOT NULL, "metamask" boolean NOT NULL DEFAULT true, "anonymous" boolean NOT NULL, "nft" character varying NOT NULL, CONSTRAINT "PK_eb703ebdc7f125187f6caf367ea" PRIMARY KEY ("groupId"))');
+    await queryRunner.query('CREATE TABLE "imagefile" ("groupId" integer NOT NULL, "id" character varying NOT NULL, "trxId" character varying NOT NULL, "mineType" character varying NOT NULL, "content" character varying NOT NULL, "userAddress" character varying NOT NULL, "timestamp" TIMESTAMP NOT NULL, CONSTRAINT "PK_6efc29b7dadf1e5a2ff09181b96" PRIMARY KEY ("groupId", "id"))');
+    await queryRunner.query('CREATE INDEX "IDX_64f4f5768d8d4effd9dc7a1ee4" ON "imagefile" ("trxId") ');
     await queryRunner.query('CREATE TABLE "postappends" ("groupId" integer NOT NULL, "id" character varying NOT NULL, "trxId" character varying NOT NULL, "postId" character varying NOT NULL, "content" character varying NOT NULL, "timestamp" TIMESTAMP NOT NULL, CONSTRAINT "PK_2c0eedf77bedd34a017d7c41261" PRIMARY KEY ("groupId", "id"))');
     await queryRunner.query('CREATE INDEX "IDX_34d43519f9ddfbe6ab7bf2b762" ON "postappends" ("trxId") ');
     await queryRunner.query('CREATE INDEX "IDX_8e238809bfe8c1141f117ba88a" ON "postappends" ("postId") ');
@@ -66,13 +66,15 @@ export class init1676887666762 implements MigrationInterface {
     await queryRunner.query('CREATE INDEX "IDX_c0b4feed6d806b02e68f78b902" ON "objecthistory" ("objectType") ');
     await queryRunner.query('CREATE INDEX "IDX_e5105f5600e6e78e0831de5070" ON "objecthistory" ("type") ');
     await queryRunner.query('CREATE INDEX "IDX_9cc7db7b771341b906e3f03fc5" ON "objecthistory" ("timestamp") ');
-    await queryRunner.query('CREATE TABLE "pendingcontent" ("id" SERIAL NOT NULL, "groupId" integer NOT NULL, "content" character varying NOT NULL, CONSTRAINT "PK_8bf298befd8439498da38c82ead" PRIMARY KEY ("id"))');
+    await queryRunner.query('CREATE TABLE "pendingcontent" ("id" SERIAL NOT NULL, "groupId" integer NOT NULL, "trxId" character varying NOT NULL, "content" character varying NOT NULL, CONSTRAINT "PK_8bf298befd8439498da38c82ead" PRIMARY KEY ("id"))');
     await queryRunner.query('CREATE INDEX "IDX_4f5b87261f8cb65e060e695a3b" ON "pendingcontent" ("groupId") ');
+    await queryRunner.query('CREATE INDEX "IDX_b6e38f054ba0a56f71c311663b" ON "pendingcontent" ("trxId") ');
     await queryRunner.query('CREATE TABLE "trxset" ("groupId" integer NOT NULL, "trxId" character varying NOT NULL, CONSTRAINT "PK_84aae4f58cbc82198d406699f6a" PRIMARY KEY ("groupId", "trxId"))');
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DROP TABLE "trxset"');
+    await queryRunner.query('DROP INDEX "public"."IDX_b6e38f054ba0a56f71c311663b"');
     await queryRunner.query('DROP INDEX "public"."IDX_4f5b87261f8cb65e060e695a3b"');
     await queryRunner.query('DROP TABLE "pendingcontent"');
     await queryRunner.query('DROP INDEX "public"."IDX_9cc7db7b771341b906e3f03fc5"');
@@ -93,20 +95,24 @@ export class init1676887666762 implements MigrationInterface {
     await queryRunner.query('DROP INDEX "public"."IDX_8e238809bfe8c1141f117ba88a"');
     await queryRunner.query('DROP INDEX "public"."IDX_34d43519f9ddfbe6ab7bf2b762"');
     await queryRunner.query('DROP TABLE "postappends"');
+    await queryRunner.query('DROP INDEX "public"."IDX_64f4f5768d8d4effd9dc7a1ee4"');
+    await queryRunner.query('DROP TABLE "imagefile"');
+    await queryRunner.query('DROP TABLE "groupconfig"');
+    await queryRunner.query('DROP INDEX "public"."IDX_478cb63b3a2ebaf1479650eb57"');
+    await queryRunner.query('DROP INDEX "public"."IDX_394a6392a368e40bca32694d51"');
+    await queryRunner.query('DROP INDEX "public"."IDX_8f8c2691d839de621dc171e27e"');
+    await queryRunner.query('DROP INDEX "public"."IDX_81b3e177d31751be3eae8765de"');
+    await queryRunner.query('DROP INDEX "public"."IDX_05016cb34d66ea1d0eb3775c7f"');
+    await queryRunner.query('DROP INDEX "public"."IDX_d5ca40ed63b438d98c053b9540"');
+    await queryRunner.query('DROP INDEX "public"."IDX_fe5974ee4af5427d2ca4210469"');
+    await queryRunner.query('DROP TABLE "counters"');
     await queryRunner.query('DROP INDEX "public"."IDX_377a8a2fe75069896a81560b49"');
     await queryRunner.query('DROP INDEX "public"."IDX_af98d3d652b941e342dfc9f914"');
     await queryRunner.query('DROP INDEX "public"."IDX_f351681fc3ee45ac3e92557950"');
     await queryRunner.query('DROP INDEX "public"."IDX_0988cd97f7fbc7dd57c086c39f"');
     await queryRunner.query('DROP INDEX "public"."IDX_cc11098096fe3738711ed64ed0"');
     await queryRunner.query('DROP TABLE "nftrequests"');
-    await queryRunner.query('DROP INDEX "public"."IDX_64f4f5768d8d4effd9dc7a1ee4"');
-    await queryRunner.query('DROP TABLE "imagefile"');
     await queryRunner.query('DROP TABLE "groupstatus"');
-    await queryRunner.query('DROP TABLE "groupconfig"');
-    await queryRunner.query('DROP INDEX "public"."IDX_40f5c0a66ffe4f0115898475e4"');
-    await queryRunner.query('DROP INDEX "public"."IDX_27c75a307d3baeee6749f8e45d"');
-    await queryRunner.query('DROP INDEX "public"."IDX_1dbbb645715c05ce0a13199974"');
-    await queryRunner.query('DROP TABLE "groupinfo"');
     await queryRunner.query('DROP INDEX "public"."IDX_31761e5f1b67f42fa0da44bc03"');
     await queryRunner.query('DROP INDEX "public"."IDX_fcdfd24f4c1627eb1f070d7d50"');
     await queryRunner.query('DROP INDEX "public"."IDX_9029c2464ed0c122197be4f60b"');
@@ -120,22 +126,18 @@ export class init1676887666762 implements MigrationInterface {
     await queryRunner.query('DROP INDEX "public"."IDX_13a496076a1e84ecef0049dc23"');
     await queryRunner.query('DROP INDEX "public"."IDX_4ac02c7a052bbc73576d6e9512"');
     await queryRunner.query('DROP TABLE "profiles"');
-    await queryRunner.query('DROP INDEX "public"."IDX_478cb63b3a2ebaf1479650eb57"');
-    await queryRunner.query('DROP INDEX "public"."IDX_394a6392a368e40bca32694d51"');
-    await queryRunner.query('DROP INDEX "public"."IDX_8f8c2691d839de621dc171e27e"');
-    await queryRunner.query('DROP INDEX "public"."IDX_81b3e177d31751be3eae8765de"');
-    await queryRunner.query('DROP INDEX "public"."IDX_05016cb34d66ea1d0eb3775c7f"');
-    await queryRunner.query('DROP INDEX "public"."IDX_d5ca40ed63b438d98c053b9540"');
-    await queryRunner.query('DROP INDEX "public"."IDX_fe5974ee4af5427d2ca4210469"');
-    await queryRunner.query('DROP TABLE "counters"');
-    await queryRunner.query('DROP INDEX "public"."IDX_7d1448e9d106e15bab654e5d93"');
-    await queryRunner.query('DROP INDEX "public"."IDX_57936256227bbf7fb633aecbd5"');
-    await queryRunner.query('DROP TABLE "attachedimage"');
     await queryRunner.query('DROP INDEX "public"."IDX_e840988fe6caef3ac0562b5bbe"');
     await queryRunner.query('DROP INDEX "public"."IDX_fbd8798bf5735855f9cf8857a4"');
     await queryRunner.query('DROP INDEX "public"."IDX_6a6a97b52f1496721457c215b7"');
     await queryRunner.query('DROP INDEX "public"."IDX_8e5224e455886d704c6f426bc1"');
     await queryRunner.query('DROP INDEX "public"."IDX_c0a6c3b631b712269bdacb4440"');
     await queryRunner.query('DROP TABLE "countersummary"');
+    await queryRunner.query('DROP INDEX "public"."IDX_40f5c0a66ffe4f0115898475e4"');
+    await queryRunner.query('DROP INDEX "public"."IDX_27c75a307d3baeee6749f8e45d"');
+    await queryRunner.query('DROP INDEX "public"."IDX_1dbbb645715c05ce0a13199974"');
+    await queryRunner.query('DROP TABLE "groupinfo"');
+    await queryRunner.query('DROP INDEX "public"."IDX_7d1448e9d106e15bab654e5d93"');
+    await queryRunner.query('DROP INDEX "public"."IDX_57936256227bbf7fb633aecbd5"');
+    await queryRunner.query('DROP TABLE "attachedimage"');
   }
 }

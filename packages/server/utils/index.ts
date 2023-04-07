@@ -81,8 +81,7 @@ export const patchLogger = (logger: Logger | FastifyBaseLogger) => {
   };
 };
 
-// TODO: timestamp type should be string
-export const parseActivityTimestamp = (published: string | undefined, timestamp: any) => {
+export const parseActivityTimestamp = (published: string | undefined, timestamp: string) => {
   if (published) {
     return parseISO(published).getTime();
   }

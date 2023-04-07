@@ -9272,10 +9272,10 @@ rum-sdk-browser@^2.0.1:
     store2 "^2.13.2"
     uuid "^8.3.2"
 
-rum-sdk-nodejs@^2.0.1:
-  version "2.0.1"
-  resolved "https://registry.npmmirror.com/rum-sdk-nodejs/-/rum-sdk-nodejs-2.0.1.tgz#4d0d484e6bc3fc814161e67f9b6d4194c850b1a3"
-  integrity sha512-jB7bM8S5+SZfGtrdxong78N3uV97g8shzjlWPOed1att83g9VtlFsNpCnLYK0tgyf6uUBmKI6kLyLNH3+Noylw==
+rum-sdk-nodejs@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.npmmirror.com/rum-sdk-nodejs/-/rum-sdk-nodejs-2.0.2.tgz#44d1f9413bd0d402250f2b9d9b3eb2f42bf01bc1"
+  integrity sha512-scvsuYWgg5I8MCAepBGFriOQrHTVBUUVVDtHL3KoDBVmxDI6ke8caNr7PQnsJHi2FKAcR8XshL7OgtRB52r8zQ==
   dependencies:
     "@types/crypto-js" "^4.1.1"
     "@types/node-localstorage" "^1.3.0"
@@ -9347,10 +9347,10 @@ safe-stable-stringify@^2.3.1:
   resolved "https://registry.npmmirror.com/safer-buffer/-/safer-buffer-2.1.2.tgz#44fa161b0187b9549dd84bb91802f9bd8385cd6a"
   integrity sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==
 
-sass@^1.60.0:
-  version "1.60.0"
-  resolved "https://registry.npmmirror.com/sass/-/sass-1.60.0.tgz#657f0c23a302ac494b09a5ba8497b739fb5b5a81"
-  integrity sha512-updbwW6fNb5gGm8qMXzVO7V4sWf7LMXnMly/JEyfbfERbVH46Fn6q02BX7/eHTdKpE7d+oTkMMQpFWNUMfFbgQ==
+sass@^1.61.0:
+  version "1.61.0"
+  resolved "https://registry.npmmirror.com/sass/-/sass-1.61.0.tgz#d1f6761bb833887b8fdab32a24e052c40531d02b"
+  integrity sha512-PDsN7BrVkNZK2+dj/dpKQAWZavbAQ87IXqVvw2+oEYI+GwlTWkvbQtL7F2cCNbMqJEYKPh1EcjSxsnqIb/kyaQ==
   dependencies:
     chokidar ">=3.0.0 <4.0.0"
     immutable "^4.0.0"
@@ -9376,10 +9376,10 @@ scheduler@^0.23.0:
   dependencies:
     loose-envify "^1.1.0"
 
-scroll-into-view-if-needed@^3.0.6:
-  version "3.0.6"
-  resolved "https://registry.npmmirror.com/scroll-into-view-if-needed/-/scroll-into-view-if-needed-3.0.6.tgz#2c803a509c1036bc4a9c009fecc5c145f87e47cf"
-  integrity sha512-x+CW0kOzlFNOnseF0DBr0AJ5m+TgGmSOdEZwyiZW0gV87XBvxQKw5A8DvFFgabznA68XqLgVX+PwPX8OzsFvRA==
+scroll-into-view-if-needed@^3.0.7:
+  version "3.0.7"
+  resolved "https://registry.npmmirror.com/scroll-into-view-if-needed/-/scroll-into-view-if-needed-3.0.7.tgz#c41d9709aac3776a25c5c0ead442afe7420a9e3c"
+  integrity sha512-Hr094AIeUq/Du9QWTo+EQA2ygzasu13KltO4TuVqAMf1ioIAIOdf/cDzK4+URe7A81IzdXf5rxMXBpz4k2IdxQ==
   dependencies:
     compute-scroll-into-view "^3.0.0"
 

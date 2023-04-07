@@ -5,7 +5,7 @@ import { pollingAppConfigTask, pollingContentTask } from './pollingTask';
 
 export const INTERVAL = {
   APPCONFIG: 60000,
-  CONTENT: 2000,
+  CONTENT: 500,
 };
 
 const state = {

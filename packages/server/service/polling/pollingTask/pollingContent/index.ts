@@ -163,11 +163,11 @@ const handleContent = async (params: HandleContentParams) => {
         return handleContent();
       }),
       taskEither.chainW(() => updateGroupstatus()),
-      taskEither.orElse(() => rollback),
       taskEither.mapLeft((e) => {
         pollingLog.error(e);
         return e;
       }),
+      taskEither.orElse(() => rollback),
       taskEither.map((v) => {
         if (!isPendingContent) {
           pollingLog.info(`${content.GroupId} ${content.TrxId} ✅ ${trxType}`);
@@ -245,9 +245,11 @@ export const pollingContentTask = async (groupStatusId: number) => {
     )();
   }
 
-  queuedEvents.forEach((v) => {
-    socketService.send(v);
-  });
+  if (groupStatus.loaded) {
+    queuedEvents.forEach((v) => {
+      socketService.send(v);
+    });
+  }
 
   if (!totalCount) {
     if (!groupStatus.loaded) {
